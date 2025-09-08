@@ -1,0 +1,71 @@
+{
+  "name": "",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "license": "AGPL-version-3.0",
+  "private": false,
+  "engines": {
+    "node": ">= 14.0.0",
+    "npm": ">= 6.0.0"
+  },
+  "homepage": "",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "bugs": "",
+  "keywords": [],
+  "author": {
+    "name": "",
+    "email": "",
+    "url": ""
+  },
+  "contributors": [],
+  "scripts": {
+    "dev": "nodemon",
+    "build": "tsc && tsc-alias",
+    "start": "node ./dist/src/index.js",
+    "db:migrate": "drizzle-kit migrate",
+    "db:generate": "drizzle-kit generate",
+    "db:delete": "rimraf ./db/migration db.sqlite",
+    "db:sync": "drizzle-kit generate && drizzle-kit migrate",
+    "db:seed": "tsx ./db/seed.ts",
+    "db:reset": "npm run db:delete && npm run db:sync && npm run db:seed"
+  },
+  "devDependencies": {
+    "@tsconfig/node-lts": "^22.0.2",
+    "@tsconfig/node-ts": "^23.6.1",
+    "@types/bcrypt": "^6.0.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/debug": "^4.1.12",
+    "@types/express": "^5.0.3",
+    "@types/express-session": "^1.18.2",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^24.3.0",
+    "@types/passport": "^1.0.17",
+    "@types/passport-local": "^1.0.38",
+    "drizzle-kit": "^0.31.4",
+    "nodemon": "^3.1.10",
+    "rimraf": "^6.0.1",
+    "tsc-alias": "^1.8.16",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.2.0",
+    "debug": "^4.4.1",
+    "dotenv": "^17.2.1",
+    "drizzle-orm": "^0.44.5",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "morgan": "^1.10.1",
+    "nanoid": "^5.1.5",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "pug": "^3.0.3"
+  }
+}
