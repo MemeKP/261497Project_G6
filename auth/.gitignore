@@ -11,3 +11,5 @@ npm-debug.log*
 migration
 
 dist
+
+.DS_Store
