@@ -6,8 +6,9 @@ import { Strategy as LocalStrategy } from "passport-local";
 import bcrypt from "bcrypt";
 import morgan from "morgan";
 import { dbClient } from "@db/client.js";
-import { usersTable, diningSessionsTable } from "@db/schema.js";
+import { usersTable, diningSessionsTable, groupsTable, tablesTable } from "@db/schema.js";
 import { eq, and } from "drizzle-orm";
+import QRCode from "qrcode";
 
 const app = express();
 
@@ -127,24 +128,84 @@ app.post("/auth/login", (req, res, next) => {
   })(req, res, next);
 });
 
-// --- Dining Session ---
-app.post("/dining_session/start", requireAuth, requireAdmin, async (req, res) => {
-  const { tableId } = req.body;
-  if (!tableId) return res.status(400).json({ error: "tableId required" });
-
-  const existing = await dbClient.query.diningSessionsTable.findFirst({
-    where: and(eq(diningSessionsTable.tableId, tableId), eq(diningSessionsTable.status, "ACTIVE"))
+app.post("/auth/logout", (req, res, next) => {
+  req.logout(function(err) {
+    if (err) return next(err);
+    res.json({ message: "Logged out successfully" });
   });
-  if (existing) return res.status(400).json({ error: "Table already active" });
-
-  const session = await dbClient.insert(diningSessionsTable).values({
-    tableId: parseInt(tableId),
-    status: "ACTIVE",
-    totalCustomers: 0
-  }).returning();
-
-  res.status(201).json({ message: "Dining session started", session: session[0] });
 });
+
+// --- Dining Session ---
+app.post(
+  "/dining_session/start",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    const { tableId } = req.body;
+    if (!tableId) return res.status(400).json({ error: "tableId required" });
+
+    const existing = await dbClient.query.diningSessionsTable.findFirst({
+      where: and(
+        eq(diningSessionsTable.tableId, tableId),
+        eq(diningSessionsTable.status, "ACTIVE")
+      ),
+    });
+    if (existing)
+      return res.status(400).json({ error: "Table already active" });
+
+    const adminId = (req.user as any).id;
+
+    const [session] = await dbClient
+      .insert(diningSessionsTable)
+      .values({
+        tableId: parseInt(tableId),
+        status: "ACTIVE",
+        totalCustomers: 0,
+      })
+      .returning();
+
+    const [group] = await dbClient
+      .insert(groupsTable)
+      .values({
+        tableId: parseInt(tableId),
+        creatorUserId: adminId,
+        createdAt: new Date(),
+      })
+      .returning();
+
+    const qrPayload = `${
+      process.env.CUSTOMER_URL ?? "http://localhost:5002"
+    }/group/join/${group.id}`;
+    const qrCodeDataUrl = await QRCode.toDataURL(qrPayload);
+
+    res.status(201).json({
+      message: "Dining session started",
+      session,
+      group,
+      qrCode: qrCodeDataUrl,
+    });
+  }
+);
+
+app.get(
+  "/dining_sessions/active",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const activeSessions = await dbClient.query.diningSessionsTable.findMany({
+        where: eq(diningSessionsTable.status, "ACTIVE"),
+      });
+
+      const activeTableIds = activeSessions.map((session) => session.tableId);
+
+      res.json({ activeTables: activeTableIds });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch active tables" });
+    }
+  }
+);
 
 app.put("/dining_session/:tableId/customers", requireAuth, requireAdmin, async (req, res) => {
   const { tableId } = req.params;
@@ -170,7 +231,35 @@ app.post("/dining_session/:tableId/end", requireAuth, requireAdmin, async (req, 
     .returning();
 
   if (!ended.length) return res.status(404).json({ error: "No active session" });
-  res.json({ message: "Dining session ended", session: ended[0] });
+
+  await dbClient.update(tablesTable)
+    .set({ status: "AVAILABLE" })
+    .where(eq(tablesTable.id, parseInt(tableId)));
+
+  res.json({ 
+    message: "Dining session ended", 
+    session: ended[0] 
+  });
+});
+
+app.get("/admin/sessions", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const sessions = await dbClient.query.diningSessionsTable.findMany();
+    res.json(sessions);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch sessions" });
+  }
+});
+
+app.get("/admin/orders", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const orders = await dbClient.query.ordersTable.findMany();
+    res.json(orders);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
 });
 
 // ===================== Start Server =====================

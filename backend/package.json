@@ -24,9 +24,9 @@
   },
   "contributors": [],
   "scripts": {
-    "dev": "nodemon",
+    "dev": "nodemon --exec tsx src/admin.ts",
     "build": "tsc && tsc-alias",
-    "start": "node ./dist/src/index.js",
+    "start": "node ./dist/src/admin.js",
     "db:migrate": "drizzle-kit migrate",
     "db:generate": "drizzle-kit generate",
     "db:delete": "rimraf ./db/migration db.sqlite",
@@ -46,6 +46,7 @@
     "@types/node": "^24.3.0",
     "@types/passport": "^1.0.17",
     "@types/passport-local": "^1.0.38",
+    "@types/qrcode": "^1.5.5",
     "drizzle-kit": "^0.31.4",
     "nodemon": "^3.1.10",
     "rimraf": "^6.0.1",
@@ -66,6 +67,7 @@
     "nanoid": "^5.1.5",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
-    "pug": "^3.0.3"
+    "pug": "^3.0.3",
+    "qrcode": "^1.5.4"
   }
 }
