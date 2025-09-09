@@ -24,7 +24,7 @@
   },
   "contributors": [],
   "scripts": {
-    "dev": "nodemon --exec tsx src/admin.ts",
+    "dev": "concurrently \"tsx src/admin.ts\" \"tsx src/customer.ts\"",
     "build": "tsc && tsc-alias",
     "start": "node ./dist/src/admin.js",
     "db:migrate": "drizzle-kit migrate",
@@ -47,6 +47,7 @@
     "@types/passport": "^1.0.17",
     "@types/passport-local": "^1.0.38",
     "@types/qrcode": "^1.5.5",
+    "concurrently": "^9.2.1",
     "drizzle-kit": "^0.31.4",
     "nodemon": "^3.1.10",
     "rimraf": "^6.0.1",
