@@ -1,0 +1,15 @@
+name: group06 # You can also change this to another name to avoid warning with existing group. 
+services:
+  frontend:
+    container_name: g06-frontend
+    build: .
+    ports:
+      - ${NGINX_PORT}:5173
+    networks:
+      - project_final-net
+    environment:
+      - NGINX_PROXY=${NGINX_PROXY}
+      - NGINX_PORT=${NGINX_PORT}
+networks:
+  project_final-net: # Check by using `docker network ls` command
+    external: true
