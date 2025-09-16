@@ -11,6 +11,8 @@ import {
   RouterProvider,
 } from 'react-router-dom'
 import MainLayout from './layout/MainLayout.tsx'
+import LoginPage from './routes/LoginPage.tsx'
+import RegisterPage from './routes/RegisterPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -35,6 +37,14 @@ const router = createBrowserRouter([
       {
         path: "/addmember",
         element: <AddMemberPage />,
+      },
+      {
+        path: "/login",
+        element: <LoginPage />,
+      },
+            {
+        path: "/register",
+        element: <RegisterPage />,
       },
     ]
   }
