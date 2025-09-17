@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUser, FaLock } from "react-icons/fa";
+import { FaPhoneAlt, FaHome } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
 import bg1 from "../assets/imgs/bg-1.png";
 
 const RegisterPage = () => {
-  const [name, setName] = useState("");
+  const [username, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,10 +25,14 @@ const RegisterPage = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
+          username,
           email,
+          firstName,
+          lastName,
+          phone,
+          address,
           password,
-          passwordConfirm: password, // backend ต้องการ field นี้
+          passwordConfirm: password,
         }),
       });
 
@@ -52,7 +61,7 @@ const RegisterPage = () => {
       </div>
 
       {/* Content */}
-      <div className="absolute flex flex-col items-center justify-center w-screen">
+      <div className="absolute flex flex-col items-center justify-center w-screen mt-[-80px]">
         <h1 className="title1 text-white text-9xl mt-30">ENSO</h1>
         <p className="text-white p-2 mt-3 font-[Gantari]">
           Please login with your admin credentials.
@@ -69,8 +78,59 @@ const RegisterPage = () => {
             <input
               type="text"
               placeholder="username"
-              value={name}
+              value={username}
               onChange={(e) => setName(e.target.value)}
+              className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
+            />
+          </div>
+
+          {/* Name Row */}
+          <div className="flex gap-2 w-full">
+            {/* First Name */}
+            <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-3 h-12 w-1/2">
+              <FaUser className="text-gray-400" />
+              <input
+                type="text"
+                placeholder="First name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
+              />
+            </div>
+
+            {/* Last Name */}
+            <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-3 h-12 w-1/2">
+              <FaUser className="text-gray-400" />
+              <input
+                type="text"
+                placeholder="Last name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
+              />
+            </div>
+          </div>
+
+          {/* Phone */}
+          <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12 w-full">
+            <FaPhoneAlt className="text-gray-400" />
+            <input
+              type="tel"
+              placeholder="Phone number"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
+            />
+          </div>
+
+          {/* Address */}
+          <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12 w-full">
+            <FaHome className="text-gray-400" />
+            <input
+              type="text"
+              placeholder="Address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
               className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
             />
           </div>
