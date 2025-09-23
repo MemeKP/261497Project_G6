@@ -3,7 +3,7 @@ import bg1 from "../assets/imgs/bg-1.png";
 
 const LandingPage = () => {
   return (
-    <div className="w-full h-[852px] relative bg-black overflow-hidden">
+    <div className="w-full h-[852px] relative bg-black overflow-hidden ">
       {/* BACKGROUND */}
       <img
         className="w-full h-full object-cover absolute inset-0"
@@ -13,7 +13,7 @@ const LandingPage = () => {
       <div className="absolute inset-0 bg-black opacity-60"></div>
       
       {/* CONTENT */}
-      <div className="absolute flex flex-col items-center justify-center w-screen">
+      <div className="absolute flex flex-col w-full items-center justify-center">
         <h1 className="title1 text-white text-9xl mt-30">ENSO</h1>
         <p className="text-white p-2 mt-3 font-[Gantari]">
           Welcome to Authentic Japanese Dining.
