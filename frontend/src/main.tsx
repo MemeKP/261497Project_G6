@@ -13,6 +13,9 @@ import {
 import MainLayout from './layout/MainLayout.tsx'
 import LoginPage from './routes/LoginPage.tsx'
 import RegisterPage from './routes/RegisterPage.tsx'
+import CartPage from './routes/CartPage.tsx'
+import OrderStatusPage from './routes/OrderStatusPage.tsx'
+import BillPage from './routes/ฺBillPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -42,9 +45,21 @@ const router = createBrowserRouter([
         path: "/login",
         element: <LoginPage />,
       },
-            {
+      {
         path: "/register",
         element: <RegisterPage />,
+      },
+      {
+        path: "/cart",
+        element: <CartPage />,
+      },
+      {
+        path: "/orderstatus",
+        element: <OrderStatusPage />,
+      },
+      {
+        path: "/billpage",
+        element: <BillPage />,
       },
     ]
   }
