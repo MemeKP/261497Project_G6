@@ -1,14 +1,17 @@
-import React from 'react'
-import MenuItems from './MenuItems'
+import React from "react";
+import MenuItems from "./MenuItems";
 
 const MenuList = () => {
   return (
     <>
-    <MenuItems />
-    <MenuItems />
+      <div className="flex flex-col items-center ">
+        <MenuItems />
+        <MenuItems />
+        <MenuItems />
+        <MenuItems />
+      </div>
     </>
-    
-  )
-}
+  );
+};
 
-export default MenuList
+export default MenuList;
