@@ -1,11 +1,6 @@
-# 261497Project_G6
+step 1. pnpm i
 
-### set up for docker-compose file (if needed)
+step 2. if you want to test in postman 
 
-name: group06 (not container name)
+use  :  npm run seed 
 
-network: project_final-net
-
-create network command: $docker network create project_final-net
-
-inspect: $docker network ls
