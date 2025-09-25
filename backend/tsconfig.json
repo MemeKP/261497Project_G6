@@ -8,6 +8,7 @@
     "baseUrl": "./",
     "paths": {
       "@db/*": ["./db/*"]
-    }
-  }
+    },
+  },
+  "include": ["./*", "./src/**/*", "./db/**/*", "../project_backend/src/db/client2.ts"]
 }

@@ -1,14 +1,15 @@
-import { db } from "src/db/client.js";
-import { orders } from "src/db/schema.js";
+// import { db } from "src/db/client2.js";
+import { dbClient as db } from "@db/client.js";
+import { orders } from "db/schema.js";
 import { eq } from "drizzle-orm";
 
 // const allowedStatus = ["PENDING", "PREPARING", "COMPLETED", "CANCELLED"] as const;
 const allowedStatus = ["PENDING", "PREPARING", "COMPLETED", "CANCELLED", "PAID"] as const;
 
-export async function createOrder(diningSessionId: number) {
+export async function createOrder(dining_session_id: number, table_id: number) {
   const [newOrder] = await db
     .insert(orders)
-    .values({ diningSessionId })
+    .values({ dining_session_id, table_id })
     .returning();
   return newOrder;
 }
@@ -17,8 +18,9 @@ export async function getOrdersBySession(sessionId: number) {
   return await db
     .select()
     .from(orders)
-    .where(eq(orders.diningSessionId, sessionId));
+    .where(eq(orders.dining_session_id, sessionId));
 }
+
 
 export async function updateOrderStatus(orderId: number, status: string) {
   if (!allowedStatus.includes(status as any)) {

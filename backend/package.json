@@ -2,7 +2,7 @@
   "name": "",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "type": "module",
   "license": "AGPL-version-3.0",
   "private": false,
@@ -24,35 +24,47 @@
   },
   "contributors": [],
   "scripts": {
+    "dev": "nodemon --watch src --ext ts --exec tsx src/server.ts",
+    "build": "tsc && tsc-alias",
+    "start": "node ./dist/src/server.js",
+    "seed": "tsx src/db/seed.ts",
     "db:generate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit generate",
     "db:push": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit push",
-    "db:migrate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit migrate",
-    "db:prototype": "tsx ./db/prototype.ts",
-    "eol": "eolConverter _entrypoint/*.sh"
+    "db:migrate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit migrate"
   },
   "dependencies": {
+    "@tsconfig/node-lts": "^22.0.2",
+    "@tsconfig/node-ts": "^23.6.1",
+    "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
-    "connect-pg-simple": "^10.0.0",
+    "cors": "^2.8.5",
+    "debug": "^4.4.1",
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.44.5",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.1",
     "pg": "^8.16.3",
     "postgres": "^3.4.7",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "tsc-alias": "^1.8.16",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
   },
   "devDependencies": {
-    "@tsconfig/node-lts": "^22.0.2",
-    "@tsconfig/node-ts": "^23.6.1",
+    "@types/axios": "^0.14.4",
     "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/debug": "^4.1.12",
     "@types/express": "^5.0.3",
     "@types/express-session": "^1.18.2",
-    "@types/node": "^24.5.2",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^24.3.1",
     "@types/pg": "^8.15.5",
     "@types/qrcode": "^1.5.5",
     "cross-env": "^10.0.0",
     "drizzle-kit": "^0.31.4",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "nodemon": "^3.1.10"
   }
 }

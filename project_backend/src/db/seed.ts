@@ -1,4 +1,4 @@
-import { db } from "src/db/client.js";
+import { db } from "src/db/client2.js";
 import {
   admins,
   tables,

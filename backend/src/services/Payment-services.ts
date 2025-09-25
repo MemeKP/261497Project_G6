@@ -1,6 +1,7 @@
 import axios from "axios";
-import { db } from "src/db/client.js";
-import { payments, billSplits, bills } from "src/db/schema.js";
+// import { db } from "src/db/client2.js";
+import { dbClient as db } from "@db/client.js";
+import { payments, billSplits, bills } from "db/schema.js";
 import { eq, and } from "drizzle-orm";
 
 const SCB_BASE_URL = "https://api-sandbox.partners.scb/partners/sandbox/v3";

@@ -3,20 +3,27 @@ import * as orderService from "src/services/Orders-services.js";
 
 // Allowed status values
 const allowedStatus = ["PENDING", "PREPARING", "COMPLETED", "CANCELLED"] as const;
-
 export async function createOrder(req: Request, res: Response) {
   try {
-    const { diningSessionId } = req.body;
+    const { diningSessionId, tableId } = req.body;
+
     if (!diningSessionId || isNaN(Number(diningSessionId))) {
       return res.status(400).json({ error: "Valid diningSessionId is required" });
     }
+    if (!tableId || isNaN(Number(tableId))) {
+      return res.status(400).json({ error: "Valid tableId is required" });
+    }
 
-    const order = await orderService.createOrder(Number(diningSessionId));
+    const order = await orderService.createOrder(
+      Number(diningSessionId),
+      Number(tableId)
+    );
     res.status(201).json(order);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 }
+
 
 export async function getOrders(req: Request, res: Response) {
   try {
