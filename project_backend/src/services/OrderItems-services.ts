@@ -1,18 +1,34 @@
+
 import { db } from "src/db/client.js";
 import { orderItems, orders, menuItems, members } from "src/db/schema.js";
 import { eq } from "drizzle-orm";
 
-export async function addOrderItem(orderId: number, menuItemId: number, memberId: number, quantity: number, note?: string) {
+/**
+ * เพิ่ม OrderItem เข้าไปใน Order (Add to cart)
+ */
+export async function addOrderItem(
+  orderId: number,
+  menuItemId: number,
+  memberId: number,
+  quantity: number,
+  note?: string
+) {
   if (quantity < 1) throw new Error("Quantity must be at least 1");
 
-  //FK Validation
+  // FK Validation
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
   if (!order) throw new Error("Order not found");
 
-  const [menu] = await db.select().from(menuItems).where(eq(menuItems.id, menuItemId));
+  const [menu] = await db
+    .select()
+    .from(menuItems)
+    .where(eq(menuItems.id, menuItemId));
   if (!menu) throw new Error("Menu item not found");
 
-  const [member] = await db.select().from(members).where(eq(members.id, memberId));
+  const [member] = await db
+    .select()
+    .from(members)
+    .where(eq(members.id, memberId));
   if (!member) throw new Error("Member not found");
 
   const [newItem] = await db
@@ -23,6 +39,19 @@ export async function addOrderItem(orderId: number, menuItemId: number, memberId
   return newItem;
 }
 
+/**
+ * ดึง OrderItems ทั้งหมดของ Order (Cart list)
+ */
+export async function getOrderItemsByOrderId(orderId: number) {
+  return await db
+    .select()
+    .from(orderItems)
+    .where(eq(orderItems.orderId, orderId));
+}
+
+/**
+ * อัปเดต OrderItem (แก้ qty/note)
+ */
 export async function updateOrderItem(id: number, quantity?: number, note?: string) {
   const updates: Partial<{ quantity: number; note: string }> = {};
 
@@ -41,6 +70,9 @@ export async function updateOrderItem(id: number, quantity?: number, note?: stri
   return updated || null;
 }
 
+/**
+ * ลบ OrderItem (remove from cart)
+ */
 export async function deleteOrderItem(id: number) {
   const [deleted] = await db
     .delete(orderItems)

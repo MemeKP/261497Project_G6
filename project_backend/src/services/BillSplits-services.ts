@@ -13,7 +13,7 @@ export async function generateBill(orderId: number) {
   // check ว่า orderId นี้มี bill อยู่แล้วหรือยัง
   const existingBill = await db.select().from(bills).where(eq(bills.orderId, orderId));
   if (existingBill.length > 0) {
-    return existingBill[0]; //ถ้ามีแล้ว return ไปเลย ไม่สร้างซ้ำ
+    return existingBill[0]; // ถ้ามีแล้ว return ไปเลย ไม่สร้างซ้ำ
   }
 
   const diningSessionId = order.diningSessionId;
@@ -44,19 +44,22 @@ export async function generateBill(orderId: number) {
       diningSessionId,
       subtotal,
       serviceCharge,
-      vat: 0, // ถ้าอนาคตมี VAT ค่อยบวกเพิ่ม
+      vat: 0,
       total,
       status: "UNPAID",
     })
     .returning();
 
+  // หลังจากสร้าง bill แล้ว → สร้าง splits เลย
+  await calculateSplit(orderId, bill.id, serviceCharge);
+
   return bill;
 }
 
 /**
- * Recalculate split by members
+ * Recalculate split by members (service charge หารเท่า ๆ กัน)
  */
-export async function calculateSplit(orderId: number, billId: number) {
+export async function calculateSplit(orderId: number, billId: number, serviceChargeOverride?: number) {
   // check ว่า bill มีจริง
   const [bill] = await db.select().from(bills).where(eq(bills.id, billId));
   if (!bill) throw new Error("Bill not found");
@@ -75,23 +78,31 @@ export async function calculateSplit(orderId: number, billId: number) {
     .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
     .where(eq(orderItems.orderId, orderId));
 
+  // รวมยอดแต่ละ member
   const memberTotals: Record<number, number> = {};
   for (const item of items) {
     const amount = item.price * (item.quantity ?? 0);
     memberTotals[item.memberId] = (memberTotals[item.memberId] || 0) + amount;
   }
 
+  // ใช้ serviceChargeOverride ถ้ามี (จาก generateBill)
+  const serviceCharge = serviceChargeOverride ?? bill.serviceCharge ?? 0;
+  const memberCount = Object.keys(memberTotals).length || 1;
+  const servicePerMember = +(serviceCharge / memberCount).toFixed(2);
+
+  // insert split สำหรับแต่ละ member
   for (const [memberId, amount] of Object.entries(memberTotals)) {
     await db.insert(billSplits).values({
       billId,
       memberId: Number(memberId),
-      amount: +amount.toFixed(2), // ✅ ตัดเป็นทศนิยม 2 ตำแหน่ง
+      amount: +(amount + servicePerMember).toFixed(2),
       paid: false,
     });
   }
 
   return { status: "recalculated", billId };
 }
+
 
 /**
  * Get split details of a bill
@@ -135,5 +146,6 @@ export async function updatePayment(billId: number, memberId: number) {
 
   return { ...updated, allPaid };
 }
+
 
 

@@ -1,0 +1,43 @@
+
+    {
+      "name": "BillSplits-Test",
+      "item": [
+        {
+          "name": "Create Bill from Order",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "http://localhost:3000/bill-splits/orders/1/bill", "host": ["http://localhost:3000"], "path": ["bill-splits", "orders", "1", "bill"] }
+          }
+        },
+        {
+          "name": "Recalculate Split",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"billId\": 1\n}" },
+            "url": { "raw": "http://localhost:3000/bill-splits/orders/1/splits/calc", "host": ["http://localhost:3000"], "path": ["bill-splits", "orders", "1", "splits", "calc"] }
+          }
+        },
+        {
+          "name": "Get Bill Split",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "http://localhost:3000/bill-splits/bills/1/splits", "host": ["http://localhost:3000"], "path": ["bill-splits", "bills", "1", "splits"] }
+          }
+        },
+        {
+          "name": "Mark Member Paid (Alice)",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "http://localhost:3000/bill-splits/bills/1/splits/1/paid", "host": ["http://localhost:3000"], "path": ["bill-splits", "bills", "1", "splits", "1", "paid"] }
+          }
+        },
+        {
+          "name": "Mark Member Paid (Bob)",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "http://localhost:3000/bill-splits/bills/1/splits/2/paid", "host": ["http://localhost:3000"], "path": ["bill-splits", "bills", "1", "splits", "2", "paid"] }
+          }
+        }
+      ]
+    } 

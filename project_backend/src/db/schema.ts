@@ -136,9 +136,10 @@ export const payments = pgTable("payments", {
   billId: integer("bill_id").notNull(),
   billSplitId: integer("bill_split_id"), // null = full bill
   memberId: integer("member_id"),        // null = full bill
-  method: varchar("method", { length: 20 }).notNull(), // เช่น QR / cash / card
+  method: varchar("method", { length: 20 }).notNull(), // เช่น QR 
   amount: money("amount").notNull(), 
   status: varchar("status", { length: 20 }).default("PENDING"), // PENDING, PAID, FAILED
   paidAt: timestamp("paid_at"),
+  ref1: varchar("ref1", { length: 20 }),
 });
 

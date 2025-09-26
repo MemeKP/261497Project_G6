@@ -1,0 +1,105 @@
+{
+  "info": {
+    "name": "Restaurant Payment API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "c6c31f78-56d0-4e7f-8f7f-9b92951d1234"
+  },
+  "item": [
+    {
+      "name": "Create Payment (Full Bill)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"billId\": 1,\n  \"amount\": 320.00,\n  \"method\": \"QR\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/payments",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["payments"]
+        }
+      }
+    },
+    {
+      "name": "Create Payment (Split Bill → Alice)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"billId\": 1,\n  \"billSplitId\": 1,\n  \"memberId\": 1,\n  \"amount\": 200.00,\n  \"method\": \"QR\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/payments",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["payments"]
+        }
+      }
+    },
+    {
+      "name": "Create Payment (Split Bill → Bob)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"billId\": 1,\n  \"billSplitId\": 2,\n  \"memberId\": 2,\n  \"amount\": 120.00,\n  \"method\": \"QR\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/payments",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["payments"]
+        }
+      }
+    },
+    {
+      "name": "Confirm Payment (Manual → Admin)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:3000/payments/1/confirm",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["payments", "1", "confirm"]
+        }
+      }
+    },
+    {
+      "name": "SCB Callback (Simulate)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"billPaymentRef1\": \"00000000000000000001\",\n  \"statusCode\": \"00\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/payments/scb-callback",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["payments", "scb-callback"]
+        }
+      }
+    }
+  ]
+}

@@ -33,6 +33,23 @@ export async function createOrderItem(req: Request, res: Response) {
   }
 }
 
+export async function getOrderItems(req: Request, res: Response) {
+  try {
+    const { orderId } = req.params;
+    const numericOrderId = Number(orderId);
+
+    if (isNaN(numericOrderId)) {
+      return res.status(400).json({ error: "Invalid orderId" });
+    }
+
+    const items = await orderItemService.getOrderItemsByOrderId(numericOrderId);
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+
 export async function updateOrderItem(req: Request, res: Response) {
   try {
     const { id } = req.params;

@@ -1,0 +1,89 @@
+{
+  "info": {
+    "name": "Orders API ",
+    "_postman_id": "orders-seed-1234",
+    "description": "Test Orders endpoints using seed.ts data",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Create Order (Checkout)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"diningSessionId\": 1,\n  \"items\": [\n    { \"menuId\": 1, \"memberId\": 1, \"qty\": 2, \"note\": \"Extra spicy\" },\n    { \"menuId\": 2, \"memberId\": 2, \"qty\": 1 }\n  ]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/orders",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["orders"]
+        }
+      }
+    },
+    {
+      "name": "2. Get Orders by Session (Session 1)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:3000/orders/session/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["orders", "session", "1"]
+        }
+      }
+    },
+    {
+      "name": "3. Get Order by ID (Order 1)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:3000/orders/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["orders", "1"]
+        }
+      }
+    },
+    {
+      "name": "4. Update Order Status (Order 1 → PREPARING)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"status\": \"PREPARING\" }"
+        },
+        "url": {
+          "raw": "http://localhost:3000/orders/1/status",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["orders", "1", "status"]
+        }
+      }
+    },
+    {
+      "name": "5. Get All Orders",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:3000/orders",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["orders"]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "info": {
+    "name": "OrderItems API ",
+    "_postman_id": "orderitems-seed-5678",
+    "description": "Test OrderItems endpoints using seed.ts data (Alice & Bob)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Add Item to Order 1 (Alice adds Fried Rice)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": 1,\n  \"menuItemId\": 1,\n  \"memberId\": 1,\n  \"quantity\": 2,\n  \"note\": \"Extra spicy\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/order-items",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["order-items"]
+        }
+      }
+    },
+    {
+      "name": "2. Add Item to Order 1 (Bob adds Pad Thai)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": 1,\n  \"menuItemId\": 2,\n  \"memberId\": 2,\n  \"quantity\": 1\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/order-items",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["order-items"]
+        }
+      }
+    },
+    {
+      "name": "3. Get Order 1 Items",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:3000/order-items/orders/1/items",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["order-items", "orders", "1", "items"]
+        }
+      }
+    },
+    {
+      "name": "4. Update OrderItem (id=1 → Change qty to 3)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"quantity\": 3, \"note\": \"เผ็ดมาก\" }"
+        },
+        "url": {
+          "raw": "http://localhost:3000/order-items/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["order-items", "1"]
+        }
+      }
+    },
+    {
+      "name": "5. Delete OrderItem (id=1)",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "http://localhost:3000/order-items/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["order-items", "1"]
+        }
+      }
+    }
+  ]
+}

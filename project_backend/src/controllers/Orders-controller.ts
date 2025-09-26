@@ -1,3 +1,4 @@
+
 import type { Request, Response } from "express";
 import * as orderService from "src/services/Orders-services.js";
 
@@ -6,12 +7,32 @@ const allowedStatus = ["PENDING", "PREPARING", "COMPLETED", "CANCELLED"] as cons
 
 export async function createOrder(req: Request, res: Response) {
   try {
-    const { diningSessionId } = req.body;
+    const { diningSessionId, items } = req.body;
+
     if (!diningSessionId || isNaN(Number(diningSessionId))) {
       return res.status(400).json({ error: "Valid diningSessionId is required" });
     }
 
-    const order = await orderService.createOrder(Number(diningSessionId));
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "Order items are required" });
+    }
+
+    // items ควรเป็น array ของ { menuId, qty, note? }
+    for (const item of items) {
+      if (!item.menuId || isNaN(Number(item.menuId))) {
+        return res.status(400).json({ error: "Each item must have a valid menuId" });
+      }
+      if (!item.qty || isNaN(Number(item.qty)) || item.qty <= 0) {
+        return res.status(400).json({ error: "Each item must have a valid qty > 0" });
+      }
+    }
+
+    // ส่งไปให้ service จัดการสร้าง order + orderItems
+    const order = await orderService.createOrderWithItems(
+      Number(diningSessionId),
+      items
+    );
+
     res.status(201).json(order);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -49,7 +70,9 @@ export async function updateOrderStatus(req: Request, res: Response) {
     }
 
     if (!allowedStatus.includes(status as any)) {
-      return res.status(400).json({ error: `Invalid status value. Allowed: ${allowedStatus.join(", ")}` });
+      return res
+        .status(400)
+        .json({ error: `Invalid status value. Allowed: ${allowedStatus.join(", ")}` });
     }
 
     const order = await orderService.updateOrderStatus(orderId, status);
@@ -107,3 +130,5 @@ export async function deleteOrder(req: Request, res: Response) {
     res.status(500).json({ error: err.message });
   }
 }
+
+
