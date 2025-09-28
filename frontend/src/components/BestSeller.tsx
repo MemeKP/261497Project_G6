@@ -13,7 +13,7 @@ const BestSeller = () => {
           className="w-50 sm:w-44 md:w-48 absolute -top-18 left-1/2 -translate-x-1/2"
         />
 
-        <div className="text-white mt-22 text-start px-2">
+        <div className="text-white mt-23 text-start px-2">
           <div className="text-base sm:text-lg font-semibold">Lorem Ipsum</div>
           <div className="text-[10px] sm:text-sm font-normal leading-snug">
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. maximus

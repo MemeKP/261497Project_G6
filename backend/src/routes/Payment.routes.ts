@@ -11,7 +11,7 @@
 
 // export default router;
 import { Router } from "express";
-import * as paymentController from "src/controllers/Payment-controller.js";
+import * as paymentController from "src/controllers/Payment.controller.ts";
 
 const router = Router();
 

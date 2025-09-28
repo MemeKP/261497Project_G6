@@ -7,6 +7,7 @@ import MenuList from "../components/MenuList";
 import BestSellerList from "../components/BestSellerList";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import PageAnimation from "../common/PageAnimetion";
 
 const HomePage = () => {
   return (
@@ -31,23 +32,30 @@ const HomePage = () => {
               style={{ backgroundImage: `url(${homepage})` }}
             >
               {/* SIGNATURE MENU */}
+
               <div className="flex flex-col items-center mt-6 relative">
-                <img
-                  src={sg1}
-                  alt="Signature menu"
-                  className="w-72 h-96 relative"
-                />
-                <div className="absolute left-[150px] top-[330px] w-50 bg-black shadow-[3px_3px_5px_0px_rgba(244,233,32,1.00)] rounded-xl p-3 mt-4">
-                  <div className="font-semibold text-base">
-                    Enso’s Secret Beef Ramen
+                <PageAnimation index={0}>
+                  <img
+                    src={sg1}
+                    alt="Signature menu"
+                    className="w-72 h-96 relative"
+                  />
+                </PageAnimation>
+
+                <PageAnimation index={1}>
+                  <div className="absolute z-10 left-[150px] top-[330px] w-50 bg-black shadow-[3px_3px_5px_0px_rgba(244,233,32,1.00)] rounded-xl p-3 mt-4">
+                    <div className="font-semibold text-base">
+                      Enso’s Secret Beef Ramen
+                    </div>
+                    <div className="font-light text-xs pr-6">
+                      A luxurious bowl featuring marinated beef, soft-boiled
+                      egg.
+                    </div>
+                    <Link to="/details">
+                      <FaArrowRightLong className="absolute bottom-2 right-2 w-4 h-4 text-white cursor-pointer" />
+                    </Link>
                   </div>
-                  <div className="font-light text-xs pr-6">
-                    A luxurious bowl featuring marinated beef, soft-boiled egg.
-                  </div>
-                  <Link to="/details">
-                    <FaArrowRightLong className="absolute bottom-2 right-2 w-4 h-4 text-white cursor-pointer" />
-                  </Link>
-                </div>
+                </PageAnimation>
               </div>
             </div>
           </div>

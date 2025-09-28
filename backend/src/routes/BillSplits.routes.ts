@@ -1,5 +1,5 @@
 import { Router } from "express";
-import * as billSplitController from "src/controllers/BillSplits-controller.js";
+import * as billSplitController from "src/controllers/BillSplits.controller.js";
 
 const router = Router();
 
