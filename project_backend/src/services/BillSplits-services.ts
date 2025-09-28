@@ -85,7 +85,7 @@ export async function calculateSplit(orderId: number, billId: number, serviceCha
     memberTotals[item.memberId] = (memberTotals[item.memberId] || 0) + amount;
   }
 
-  // ใช้ serviceChargeOverride ถ้ามี (จาก generateBill)
+  // ใช้ serviceChargeOverride จาก generateBill
   const serviceCharge = serviceChargeOverride ?? bill.serviceCharge ?? 0;
   const memberCount = Object.keys(memberTotals).length || 1;
   const servicePerMember = +(serviceCharge / memberCount).toFixed(2);
@@ -146,6 +146,3 @@ export async function updatePayment(billId: number, memberId: number) {
 
   return { ...updated, allPaid };
 }
-
-
-

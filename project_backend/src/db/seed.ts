@@ -14,7 +14,7 @@ async function seed() {
   const [admin] = await db.insert(admins).values({
     name: "Admin 1",
     email: "admin1@example.com",
-    password: "hashedpassword", // จริง ๆ ควร hash
+    password: "hashedpassword",
   }).returning();
 
   // 2. Table

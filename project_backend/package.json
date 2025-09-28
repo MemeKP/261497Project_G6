@@ -24,13 +24,13 @@
   },
   "contributors": [],
   "scripts": {
-  "dev": "nodemon --watch src --ext ts --exec tsx src/server.ts",
-  "build": "tsc && tsc-alias",
-  "start": "node ./dist/src/server.js",
-  "seed": "tsx src/db/seed.ts",
-  "db:generate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit generate",
-  "db:push": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit push",
-  "db:migrate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit migrate"
+    "dev": "nodemon --watch src --ext ts --exec tsx src/server.ts",
+    "build": "tsc && tsc-alias",
+    "start": "node ./dist/src/server.js",
+    "seed": "tsx src/db/seed.ts",
+    "db:generate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit generate",
+    "db:push": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit push",
+    "db:migrate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit migrate"
   },
   "dependencies": {
     "@tsconfig/node-lts": "^22.0.2",
@@ -45,6 +45,8 @@
     "morgan": "^1.10.1",
     "pg": "^8.16.3",
     "postgres": "^3.4.7",
+    "promptpay-qr": "^0.5.0",
+    "qrcode": "^1.5.4",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
@@ -57,6 +59,7 @@
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.3.1",
     "@types/pg": "^8.15.5",
+    "@types/qrcode": "^1.5.5",
     "cross-env": "^10.0.0",
     "drizzle-kit": "^0.31.4",
     "nodemon": "^3.1.10"

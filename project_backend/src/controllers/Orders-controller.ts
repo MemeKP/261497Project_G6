@@ -1,4 +1,3 @@
-
 import type { Request, Response } from "express";
 import * as orderService from "src/services/Orders-services.js";
 
@@ -17,7 +16,6 @@ export async function createOrder(req: Request, res: Response) {
       return res.status(400).json({ error: "Order items are required" });
     }
 
-    // items ควรเป็น array ของ { menuId, qty, note? }
     for (const item of items) {
       if (!item.menuId || isNaN(Number(item.menuId))) {
         return res.status(400).json({ error: "Each item must have a valid menuId" });
@@ -27,7 +25,7 @@ export async function createOrder(req: Request, res: Response) {
       }
     }
 
-    // ส่งไปให้ service จัดการสร้าง order + orderItems
+    // ส่งไปให้ service สร้าง order and orderItems
     const order = await orderService.createOrderWithItems(
       Number(diningSessionId),
       items

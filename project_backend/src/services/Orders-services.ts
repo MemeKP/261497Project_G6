@@ -1,4 +1,3 @@
-
 import { db } from "src/db/client.js";
 import { orders, orderItems } from "src/db/schema.js";
 import { eq, inArray } from "drizzle-orm";
