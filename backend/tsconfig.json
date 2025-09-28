@@ -1,0 +1,14 @@
+{
+  "extends": [
+    "@tsconfig/node-lts/tsconfig.json",
+    "@tsconfig/node-ts/tsconfig.json"
+  ],
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+      "@db/*": ["./db/*"]
+    },
+  },
+  "include": ["./*", "./src/**/*", "./db/**/*", "../project_backend/src/db/client2.ts"]
+}
