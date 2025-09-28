@@ -59,38 +59,37 @@ const LoginPage = () => {
           className="mt-8 flex flex-col gap-4 w-[320px]"
         >
           {/* Username */}
+        <div className="flex flex-col gap-1 w-full">
+          <label className="text-xs text-white font-[Gantari]">username or email</label>
           <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12 w-full">
             <FaUser className="text-gray-400" />
             <input
               type="text"
-              placeholder="username or email"
+              placeholder="user@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
             />
           </div>
+        </div>
 
-          {/* Password */}
+        {/* Password */}
+        <div className="flex flex-col gap-1 w-full">
+          <label className="text-xs text-white font-[Gantari]">password</label>
           <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12 w-full">
             <FaLock className="text-gray-400 mr-2" />
             <input
               type="password"
-              placeholder="password"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
             />
           </div>
+        </div>
 
           {/* Error */}
           {error && <p className="text-red-400 text-sm">{error}</p>}
-
-          {/* Forgot Password */}
-          <div className="w-full text-right text-xs mt-[-8px]">
-            <a href="/forgot-password" className="text-gray-200 hover:text-white font-[Gantari]">
-              Forgot Password?
-            </a>
-          </div>
 
           {/* Button */}
           <button

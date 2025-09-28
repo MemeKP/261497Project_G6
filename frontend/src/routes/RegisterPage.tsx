@@ -73,91 +73,113 @@ const RegisterPage = () => {
           className="mt-8 flex flex-col gap-4 w-[320px]"
         >
           {/* Username */}
-          <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12 w-full">
-            <FaUser className="text-gray-400" />
-            <input
-              type="text"
-              placeholder="username"
-              value={username}
-              onChange={(e) => setName(e.target.value)}
-              className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
-            />
+          <div className="flex flex-col gap-1 w-full">
+            <label className="text-xs text-white font-[Gantari]">username</label>
+            <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12 w-full">
+              <FaUser className="text-gray-400" />
+              <input
+                type="text"
+                placeholder="admin"
+                value={username}
+                onChange={(e) => setName(e.target.value)}
+                className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
+              />
+            </div>
           </div>
 
           {/* Name Row */}
           <div className="flex gap-2 w-full">
             {/* First Name */}
-            <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-3 h-12 w-1/2">
-              <FaUser className="text-gray-400" />
-              <input
-                type="text"
-                placeholder="First name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
-              />
+            <div className="flex flex-col gap-1 w-1/2">
+              <label className="text-xs text-white font-[Gantari]">First name</label>
+              <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-3 h-12">
+                <FaUser className="text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="John"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
+                />
+              </div>
             </div>
 
             {/* Last Name */}
-            <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-3 h-12 w-1/2">
-              <FaUser className="text-gray-400" />
-              <input
-                type="text"
-                placeholder="Last name"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
-              />
+            <div className="flex flex-col gap-1 w-1/2">
+              <label className="text-xs text-white font-[Gantari]">Last name</label>
+              <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-3 h-12">
+                <FaUser className="text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Doe"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
+                />
+              </div>
             </div>
           </div>
 
           {/* Phone */}
-          <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12 w-full">
-            <FaPhoneAlt className="text-gray-400" />
-            <input
-              type="tel"
-              placeholder="Phone number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
-            />
+          <div className="flex flex-col gap-1 w-full">
+            <label className="text-xs text-white font-[Gantari]">Phone</label>
+            <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12">
+              <FaPhoneAlt className="text-gray-400" />
+              <input
+                type="tel"
+                placeholder="069-123-4567"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
+              />
+            </div>
           </div>
 
           {/* Address */}
-          <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12 w-full">
-            <FaHome className="text-gray-400" />
-            <input
-              type="text"
-              placeholder="Address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
-            />
+          <div className="flex flex-col gap-1 w-full">
+            <label className="text-xs text-white font-[Gantari]">Address</label>
+            <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12">
+              <FaHome className="text-gray-400" />
+              <input
+                type="text"
+                placeholder="123 Main Suthep"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
+              />
+            </div>
           </div>
 
           {/* Email */}
-          <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12 w-full">
-            <MdEmail className="text-gray-400" />
-            <input
-              type="email"
-              placeholder="user@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
-            />
+          <div className="flex flex-col gap-1 w-full">
+            <label className="text-xs text-white font-[Gantari]">Email</label>
+            <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12">
+              <MdEmail className="text-gray-400" />
+              <input
+                type="email"
+                placeholder="user@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
+              />
+            </div>
           </div>
 
           {/* Password */}
-          <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12 w-full">
-            <FaLock className="text-gray-400 mr-2" />
-            <input
-              type="password"
-              placeholder="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
-            />
+          <div className="flex flex-col gap-1 w-full">
+            <label className="text-xs text-white font-[Gantari]">Password</label>
+            <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12">
+              <FaLock className="text-gray-400 mr-2" />
+              <input
+                type="password"
+                placeholder="********"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-transparent outline-none w-full text-sm placeholder-gray-400"
+              />
+            </div>
           </div>
+
 
           {/* Error */}
           {error && <p className="text-red-400 text-sm">{error}</p>}
