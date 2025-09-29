@@ -21,15 +21,15 @@ const router = createBrowserRouter([
         element: <LandingPage />,
       },
       {
-        path: "/homepage/:sessionId",
+        path: "/homepage/:groupId",
         element: <HomePage />,
       },
       {
-        path: "/menu/:sessionId",
+        path: "/menu/:groupId",
         element: <MenuPage />,
       },
       {
-        path: "/details/:sessionId",
+        path: "/details/:groupId",
         element: <DetailsPage />,
       },
       {

@@ -1,5 +1,5 @@
 import { dbClient, dbConn } from "@db/client.js";
-import { eq } from 'drizzle-orm';
+import { eq } from "drizzle-orm";
 import QRCode from "qrcode";
 import {
   admins,
@@ -9,6 +9,7 @@ import {
   menuItems,
   orders,
   orderItems,
+  groups,
 } from "@db/schema.js";
 import bcrypt from "bcrypt";
 
@@ -21,10 +22,10 @@ async function insertAdmin() {
     const [admin] = await dbClient
       .insert(admins)
       .values({
-        username: "admin2",              
+        username: "admin2",
         name: "Admin 2",
-        phone: "9999999999",             
-        address: "123 Admin Street",     
+        phone: "9999999999",
+        address: "123 Admin Street",
         email: "admin2@example.com",
         password: passwordHash,
       })
@@ -42,7 +43,7 @@ async function insertAdmin() {
     console.log("Inserted admin:", admin);
   } catch (err) {
     console.error("Failed to insert admin:", err);
-  } 
+  }
 }
 
 // 2. Insert Table
@@ -54,7 +55,7 @@ async function insertTable() {
       status: "OCCUPIED",
     })
     .returning();
-  
+
   console.log("Inserted table:", table);
   dbConn.end();
 }
@@ -92,7 +93,7 @@ async function insertDiningSessionWithQR() {
     await dbClient
       .update(diningSessions)
       .set({ qrCode: qrCodeDataUrl })
-      .where(eq(diningSessions.id, session.id)); 
+      .where(eq(diningSessions.id, session.id));
     console.log("Inserted dining session with QR Code:", session.id);
   } catch (err) {
     console.error("Failed to insert dining session:", err);
@@ -102,40 +103,40 @@ async function insertDiningSessionWithQR() {
 }
 
 // 3. Insert Dining Session
-async function insertDiningSession() {
-  const adminList = await dbClient.query.admins.findMany();
-  const tableList = await dbClient.query.tables.findMany();
-  
-  if (adminList.length === 0 || tableList.length === 0) {
-    console.log("Need admin and table first!");
-    dbConn.end();
-    return;
-  }
-  
-  const [session] = await dbClient
-    .insert(diningSessions)
-    .values({
-      tableId: tableList[0].id,
-      openedByAdminId: adminList[0].id,
-      qrCode: "http://example.com/qr/1",
-      status: "ACTIVE",
-    })
-    .returning();
-  
-  console.log("Inserted dining session:", session);
-  dbConn.end();
-}
+// async function insertDiningSession() {
+//   const adminList = await dbClient.query.admins.findMany();
+//   const tableList = await dbClient.query.tables.findMany();
+
+//   if (adminList.length === 0 || tableList.length === 0) {
+//     console.log("Need admin and table first!");
+//     dbConn.end();
+//     return;
+//   }
+
+//   const [session] = await dbClient
+//     .insert(diningSessions)
+//     .values({
+//       tableId: tableList[0].id,
+//       openedByAdminId: adminList[0].id,
+//       qrCode: "http://example.com/qr/1",
+//       status: "ACTIVE",
+//     })
+//     .returning();
+
+//   console.log("Inserted dining session:", session);
+//   dbConn.end();
+// }
 
 // 4. Insert Members
 async function insertMembers() {
   const sessions = await dbClient.query.diningSessions.findMany();
-  
+
   if (sessions.length === 0) {
     console.log("Need dining session first!");
     dbConn.end();
     return;
   }
-  
+
   const [member1] = await dbClient
     .insert(members)
     .values({
@@ -153,7 +154,7 @@ async function insertMembers() {
       isTableAdmin: false,
     })
     .returning();
-  
+
   console.log("Inserted members:", [member1, member2]);
   dbConn.end();
 }
@@ -164,7 +165,8 @@ async function insertMenuItems() {
     .insert(menuItems)
     .values({
       name: "Truffle Unagi Don",
-      description: "Grilled eel glazed with sweet soy, served over premium Japanese rice with truffle aroma.",
+      description:
+        "Grilled eel glazed with sweet soy, served over premium Japanese rice with truffle aroma.",
       price: 289.0,
     })
     .returning();
@@ -173,11 +175,12 @@ async function insertMenuItems() {
     .insert(menuItems)
     .values({
       name: "Enso's Secret Beef Ramen",
-      description: "A luxurious bowl featuring marinated beef, soft-boiled egg, and rich broth.",
+      description:
+        "A luxurious bowl featuring marinated beef, soft-boiled egg, and rich broth.",
       price: 159.0,
     })
     .returning();
-  
+
   console.log("Inserted menu items:", [menu1, menu2]);
   dbConn.end();
 }
@@ -185,13 +188,13 @@ async function insertMenuItems() {
 // 6. Insert Order
 async function insertOrder() {
   const sessions = await dbClient.query.diningSessions.findMany();
-  
+
   if (sessions.length === 0) {
     console.log("Need dining session first!");
     dbConn.end();
     return;
   }
-  
+
   const [order] = await dbClient
     .insert(orders)
     .values({
@@ -200,7 +203,7 @@ async function insertOrder() {
       status: "PENDING",
     })
     .returning();
-  
+
   console.log("Inserted order:", order);
   dbConn.end();
 }
@@ -210,13 +213,13 @@ async function insertOrderItems() {
   const orderList = await dbClient.query.orders.findMany();
   const menuList = await dbClient.query.menuItems.findMany();
   const memberList = await dbClient.query.members.findMany();
-  
+
   if (orderList.length === 0 || menuList.length < 2 || memberList.length < 2) {
     console.log("Need orders, menu items, and members first!");
     dbConn.end();
     return;
   }
-  
+
   await dbClient.insert(orderItems).values([
     {
       orderId: orderList[0].id,
@@ -232,10 +235,77 @@ async function insertOrderItems() {
       quantity: 1,
     },
   ]);
-  
+
   console.log("Inserted order items!");
   dbConn.end();
 }
+
+export const insertGroup = async () => {
+  try {
+    const existingSessions = await dbClient.query.diningSessions.findMany({
+      where: eq(diningSessions.tableId, 1),
+      orderBy: (diningSessions, { desc }) => [desc(diningSessions.id)],
+      limit: 1,
+    });
+
+    let sessionId: number;
+    let tableId: number;
+    let qrCode: string;
+
+    if (existingSessions.length > 0) {
+      // ใช้ session ที่มีอยู่
+      console.log("Using existing dining session:", existingSessions[0]);
+      sessionId = existingSessions[0].id;
+      tableId = existingSessions[0].tableId;
+      qrCode = existingSessions[0].qrCode;
+    } else {
+      // สร้าง session ใหม่พร้อม QR Code
+      const url = `http://localhost:5173/tables/1`;
+      const qrCodeDataUrl = await QRCode.toDataURL(url);
+
+      const newSession = await dbClient
+        .insert(diningSessions)
+        .values({
+          tableId: 1,
+          openedByAdminId: 3,
+          status: "ACTIVE",
+          startedAt: new Date(),
+          createdAt: new Date(),
+          qrCode: qrCodeDataUrl,
+        })
+        .returning({
+          id: diningSessions.id,
+          tableId: diningSessions.tableId,
+          qrCode: diningSessions.qrCode,
+        });
+
+      sessionId = newSession[0].id;
+      tableId = newSession[0].tableId;
+      qrCode = newSession[0].qrCode;
+
+      console.log("Dining session created:", newSession[0]);
+    }
+
+    // สร้าง group สำหรับ session/โต๊ะนั้น
+    const newGroup = await dbClient
+      .insert(groups)
+      .values({
+        table_id: tableId,
+        creator_user_id: 3,
+        created_at: new Date(),
+      })
+      .returning({
+        id: groups.id,
+        table_id: groups.table_id,
+        creator_user_id: groups.creator_user_id,
+      });
+
+    console.log("Group created:", newGroup[0]);
+    console.log("Seeding completed successfully!");
+  } catch (err) {
+    console.error("Seeding failed:", err);
+  }
+};
 
 // Query functions
 async function queryAdmins() {
@@ -281,7 +351,8 @@ async function queryOrderItems() {
 }
 
 // insertAdmin();
-insertTable();
+// insertTable();
+insertGroup()
 // insertDiningSession();
 // insertDiningSessionWithQR();
 // insertMembers();
