@@ -7,7 +7,8 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "@db/*": ["./db/*"]
+      "@db/*": ["./db/*"],
+      "src/*": ["./src/*"]
     },
   },
   "include": ["./*", "./src/**/*", "./db/**/*", "../project_backend/src/db/client2.ts"]

@@ -50,20 +50,19 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="w-full h-[852px] relative bg-black overflow-hidden">
+    <div className="w-full min-h-screen flex flex-col bg-black relative overflow-y-auto">
+      {/* Background */}
       <img
         className="w-full h-full object-cover absolute inset-0"
         src={bg1}
         alt="background"
       />
-      <div 
-        className="absolute inset-0 bg-black opacity-70">
-      </div>
+      <div className="absolute inset-0 bg-black opacity-70"></div>
 
       {/* Content */}
-      <div className="absolute flex flex-col items-center justify-center w-screen mt-[-80px]">
-        <h1 className="title1 text-white text-9xl mt-30">ENSO</h1>
-        <p className="text-white p-2 mt-3 font-[Gantari]">
+      <div className="relative flex-1 flex flex-col items-center justify-start pt-16 pb-12">
+        <h1 className="title1 text-white text-9xl">ENSO</h1>
+        <p className="text-white p-2 mt-3 font-[Gantari] text-center">
           Please login with your admin credentials.
         </p>
 
@@ -180,19 +179,17 @@ const RegisterPage = () => {
             </div>
           </div>
 
-
           {/* Error */}
           {error && <p className="text-red-400 text-sm">{error}</p>}
 
           {/* Sign Up Button */}
           <button
             type="submit"
-            className="w-[200px] h-12 rounded-full  border-white border-1 text-lg font-medium font-[Gantari] text-black shadow-[0px_4px_18px_0px_rgba(217,217,217,1.00)] 
+            className="w-[200px] h-12 rounded-full border-white border-1 text-lg font-medium font-[Gantari] text-black shadow-[0px_4px_18px_0px_rgba(217,217,217,1.00)] 
              bg-gradient-to-r from-black via-black-200 to-gray-200 hover:opacity-90 transition mx-auto"
           >
             SignUp
           </button>
-
 
           {/* Login Link */}
           <p className="text-sm text-gray-200 text-center mt-4 font-[Gantari]">
@@ -209,9 +206,9 @@ const RegisterPage = () => {
       </div>
 
       {/* Footer */}
-      <p className="absolute flex items-center justify-center inset-x-0 bottom-0 text-white bg-black h-10 font-[Gantari]">
+      <footer className="relative bg-black text-white h-10 flex items-center justify-center font-[Gantari]">
         © 2025 ENSO RESTAURANT
-      </p>
+      </footer>
     </div>
   );
 };

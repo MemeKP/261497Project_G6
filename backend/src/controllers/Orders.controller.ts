@@ -7,7 +7,7 @@ import { eq, and, isNotNull } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
   users,
-  admin,
+  admins,
   dining_sessions,
   groups,
   group_members,
