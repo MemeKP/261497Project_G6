@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1758613489966,
-      "tag": "0000_big_manta",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1758619471764,
-      "tag": "0001_panoramic_payback",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1758620669202,
-      "tag": "0002_hard_the_stranger",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1758683362379,
-      "tag": "0003_woozy_mantis",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1758685787892,
-      "tag": "0004_condemned_umar",
+      "when": 1759148887666,
+      "tag": "0000_cold_deathstrike",
       "breakpoints": true
     }
   ]

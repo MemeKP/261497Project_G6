@@ -6,11 +6,11 @@ import { eq, and, isNotNull } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
   users,
-  admin,
-  dining_sessions,
+  admins as admin,
+  diningSessions as dining_sessions,
   groups,
   group_members,
-  menu_items,
+  menuItems as menu_items,
   orders,
   order_items,
 } from "@db/schema.js";

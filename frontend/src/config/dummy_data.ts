@@ -2,7 +2,7 @@ export const menus = [
   {
     id: 1,
     name: "Enso’s Secret Beef Ramen",
-    desc: "A luxurious bowl featuring marinated beef, soft-boiled egg, and rich broth.",
+    desc: "159",
     price: 159,
     category: "noodle",
     is_available: true,

@@ -3,7 +3,7 @@ import "dotenv/config";
 import { eq, and } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
-  dining_sessions,
+  diningSessions as dining_sessions,
   groups,
 } from "@db/schema.js";
 
@@ -24,10 +24,10 @@ export const createGroup = async (
         }
     
         console.log("Checking dining session...");
-        const diningSession = await dbClient.query.dining_sessions.findFirst({
+        const diningSession = await dbClient.query.diningSessions.findFirst({
           where: and(
             eq(dining_sessions.id, sessionId),
-            eq(dining_sessions.table_id, tableId),
+            eq(dining_sessions.tableId, tableId),
             eq(dining_sessions.status, "ACTIVE")
           ),
         });

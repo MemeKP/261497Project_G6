@@ -6,11 +6,11 @@ import { eq, and, isNotNull } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
   users,
-  admin,
-  dining_sessions,
+  admins,
+  diningSessions,
   groups,
   group_members,
-  menu_items,
+  menuItems,
   orders,
   order_items,
 } from "@db/schema.js";
@@ -29,10 +29,10 @@ export const startSession = async (
       });
     }
 
-    const existingSession = await dbClient.query.dining_sessions?.findFirst({
+    const existingSession = await dbClient.query.diningSessions?.findFirst({
       where: and(
-        eq(dining_sessions.table_id, tableId),
-        eq(dining_sessions.status, "ACTIVE")
+        eq(diningSessions.tableId, tableId),
+        eq(diningSessions.status, "ACTIVE")
       ),
     });
 
@@ -47,21 +47,23 @@ export const startSession = async (
     const startedAt = new Date();
 
     const newSession = await dbClient
-      .insert(dining_sessions)
+      .insert(diningSessions)
       .values({
-        table_id: tableId,
-        started_at: startedAt,
+        tableId: tableId,
+        startedAt: startedAt,
         status: "ACTIVE",
+        qrCode: "http://example.com/qr/1",
         total_customers: 0,
-        created_at: new Date(),
+        createdAt: new Date(),
+        openedByAdminId: 1
       })
       .returning({
-        id: dining_sessions.id,
-        table_id: dining_sessions.table_id,
-        started_at: dining_sessions.started_at,
-        status: dining_sessions.status,
-        total_customers: dining_sessions.total_customers,
-        created_at: dining_sessions.created_at,
+        id: diningSessions.id,
+        table_id: diningSessions.tableId,
+        started_at: diningSessions.startedAt,
+        status: diningSessions.status,
+        total_customers: diningSessions.total_customers,
+        created_at: diningSessions.createdAt,
       });
 
     const qrData = {
@@ -117,17 +119,17 @@ export const endSession = async (
     let whereCondition;
     if (sessionId) {
       whereCondition = and(
-        eq(dining_sessions.id, sessionId),
-        eq(dining_sessions.status, "ACTIVE")
+        eq(diningSessions.id, sessionId),
+        eq(diningSessions.status, "ACTIVE")
       );
     } else {
       whereCondition = and(
-        eq(dining_sessions.table_id, tableId),
-        eq(dining_sessions.status, "ACTIVE")
+        eq(diningSessions.tableId, tableId),
+        eq(diningSessions.status, "ACTIVE")
       );
     }
 
-    const activeSession = await dbClient.query.dining_sessions.findFirst({
+    const activeSession = await dbClient.query.diningSessions.findFirst({
       where: whereCondition,
     });
 
@@ -141,7 +143,7 @@ export const endSession = async (
 
     let totalCustomers = 0;
     const group = await dbClient.query.groups.findFirst({
-      where: eq(groups.table_id, activeSession.table_id),
+      where: eq(groups.table_id, activeSession.tableId),
     });
 
     if (group) {
@@ -153,30 +155,30 @@ export const endSession = async (
 
     const endedAt = new Date();
     const updatedSession = await dbClient
-      .update(dining_sessions)
+      .update(diningSessions)
       .set({
-        ended_at: endedAt,
+        endedAt: endedAt,
         status: "COMPLETED",
         total_customers: totalCustomers,
       })
-      .where(eq(dining_sessions.id, activeSession.id))
+      .where(eq(diningSessions.id, activeSession.id))
       .returning({
-        id: dining_sessions.id,
-        table_id: dining_sessions.table_id,
-        started_at: dining_sessions.started_at,
-        ended_at: dining_sessions.ended_at,
-        status: dining_sessions.status,
-        total_customers: dining_sessions.total_customers,
-        created_at: dining_sessions.created_at,
+        id: diningSessions.id,
+        table_id: diningSessions.tableId,
+        started_at: diningSessions.startedAt,
+        ended_at: diningSessions.endedAt,
+        status: diningSessions.status,
+        total_customers: diningSessions.total_customers,
+        created_at: diningSessions.createdAt,
       });
 
     const duration =
       endedAt.getTime() -
-      (activeSession.started_at?.getTime() || endedAt.getTime());
+      (activeSession.startedAt?.getTime() || endedAt.getTime());
     const durationMinutes = Math.round(duration / (1000 * 60));
 
     res.json({
-      message: `Dining session ended successfully for table ${activeSession.table_id}`,
+      message: `Dining session ended successfully for table ${activeSession.tableId}`,
       session: {
         id: updatedSession[0].id,
         tableId: updatedSession[0].table_id,
@@ -199,15 +201,15 @@ export const getActiveSession = async (
   next: NextFunction
 ) => {
     try {
-    const activeSessions = await dbClient.query.dining_sessions.findMany({
-      where: eq(dining_sessions.status, "ACTIVE"),
-      orderBy: [dining_sessions.created_at],
+    const activeSessions = await dbClient.query.diningSessions.findMany({
+      where: eq(diningSessions.status, "ACTIVE"),
+      orderBy: [diningSessions.createdAt],
     });
 
     const sessionsWithGroups = await Promise.all(
       activeSessions.map(async (session) => {
         const group = await dbClient.query.groups.findFirst({
-          where: eq(groups.table_id, session.table_id),
+          where: eq(groups.table_id, session.tableId),
         });
 
         let members: Array<{ id: number; name: string; note: string | null }> =
@@ -226,11 +228,11 @@ export const getActiveSession = async (
 
         return {
           id: session.id,
-          tableId: session.table_id,
-          startedAt: session.started_at,
+          tableId: session.tableId,
+          startedAt: session.startedAt,
           status: session.status,
           totalCustomers: members.length,
-          createdAt: session.created_at,
+          createdAt: session.createdAt,
           group: group
             ? {
                 id: group.id,
@@ -264,8 +266,8 @@ export const getSession = async (
           });
         }
     
-        const session = await dbClient.query.dining_sessions.findFirst({
-          where: eq(dining_sessions.id, sessionId),
+        const session = await dbClient.query.diningSessions.findFirst({
+          where: eq(diningSessions.id, sessionId),
         });
     
         if (!session) {
@@ -275,7 +277,7 @@ export const getSession = async (
         }
     
         const group = await dbClient.query.groups.findFirst({
-          where: eq(groups.table_id, session.table_id),
+          where: eq(groups.table_id, session.tableId),
         });
     
         let members: Array<{ id: number; name: string; note: string | null }> = [];
@@ -292,21 +294,22 @@ export const getSession = async (
         }
     
         let duration: number | null = null;
-        if (session.ended_at && session.started_at) {
+        if (session.endedAt && session.startedAt) {
           const durationMs =
-            session.ended_at.getTime() - session.started_at.getTime();
+            session.endedAt.getTime() - session.startedAt.getTime();
           duration = Math.round(durationMs / (1000 * 60));
         }
     
         res.json({
           session: {
             id: session.id,
-            tableId: session.table_id,
-            startedAt: session.started_at,
-            endedAt: session.ended_at,
+            tableId: session.tableId,
+            startedAt: session.startedAt,
+            endedAt: session.endedAt,
+            QRCode:session.qrCode,
             status: session.status,
-            totalCustomers: session.total_customers || members.length,
-            createdAt: session.created_at,
+            totalCustomers: members.length,
+            createdAt: session.createdAt,
             durationMinutes: duration,
           },
           group: group

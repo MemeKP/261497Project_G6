@@ -17,24 +17,6 @@ export const users = pgTable("user", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const admin = pgTable("admin", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const dining_sessions = pgTable("dining_sessions", {
-  id: serial("id").primaryKey(),
-  table_id: integer("table_id").notNull(),
-  started_at: timestamp("started_at"),
-  ended_at: timestamp("ended_at"),
-  status: varchar("status", { length: 20 }),
-  total_customers: integer("total_customers"),
-  created_at: timestamp("created_at").defaultNow(),
-});
-
 export const groups = pgTable('groups', {
   id: serial('id').primaryKey(),
   table_id: integer('table_id').notNull(),
@@ -50,14 +32,6 @@ export const group_members = pgTable('group_members', {
   note: text('note')
 });
 
-export const menu_items = pgTable('menu_items', {
-  id: serial('id').primaryKey(),
-  name: varchar('name', { length: 255 }).notNull(),
-  description: text('description'),
-  price: decimal('price', { precision: 10, scale: 2 }).notNull(),
-  is_available: boolean('is_available').default(true),
-  created_at: timestamp('created_at').defaultNow()
-});
 
 /**
  * Orders
@@ -67,7 +41,7 @@ export const orders = pgTable('orders', {
   table_id: integer('table_id').notNull(),
   group_id: integer('group_id').references(() => groups.id), 
   user_id: integer('user_id').references(() => users.id), 
-  dining_session_id: integer('dining_session_id').references(() => dining_sessions.id),
+  dining_session_id: integer('dining_session_id').references(() => diningSessions.id),
   status: varchar('status', { length: 20 }).default("PENDING"), 
   created_at: timestamp('created_at').defaultNow()
 });
@@ -75,7 +49,7 @@ export const orders = pgTable('orders', {
 export const order_items = pgTable('order_items', {
   id: serial('id').primaryKey(),
   order_id: integer('order_id').notNull().references(() => orders.id),
-  menu_item_id: integer('menu_item_id').notNull().references(() => menu_items.id),
+  menu_item_id: integer('menu_item_id').notNull().references(() => menuItems.id),
   quantity: integer('quantity'),
   note: text('note')
 });
@@ -94,7 +68,10 @@ const money = (name: string) =>
  */
 export const admins = pgTable("admins", {
   id: serial("id").primaryKey(),
-  name: varchar("name", { length: 100 }).notNull(),
+  username: varchar("username", { length: 50 }).unique().notNull(), 
+  name: varchar("name", { length: 100 }).notNull(),           
+  phone: varchar("phone", { length: 20 }),                        
+  address: text("address"),                                     
   email: varchar("email", { length: 150 }).unique().notNull(),
   password: varchar("password", { length: 200 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -118,7 +95,8 @@ export const diningSessions = pgTable("dining_sessions", {
   id: serial("id").primaryKey(),
   tableId: integer("table_id").notNull(),
   openedByAdminId: integer("opened_by_admin_id").notNull(),
-  qrCode: text("qr_code"),
+  total_customers: integer("total_customers"),
+  qrCode: text("qr_code").notNull(),
   startedAt: timestamp("started_at").defaultNow(),
   endedAt: timestamp("ended_at"),
   status: varchar("status", { length: 20 }).default("ACTIVE"), // ACTIVE, CLOSED

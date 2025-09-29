@@ -17,23 +17,23 @@ const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       {
-        path: "/",
+        path: "/table/:sessionId",
         element: <LandingPage />,
       },
       {
-        path: "/homepage",
+        path: "/homepage/:sessionId",
         element: <HomePage />,
       },
       {
-        path: "/menu",
+        path: "/menu/:sessionId",
         element: <MenuPage />,
       },
       {
-        path: "/details",
+        path: "/details/:sessionId",
         element: <DetailsPage />,
       },
       {
-        path: "/addmember",
+        path: "/addmember/:sessionId",
         element: <AddMemberPage />,
       },
     ]

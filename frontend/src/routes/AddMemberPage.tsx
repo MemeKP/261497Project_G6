@@ -1,32 +1,54 @@
 import React, { useState, useEffect } from "react";
 import { BsPlusCircleFill, BsDashLg } from "react-icons/bs";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import PageAnimation from "../common/PageAnimetion";
+import axios from "axios";
+import type { Member } from "../types";
 
 const AddMemberPage: React.FC = () => {
+  const { sessionId } = useParams<{ sessionId: string }>();
   const [input, setInput] = useState("");
-  const [members, setMembers] = useState<string[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
 
-  useEffect(() => {
-    const savedMembers = localStorage.getItem("members");
-    if (savedMembers) {
-      setMembers(JSON.parse(savedMembers));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("members", JSON.stringify(members));
-  }, [members]);
-
-  const handleAdd = () => {
-    if (input.trim() !== "") {
-      setMembers([...members, input.trim()]);
-      setInput("");
+  const fetchMembers = async () => {
+    try {
+      if (!sessionId) return;
+      const res = await axios.get<Member[]>(`/api/group/session/${sessionId}`);
+      setMembers(res.data.map((m) => ({ id: String(m.id), name: m.name })));
+    } catch (err) {
+      console.error("Failed to fetch members:", err);
     }
   };
 
-  const handleRemove = (index: number) => {
-    setMembers(members.filter((_, i) => i !== index));
+  useEffect(() => {
+    fetchMembers();
+  }, [sessionId]);
+
+  const handleAdd = async () => {
+    if (!input.trim() || !sessionId) return;
+
+    try {
+      const res = await axios.post<Member>("/api/group/add", {
+        name: input,
+        diningSessionId: Number(sessionId),
+      });
+      setMembers([
+        ...members,
+        { id: String(res.data.id), name: res.data.name },
+      ]);
+      setInput("");
+    } catch (err) {
+      console.error("Failed to add member:", err);
+    }
+  };
+
+  const handleRemove = async (memberId: string, index: number) => {
+    try {
+      await axios.delete(`/api/group/${memberId}`);
+      setMembers(members.filter((_, i) => i !== index));
+    } catch (err) {
+      console.error("Failed to remove member:", err);
+    }
   };
 
   return (
@@ -54,15 +76,15 @@ const AddMemberPage: React.FC = () => {
         {/* NAME */}
         <PageAnimation index={1}>
           <div className="flex flex-col items-center mt-10 space-y-4">
-            {members.map((name, index) => (
+            {members.map((member, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between bg-black w-80 rounded-xl px-4 py-3 text-white font-semibold text-lg font-[Epilogue]"
               >
-                <span>{name}</span>
+                <span>{member.name}</span>
                 <BsDashLg
                   className="text-2xl text-red-500 cursor-pointer"
-                  onClick={() => handleRemove(index)}
+                  onClick={() => handleRemove(member.id, index)}
                 />
               </div>
             ))}
@@ -71,7 +93,7 @@ const AddMemberPage: React.FC = () => {
         {/* BUTTON */}
         <PageAnimation index={2}>
           <div className="flex bottom-4 justify-end mt-8">
-            <Link to="/homepage">
+            <Link to={`/homepage/${sessionId}`}>
               <button
                 className=" bg-gradient-to-r from-black to-gray-700 
     text-white rounded-full px-10 py-2 text-sm font-[Epilogue] cursor-pointer 

@@ -27,10 +27,11 @@
     "dev": "nodemon --watch src --ext ts --exec tsx src/server.ts",
     "build": "tsc && tsc-alias",
     "start": "node ./dist/src/server.js",
-    "seed": "tsx src/db/seed.ts",
+    "db:seed": "tsx ./db/seed.ts",
     "db:generate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit generate",
     "db:push": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit push",
-    "db:migrate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit migrate"
+    "db:migrate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit migrate",
+    "eol": "eolConverter _entrypoint/*.sh"
   },
   "dependencies": {
     "@tsconfig/node-lts": "^22.0.2",
