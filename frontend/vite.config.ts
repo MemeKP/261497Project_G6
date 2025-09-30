@@ -9,6 +9,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
+    host: '0.0.0.0',
     //https://stackoverflow.com/a/74430384
     proxy: {
       "/api": {

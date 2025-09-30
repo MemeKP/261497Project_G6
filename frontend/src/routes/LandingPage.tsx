@@ -10,7 +10,7 @@ const LandingPage = () => {
 
   useEffect(() => {
     if (sessionId) {
-      axios.get(`/api/session/${sessionId}`)
+      axios.get(`/api/dining_session/${sessionId}`)
         .then(res => {
           console.log("Session data:", res.data);
         })

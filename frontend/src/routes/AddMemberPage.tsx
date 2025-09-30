@@ -25,6 +25,8 @@ const AddMemberPage: React.FC = () => {
         `/api/dining_session/${sessionId}`
       );
 
+      console.log("[FRONTEND] API Response Data (RES.DATA):", res.data);
+
       const group = res.data.group;
 
       if (group && group.id && Array.isArray(group.members)) {
@@ -73,10 +75,12 @@ const AddMemberPage: React.FC = () => {
         groupId,
       });
 
-      setMembers([
-        ...members,
-        { id: String(res.data.id), name: res.data.name },
-      ]);
+      await fetchGroupAndMembers();
+
+      // setMembers([
+      //   ...members,
+      //   { id: String(res.data.id), name: res.data.name },
+      // ]);
       setInput("");
       console.log("Member added successfully:", res.data.name);
     } catch (err) {
@@ -86,7 +90,7 @@ const AddMemberPage: React.FC = () => {
 
   const handleRemove = async (memberId: string, index: number) => {
     try {
-      await axios.delete(`/api/group_members/${memberId}`);
+      await axios.delete(`/api/group_members/member/${memberId}`);
 
       setMembers(members.filter((_, i) => i !== index));
       console.log("Member removed:", memberId);

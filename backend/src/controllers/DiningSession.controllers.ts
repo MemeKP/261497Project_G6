@@ -37,9 +37,7 @@ export const startSession = async (
     });
 
     if (existingSession) {
-      return res
-      .status(400)
-      .json({
+      return res.status(400).json({
         error: `Table ${tableId} already has an active dining session`,
       });
     }
@@ -55,7 +53,7 @@ export const startSession = async (
         qrCode: "http://example.com/qr/1",
         total_customers: 0,
         createdAt: new Date(),
-        openedByAdminId: 1
+        openedByAdminId: 1,
       })
       .returning({
         id: diningSessions.id,
@@ -69,7 +67,7 @@ export const startSession = async (
     const qrData = {
       sessionId: newSession[0].id,
       tableId: tableId,
-      url: `${process.env.CLIENT_URL || "http://localhost:3000"}/table/${
+      url: `${process.env.VITE_FRONTEND_URL || "http://localhost:3000"}/tables/${
         newSession[0].id
       }`,
     };
@@ -107,7 +105,7 @@ export const endSession = async (
   res: Response,
   next: NextFunction
 ) => {
-    try {
+  try {
     const { sessionId, tableId } = req.body;
 
     if (!sessionId && !tableId) {
@@ -200,7 +198,7 @@ export const getActiveSession = async (
   res: Response,
   next: NextFunction
 ) => {
-    try {
+  try {
     const activeSessions = await dbClient.query.diningSessions.findMany({
       where: eq(diningSessions.status, "ACTIVE"),
       orderBy: [diningSessions.createdAt],
@@ -252,74 +250,73 @@ export const getActiveSession = async (
   }
 };
 
-export const getSession = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-    try {
-        const sessionId = parseInt(req.params.sessionId);
-    
-        if (isNaN(sessionId)) {
-          return res.status(400).json({
-            error: "Invalid Session ID",
-          });
-        }
-    
-        const session = await dbClient.query.diningSessions.findFirst({
-          where: eq(diningSessions.id, sessionId),
-        });
-    
-        if (!session) {
-          return res.status(404).json({
-            error: "Session not found",
-          });
-        }
-    
-        const group = await dbClient.query.groups.findFirst({
-          where: eq(groups.table_id, session.tableId),
-        });
-    
-        let members: Array<{ id: number; name: string; note: string | null }> = [];
-        if (group) {
-          const groupMembers = await dbClient.query.group_members.findMany({
-            where: eq(group_members.group_id, group.id),
-          });
-          members =
-            groupMembers?.map((member) => ({
-              id: member.id,
-              name: member.name,
-              note: member.note,
-            })) || [];
-        }
-    
-        let duration: number | null = null;
-        if (session.endedAt && session.startedAt) {
-          const durationMs =
-            session.endedAt.getTime() - session.startedAt.getTime();
-          duration = Math.round(durationMs / (1000 * 60));
-        }
-    
-        res.json({
-          session: {
-            id: session.id,
-            tableId: session.tableId,
-            startedAt: session.startedAt,
-            endedAt: session.endedAt,
-            QRCode:session.qrCode,
-            status: session.status,
-            totalCustomers: members.length,
-            createdAt: session.createdAt,
-            durationMinutes: duration,
-          },
-          group: group
-            ? {
-                id: group.id,
-                members: members,
-              }
-            : null,
-        });
-      } catch (err) {
-        next(err);
-      }
+export const getSession = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const sessionId = parseInt(req.params.sessionId);
+    if (isNaN(sessionId)) {
+      return res.status(400).json({ error: "Invalid Session ID" });
+    }
+    const session = await dbClient
+      .select({
+        id: diningSessions.id,
+        tableId: diningSessions.tableId,
+        startedAt: diningSessions.startedAt,
+        endedAt: diningSessions.endedAt,
+        status: diningSessions.status,
+        totalCustomers: diningSessions.total_customers,
+        createdAt: diningSessions.createdAt,
+        qrCode: diningSessions.qrCode,
+      })
+      .from(diningSessions)
+      .where(eq(diningSessions.id, sessionId))
+      .limit(1);
+
+    const sessionData = session[0];
+    if (!sessionData) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    if (!sessionData.qrCode) {
+      return res.status(500).json({ error: "Session QR Code data is missing in the database." });
+    }
+    const group = await dbClient.query.groups.findFirst({
+      where: eq(groups.table_id, sessionData.tableId),
+    });
+
+    const members = group
+      ? (await dbClient.query.group_members.findMany({
+          where: eq(group_members.group_id, group.id),
+        })).map((member) => ({
+          id: member.id,
+          name: member.name,
+          note: member.note,
+        }))
+      : [];
+    const duration =
+      sessionData.endedAt && sessionData.startedAt
+        ? Math.round((sessionData.endedAt.getTime() - sessionData.startedAt.getTime()) / 60000)
+        : null;
+    res.json({
+      session: {
+        id: sessionData.id,
+        tableId: sessionData.tableId,
+        startedAt: sessionData.startedAt,
+        endedAt: sessionData.endedAt,
+        qrCode: sessionData.qrCode,
+        status: sessionData.status,
+        totalCustomers: members.length,
+        createdAt: sessionData.createdAt,
+        durationMinutes: duration,
+      },
+      group: group
+        ? {
+            id: group.id,
+            members,
+          }
+        : null,
+    });
+  } catch (err) {
+    next(err);
+  }
 };
+

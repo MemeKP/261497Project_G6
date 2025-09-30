@@ -86,7 +86,7 @@ async function insertDiningSessionWithQR() {
     if (!session) throw new Error("Failed to insert dining session");
 
     // สร้าง QR Code เป็น URL ชี้ไปยังหน้า frontend ของโต๊ะ/กลุ่ม
-    const url = `http://localhost:5173/tables/${session.id}`; // ปรับ portตาม frontend
+    const url =  process.env.VITE_FRONTEND_URL || 'http://localhost:5173'; // ปรับ portตาม frontend
     const qrCodeDataUrl = await QRCode.toDataURL(url);
 
     // อัปเดต dining session ด้วย QR Code
@@ -97,6 +97,36 @@ async function insertDiningSessionWithQR() {
     console.log("Inserted dining session with QR Code:", session.id);
   } catch (err) {
     console.error("Failed to insert dining session:", err);
+  } finally {
+    dbConn.end();
+  }
+}
+
+async function updateQRForDiningSession(sessionId: number) {
+  try {
+    const existingSession = await dbClient.query.diningSessions.findFirst({
+      where: eq(diningSessions.id, sessionId),
+    });
+
+    if (!existingSession) {
+      console.warn(`Dining session with ID ${sessionId} not found. Cannot update QR code.`);
+      dbConn.end();
+      return;
+    }
+
+    const url = process.env.VITE_FRONTEND_URL || 'http://localhost:5173';
+
+    const sessionUrl = `${url}/tables/${sessionId}`;
+    const newQrCodeDataUrl = await QRCode.toDataURL(sessionUrl);
+    
+    await dbClient
+      .update(diningSessions)
+      .set({ qrCode: newQrCodeDataUrl })
+      .where(eq(diningSessions.id, sessionId));
+
+    console.log(`Successfully updated QR Code for dining session ID: ${sessionId}`);
+  } catch (err) {
+    console.error(`Failed to update QR Code for session ${sessionId}:`, err);
   } finally {
     dbConn.end();
   }
@@ -164,10 +194,13 @@ async function insertMenuItems() {
   const [menu1] = await dbClient
     .insert(menuItems)
     .values({
-      name: "Truffle Unagi Don",
+      name: "Ebi Fry Katsu Curry Rice",
       description:
-        "Grilled eel glazed with sweet soy, served over premium Japanese rice with truffle aroma.",
+        "Rich and flavorful Japanese Curry served over soft, fluffy Japanese rice. Topped with large Ebi Fry.",
       price: 289.0,
+      isSignature: false,
+      category: "rice",
+      imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/menu1.png?updatedAt=1759220941089',
     })
     .returning();
 
@@ -178,6 +211,10 @@ async function insertMenuItems() {
       description:
         "A luxurious bowl featuring marinated beef, soft-boiled egg, and rich broth.",
       price: 159.0,
+      isSignature: true,
+      category:"noodle",
+      imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/signature.png?updatedAt=1759220936892'
+  
     })
     .returning();
 
@@ -352,11 +389,12 @@ async function queryOrderItems() {
 
 // insertAdmin();
 // insertTable();
-insertGroup()
+// insertGroup()
+// updateQRForDiningSession(1)
 // insertDiningSession();
 // insertDiningSessionWithQR();
 // insertMembers();
-// insertMenuItems();
+insertMenuItems();
 // insertOrder();
 // insertOrderItems();
 

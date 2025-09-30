@@ -10,6 +10,8 @@ import Navbar from "../components/Navbar";
 import PageAnimation from "../common/PageAnimetion";
 
 const HomePage = () => {
+
+
   return (
     <>
       <Navbar />

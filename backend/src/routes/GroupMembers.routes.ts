@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { addMembers, deleteMembers, getGroupMembers } from "src/controllers/GroupMembers.controllers.js";
+import { addMembers, deleteAllMembers, deleteMember, getGroupMembers } from "src/controllers/GroupMembers.controllers.js";
 
 const router = Router()
 
 router.post('/add', addMembers)
-router.delete('/:groupId', deleteMembers)
+router.delete('/:groupId', deleteAllMembers)
+router.delete('/member/:memberId', deleteMember); 
 router.get('/:groupId', getGroupMembers)
 
 export default router

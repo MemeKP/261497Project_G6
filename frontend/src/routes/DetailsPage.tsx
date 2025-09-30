@@ -1,12 +1,24 @@
-import React from "react";
+import React, { useEffect } from "react";
 import bg from "../assets/imgs/menu3.png";
 import { IoClose, IoAddCircle, IoRemoveCircle, IoPersonAddSharp } from "react-icons/io5";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import axios from "axios";
 
 const DetailsPage = () => {
+    const { sessionId } = useParams<{ sessionId: string }>();
+
+  useEffect(() => {
+    if (sessionId) {
+      axios.get(`/api/dining_session/${sessionId}`)
+        .then(res => {
+          console.log("Session data:", res.data);
+        })
+        .catch(err => console.error(err));
+    }
+  }, [sessionId]);
   return (
     <div className="relative min-h-screen overflow-hidden flex flex-col">
-      <Link to='/homepage'>
+      <Link to={`/homepage/${sessionId}`}>
         <IoClose className="absolute right-6 top-6 w-9 h-9 text-gray-300 z-20" />
       </Link>
       {/* BG IMG */}
