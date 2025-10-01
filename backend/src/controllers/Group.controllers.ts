@@ -3,7 +3,8 @@ import "dotenv/config";
 import { eq, and } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
-  dining_sessions,
+  diningSessions as dining_sessions,
+  group_members,
   groups,
 } from "@db/schema.js";
 
@@ -24,10 +25,10 @@ export const createGroup = async (
         }
     
         console.log("Checking dining session...");
-        const diningSession = await dbClient.query.dining_sessions.findFirst({
+        const diningSession = await dbClient.query.diningSessions.findFirst({
           where: and(
             eq(dining_sessions.id, sessionId),
-            eq(dining_sessions.table_id, tableId),
+            eq(dining_sessions.tableId, tableId),
             eq(dining_sessions.status, "ACTIVE")
           ),
         });
@@ -90,3 +91,41 @@ export const createGroup = async (
       }
 };
 
+export const getGroupBySession = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { sessionId } = req.params;
+    if (!sessionId) {
+      return res.status(400).json({ error: "Session ID is required" });
+    }
+
+    // หา session
+    const session = await dbClient.query.diningSessions.findFirst({
+      where: eq(dining_sessions.id, Number(sessionId)),
+    });
+
+    if (!session) return res.status(404).json({ error: "Session not found" });
+
+    // หา group ตาม table_id ของ session
+    const group = await dbClient.query.groups.findFirst({
+      where: eq(groups.table_id, session.tableId),
+    });
+
+    if (!group) return res.status(404).json({ error: "Group not found for this session" });
+
+    // ดึงสมาชิกของ group
+    const members = await dbClient.query.group_members.findMany({
+      where: eq(group_members.group_id, group.id),
+    });
+
+    res.json({
+      group: {
+        id: group.id,
+        tableId: group.table_id,
+        members: members.map((m) => ({ id: m.id, name: m.name, note: m.note })),
+      },
+    });
+  } catch (err) {
+    console.error("Error in /group/session/:sessionId", err);
+    next(err);
+  }
+};

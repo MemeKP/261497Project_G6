@@ -7,10 +7,10 @@ import { dbClient } from "@db/client.js";
 import {
   users,
   admins,
-  dining_sessions,
+  diningSessions,
   groups,
   group_members,
-  menu_items,
+  menuItems,
   orders,
   order_items,
 } from "@db/schema.js";
@@ -29,17 +29,15 @@ export const startSession = async (
       });
     }
 
-    const existingSession = await dbClient.query.dining_sessions?.findFirst({
+    const existingSession = await dbClient.query.diningSessions?.findFirst({
       where: and(
-        eq(dining_sessions.table_id, tableId),
-        eq(dining_sessions.status, "ACTIVE")
+        eq(diningSessions.tableId, tableId),
+        eq(diningSessions.status, "ACTIVE")
       ),
     });
 
     if (existingSession) {
-      return res
-      .status(400)
-      .json({
+      return res.status(400).json({
         error: `Table ${tableId} already has an active dining session`,
       });
     }
@@ -47,27 +45,29 @@ export const startSession = async (
     const startedAt = new Date();
 
     const newSession = await dbClient
-      .insert(dining_sessions)
+      .insert(diningSessions)
       .values({
-        table_id: tableId,
-        started_at: startedAt,
+        tableId: tableId,
+        startedAt: startedAt,
         status: "ACTIVE",
+        qrCode: "http://example.com/qr/1",
         total_customers: 0,
-        created_at: new Date(),
+        createdAt: new Date(),
+        openedByAdminId: 1,
       })
       .returning({
-        id: dining_sessions.id,
-        table_id: dining_sessions.table_id,
-        started_at: dining_sessions.started_at,
-        status: dining_sessions.status,
-        total_customers: dining_sessions.total_customers,
-        created_at: dining_sessions.created_at,
+        id: diningSessions.id,
+        table_id: diningSessions.tableId,
+        started_at: diningSessions.startedAt,
+        status: diningSessions.status,
+        total_customers: diningSessions.total_customers,
+        created_at: diningSessions.createdAt,
       });
 
     const qrData = {
       sessionId: newSession[0].id,
       tableId: tableId,
-      url: `${process.env.CLIENT_URL || "http://localhost:3000"}/table/${
+      url: `${process.env.VITE_FRONTEND_URL || "http://localhost:3000"}/tables/${
         newSession[0].id
       }`,
     };
@@ -105,7 +105,7 @@ export const endSession = async (
   res: Response,
   next: NextFunction
 ) => {
-    try {
+  try {
     const { sessionId, tableId } = req.body;
 
     if (!sessionId && !tableId) {
@@ -117,17 +117,17 @@ export const endSession = async (
     let whereCondition;
     if (sessionId) {
       whereCondition = and(
-        eq(dining_sessions.id, sessionId),
-        eq(dining_sessions.status, "ACTIVE")
+        eq(diningSessions.id, sessionId),
+        eq(diningSessions.status, "ACTIVE")
       );
     } else {
       whereCondition = and(
-        eq(dining_sessions.table_id, tableId),
-        eq(dining_sessions.status, "ACTIVE")
+        eq(diningSessions.tableId, tableId),
+        eq(diningSessions.status, "ACTIVE")
       );
     }
 
-    const activeSession = await dbClient.query.dining_sessions.findFirst({
+    const activeSession = await dbClient.query.diningSessions.findFirst({
       where: whereCondition,
     });
 
@@ -141,7 +141,7 @@ export const endSession = async (
 
     let totalCustomers = 0;
     const group = await dbClient.query.groups.findFirst({
-      where: eq(groups.table_id, activeSession.table_id),
+      where: eq(groups.table_id, activeSession.tableId),
     });
 
     if (group) {
@@ -153,30 +153,30 @@ export const endSession = async (
 
     const endedAt = new Date();
     const updatedSession = await dbClient
-      .update(dining_sessions)
+      .update(diningSessions)
       .set({
-        ended_at: endedAt,
+        endedAt: endedAt,
         status: "COMPLETED",
         total_customers: totalCustomers,
       })
-      .where(eq(dining_sessions.id, activeSession.id))
+      .where(eq(diningSessions.id, activeSession.id))
       .returning({
-        id: dining_sessions.id,
-        table_id: dining_sessions.table_id,
-        started_at: dining_sessions.started_at,
-        ended_at: dining_sessions.ended_at,
-        status: dining_sessions.status,
-        total_customers: dining_sessions.total_customers,
-        created_at: dining_sessions.created_at,
+        id: diningSessions.id,
+        table_id: diningSessions.tableId,
+        started_at: diningSessions.startedAt,
+        ended_at: diningSessions.endedAt,
+        status: diningSessions.status,
+        total_customers: diningSessions.total_customers,
+        created_at: diningSessions.createdAt,
       });
 
     const duration =
       endedAt.getTime() -
-      (activeSession.started_at?.getTime() || endedAt.getTime());
+      (activeSession.startedAt?.getTime() || endedAt.getTime());
     const durationMinutes = Math.round(duration / (1000 * 60));
 
     res.json({
-      message: `Dining session ended successfully for table ${activeSession.table_id}`,
+      message: `Dining session ended successfully for table ${activeSession.tableId}`,
       session: {
         id: updatedSession[0].id,
         tableId: updatedSession[0].table_id,
@@ -198,16 +198,16 @@ export const getActiveSession = async (
   res: Response,
   next: NextFunction
 ) => {
-    try {
-    const activeSessions = await dbClient.query.dining_sessions.findMany({
-      where: eq(dining_sessions.status, "ACTIVE"),
-      orderBy: [dining_sessions.created_at],
+  try {
+    const activeSessions = await dbClient.query.diningSessions.findMany({
+      where: eq(diningSessions.status, "ACTIVE"),
+      orderBy: [diningSessions.createdAt],
     });
 
     const sessionsWithGroups = await Promise.all(
       activeSessions.map(async (session) => {
         const group = await dbClient.query.groups.findFirst({
-          where: eq(groups.table_id, session.table_id),
+          where: eq(groups.table_id, session.tableId),
         });
 
         let members: Array<{ id: number; name: string; note: string | null }> =
@@ -226,11 +226,11 @@ export const getActiveSession = async (
 
         return {
           id: session.id,
-          tableId: session.table_id,
-          startedAt: session.started_at,
+          tableId: session.tableId,
+          startedAt: session.startedAt,
           status: session.status,
           totalCustomers: members.length,
-          createdAt: session.created_at,
+          createdAt: session.createdAt,
           group: group
             ? {
                 id: group.id,
@@ -250,73 +250,72 @@ export const getActiveSession = async (
   }
 };
 
-export const getSession = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-    try {
-        const sessionId = parseInt(req.params.sessionId);
-    
-        if (isNaN(sessionId)) {
-          return res.status(400).json({
-            error: "Invalid Session ID",
-          });
-        }
-    
-        const session = await dbClient.query.dining_sessions.findFirst({
-          where: eq(dining_sessions.id, sessionId),
-        });
-    
-        if (!session) {
-          return res.status(404).json({
-            error: "Session not found",
-          });
-        }
-    
-        const group = await dbClient.query.groups.findFirst({
-          where: eq(groups.table_id, session.table_id),
-        });
-    
-        let members: Array<{ id: number; name: string; note: string | null }> = [];
-        if (group) {
-          const groupMembers = await dbClient.query.group_members.findMany({
-            where: eq(group_members.group_id, group.id),
-          });
-          members =
-            groupMembers?.map((member) => ({
-              id: member.id,
-              name: member.name,
-              note: member.note,
-            })) || [];
-        }
-    
-        let duration: number | null = null;
-        if (session.ended_at && session.started_at) {
-          const durationMs =
-            session.ended_at.getTime() - session.started_at.getTime();
-          duration = Math.round(durationMs / (1000 * 60));
-        }
-    
-        res.json({
-          session: {
-            id: session.id,
-            tableId: session.table_id,
-            startedAt: session.started_at,
-            endedAt: session.ended_at,
-            status: session.status,
-            totalCustomers: session.total_customers || members.length,
-            createdAt: session.created_at,
-            durationMinutes: duration,
-          },
-          group: group
-            ? {
-                id: group.id,
-                members: members,
-              }
-            : null,
-        });
-      } catch (err) {
-        next(err);
-      }
+export const getSession = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const sessionId = parseInt(req.params.sessionId);
+    if (isNaN(sessionId)) {
+      return res.status(400).json({ error: "Invalid Session ID" });
+    }
+    const session = await dbClient
+      .select({
+        id: diningSessions.id,
+        tableId: diningSessions.tableId,
+        startedAt: diningSessions.startedAt,
+        endedAt: diningSessions.endedAt,
+        status: diningSessions.status,
+        totalCustomers: diningSessions.total_customers,
+        createdAt: diningSessions.createdAt,
+        qrCode: diningSessions.qrCode,
+      })
+      .from(diningSessions)
+      .where(eq(diningSessions.id, sessionId))
+      .limit(1);
+
+    const sessionData = session[0];
+    if (!sessionData) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    if (!sessionData.qrCode) {
+      return res.status(500).json({ error: "Session QR Code data is missing in the database." });
+    }
+    const group = await dbClient.query.groups.findFirst({
+      where: eq(groups.table_id, sessionData.tableId),
+    });
+
+    const members = group
+      ? (await dbClient.query.group_members.findMany({
+          where: eq(group_members.group_id, group.id),
+        })).map((member) => ({
+          id: member.id,
+          name: member.name,
+          note: member.note,
+        }))
+      : [];
+    const duration =
+      sessionData.endedAt && sessionData.startedAt
+        ? Math.round((sessionData.endedAt.getTime() - sessionData.startedAt.getTime()) / 60000)
+        : null;
+    res.json({
+      session: {
+        id: sessionData.id,
+        tableId: sessionData.tableId,
+        startedAt: sessionData.startedAt,
+        endedAt: sessionData.endedAt,
+        qrCode: sessionData.qrCode,
+        status: sessionData.status,
+        totalCustomers: members.length,
+        createdAt: sessionData.createdAt,
+        durationMinutes: duration,
+      },
+      group: group
+        ? {
+            id: group.id,
+            members,
+          }
+        : null,
+    });
+  } catch (err) {
+    next(err);
+  }
 };

@@ -1,36 +1,36 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import LandingPage from './routes/LandingPage.tsx'
-import HomePage from './routes/HomePage.tsx'
-import DetailsPage from './routes/DetailsPage.tsx'
-import AddMemberPage from './routes/AddMemberPage.tsx'
-import MenuPage from './routes/MenuPage.tsx'
-import { 
-  createBrowserRouter,
-  RouterProvider,
-} from 'react-router-dom'
-import MainLayout from './layout/MainLayout.tsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./index.css";
+import LandingPage from "./routes/LandingPage.tsx";
+import HomePage from "./routes/HomePage.tsx";
+import DetailsPage from "./routes/DetailsPage.tsx";
+import AddMemberPage from "./routes/AddMemberPage.tsx";
+import MenuPage from "./routes/MenuPage.tsx";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import MainLayout from "./layout/MainLayout.tsx";
+import QrDisplay from "./components/QrDisplay.tsx";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+import OrderStatusPage from "./routes/OrderStatusPage.tsx";
+import BillPage from './routes/ฺBillPage.tsx'
 import LoginPage from './routes/LoginPage.tsx'
 import RegisterPage from './routes/RegisterPage.tsx'
 import CartPage from './routes/CartPage.tsx'
-import OrderStatusPage from './routes/OrderStatusPage.tsx'
-import BillPage from './routes/ฺBillPage.tsx'
 
 const router = createBrowserRouter([
   {
     element: <MainLayout />,
     children: [
       {
-        path: "/",
+        path: "/tables/:sessionId",
         element: <LandingPage />,
       },
       {
-        path: "/homepage",
+        path: "/homepage/:sessionId",
         element: <HomePage />,
       },
       {
-        path: "/menu",
+        path: "/menu/:groupId",
         element: <MenuPage />,
       },
       {
@@ -38,8 +38,12 @@ const router = createBrowserRouter([
         element: <DetailsPage />,
       },
       {
-        path: "/addmember",
+        path: "/addmember/:sessionId",
         element: <AddMemberPage />,
+      },
+      {
+        path: "/qr-display/:sessionId",
+        element: <QrDisplay />,
       },
       {
         path: "/login",

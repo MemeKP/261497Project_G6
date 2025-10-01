@@ -8,10 +8,10 @@ import { dbClient } from "@db/client.js";
 import {
   users,
   admins,
-  dining_sessions,
+  diningSessions,
   groups,
   group_members,
-  menu_items,
+  menuItems,
   orders,
   order_items,
 } from "@db/schema.js";
@@ -193,8 +193,8 @@ export const getOrderAdmin = async (req:Request, res:Response, next:NextFunction
   
           let diningSession = null;
           if (order.dining_session_id) {
-            diningSession = await dbClient.query.dining_sessions.findFirst({
-              where: eq(dining_sessions.id, order.dining_session_id),
+            diningSession = await dbClient.query.diningSessions.findFirst({
+              where: eq(diningSessions.id, order.dining_session_id),
             });
           }
   
@@ -218,8 +218,8 @@ export const getOrderAdmin = async (req:Request, res:Response, next:NextFunction
               ? {
                   id: diningSession.id,
                   status: diningSession.status,
-                  startedAt: diningSession.started_at,
-                  endedAt: diningSession.ended_at,
+                  startedAt: diningSession.startedAt,
+                  endedAt: diningSession.endedAt,
                 }
               : null,
           };
@@ -320,8 +320,8 @@ export const getOrderByIdAdmin = async (req:Request, res:Response, next:NextFunc
 
     let diningSession = null;
     if (order.dining_session_id) {
-      diningSession = await dbClient.query.dining_sessions.findFirst({
-        where: eq(dining_sessions.id, order.dining_session_id),
+      diningSession = await dbClient.query.diningSessions.findFirst({
+        where: eq(diningSessions.id, order.dining_session_id),
       });
     }
 
@@ -359,10 +359,10 @@ export const getOrderByIdAdmin = async (req:Request, res:Response, next:NextFunc
         diningSession: diningSession
           ? {
               id: diningSession.id,
-              tableId: diningSession.table_id,
+              tableId: diningSession.tableId,
               status: diningSession.status,
-              startedAt: diningSession.started_at,
-              endedAt: diningSession.ended_at,
+              startedAt: diningSession.startedAt,
+              endedAt: diningSession.endedAt,
               totalCustomers: diningSession.total_customers,
             }
           : null,

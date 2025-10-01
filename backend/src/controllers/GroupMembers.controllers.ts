@@ -6,17 +6,21 @@ import { eq, and, isNotNull } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
   users,
-  admins,
-  dining_sessions,
+  admins as admin,
+  diningSessions as dining_sessions,
   groups,
   group_members,
-  menu_items,
+  menuItems as menu_items,
   orders,
   order_items,
 } from "@db/schema.js";
 
-export const addMembers = async (req:Request, res:Response, next:NextFunction) => {
-    try {
+export const addMembers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
     const { name, groupId, userId, note } = req.body;
 
     if (!name || !groupId) {
@@ -64,10 +68,14 @@ export const addMembers = async (req:Request, res:Response, next:NextFunction) =
   } catch (err) {
     next(err);
   }
-}
+};
 
-export const deleteMembers = async (req:Request, res:Response, next:NextFunction) => {
-     try {
+export const deleteAllMembers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
     const groupId = parseInt(req.params.groupId);
 
     if (isNaN(groupId)) {
@@ -96,10 +104,49 @@ export const deleteMembers = async (req:Request, res:Response, next:NextFunction
   } catch (err) {
     next(err);
   }
-}
+};
 
-export const getGroupMembers = async (req:Request, res:Response, next:NextFunction) => {
-    try {
+export const deleteMember = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const memberId = Number(req.params.memberId);
+
+    if (isNaN(memberId)) {
+      return res.status(400).json({
+        error: "Invalid Member ID",
+      });
+    }
+
+    const result = await dbClient
+      .delete(group_members)
+      .where(eq(group_members.id, memberId))
+      .returning();
+
+    if (result.length === 0) {
+      return res.status(404).json({
+        error: `Member with ID ${memberId} not found`,
+      });
+    }
+
+    res.json({
+      message: `Member ${memberId} removed successfully`,
+    });
+  } catch (err) {
+    console.error("Database error during member deletion:", err);
+    next(err);
+  }
+};
+
+
+export const getGroupMembers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
     const groupId = parseInt(req.params.groupId);
 
     if (isNaN(groupId)) {
@@ -140,4 +187,4 @@ export const getGroupMembers = async (req:Request, res:Response, next:NextFuncti
   } catch (err) {
     next(err);
   }
-}
+};
