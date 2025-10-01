@@ -36,6 +36,7 @@ const IKImageWrapper = ({
 
   // Handle missing or invalid src
   if (!src || typeof src !== 'string' || src.trim() === '') {
+    console.warn('Invalid src provided:', src);
     return showPlaceholder ? (
       <PlaceholderImage 
         className={className} 
@@ -48,6 +49,7 @@ const IKImageWrapper = ({
 
   // Handle error state
   if (imageError) {
+    console.warn('Image error state for src:', src);
     return showPlaceholder ? (
       <PlaceholderImage 
         className={className} 
@@ -59,55 +61,87 @@ const IKImageWrapper = ({
   }
 
   const defaultTransformation = (transformation || [
-  {
-    width: width ? String(width) : undefined,
-    height: height ? String(height) : undefined,
-    quality: '80', 
-    format: 'auto',
-  },
-]) as Transformation[];
+    {
+      width: width ? String(width) : undefined,
+      height: height ? String(height) : undefined,
+      quality: '80', 
+      format: 'auto',
+    },
+  ]) as Transformation[];
 
   const handleLoad = () => {
+    console.log('Image loaded successfully:', src);
     setImageLoading(false);
     onLoad?.();
   };
 
-  const handleError = () => {
+  const handleError = (error: string) => {
+    console.error('Image load error:', error, 'for src:', src);
     setImageError(true);
     setImageLoading(false);
     onError?.();
   };
 
+  const cleanImageUrl = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      return `${urlObj.origin}${urlObj.pathname}`;
+    } catch (error) {
+      return url;
+    }
+  };
+
+  const isFullUrl = src.startsWith('http');
+  const cleanSrc = isFullUrl ? cleanImageUrl(src) : src;
+
   return (
-    <div className="relative inline-block">
-      {/* Loading skeleton */}
+    // FIX: เพิ่ม className และ relative
+    <div className={`relative inline-block ${className}`}>
+      {/* FIX: Loading skeleton ที่ถูกต้อง */}
       {imageLoading && (
         <div
-          className={`absolute inset-0 bg-gray-300 animate-pulse ${placeholderClassName}`}
-          style={{ width, height }}
+          className={`absolute inset-0 bg-gray-300 animate-pulse z-10 ${placeholderClassName}`}
+          style={{ width: width || '100%', height: height || '100%' }}
         />
       )}
 
-      <IKImage
-        urlEndpoint={urlEndpoint}
-        path={src}
-        className={`${className} ${imageLoading ? 'invisible' : 'visible'}`}
-        loading="lazy"
-        lqip={{ active: true, quality: lqipQuality }}
-        alt={alt}
-        width={width}
-        height={height}
-        transformation={defaultTransformation}
-        onLoad={handleLoad}
-        onError={handleError}
-      />
+      {/* FIX: ควบคุม opacity เมื่อโหลด */}
+      <div className={imageLoading ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}>
+        {isFullUrl ? (
+          <IKImage
+            urlEndpoint={urlEndpoint}
+            src={cleanSrc}
+            loading="lazy"
+            lqip={{ active: true, quality: lqipQuality }}
+            alt={alt || 'Menu item image'}
+            width={width}
+            height={height}
+            transformation={defaultTransformation}
+            onLoad={handleLoad}
+            onError={handleError}
+          />
+        ) : (
+          <IKImage
+            urlEndpoint={urlEndpoint}
+            path={cleanSrc}
+            loading="lazy"
+            lqip={{ active: true, quality: lqipQuality }}
+            alt={alt || 'Menu item image'}
+            width={width}
+            height={height}
+            transformation={defaultTransformation}
+            onLoad={handleLoad}
+            onError={handleError}
+          />
+        )}
+      </div>
     </div>
   );
 };
 
-// Placeholder component
+// FIX: Placeholder Image ที่ใช้ className
 const PlaceholderImage = ({
-  className,
+  className = '',
   width,
   height,
   alt,
@@ -118,12 +152,12 @@ const PlaceholderImage = ({
   alt: string;
 }) => {
   return (
+    // FIX: ใช้ className แทน style
     <div
       className={`flex items-center justify-center bg-gray-200 ${className}`}
       style={{ 
         width: width || '100%', 
-        height: height || '100%',
-        minHeight: height || '200px',
+        height: height || '200px',
       }}
       role="img"
       aria-label={alt}

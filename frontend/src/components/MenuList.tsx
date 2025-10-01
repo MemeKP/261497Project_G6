@@ -1,7 +1,6 @@
 import MenuItems from "./MenuItems";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { category } from "../config/dummy_data";
 import { useLocation, useSearchParams } from "react-router-dom";
 import InfiniteScroll from "react-infinite-scroll-component";
 
@@ -9,24 +8,35 @@ const fetchMenus = async (
   pageParam: number,
   searchQuery: string,
   pathname: string,
-  categoryQuery: string,
-  sortQuery: string
+  categoryQuery: string | string[],
 ) => {
-  console.log(" fetching post wiht: ", {
+  console.log(" fetching post with: ", {
     pageParam,
     searchQuery,
     pathname,
     categoryQuery,
   });
-  const res = await axios.get(`${import.meta.env.BACKEND_URL}/menu-items`, {
-    params: {
-      page: pageParam,
-      limit: pathname === "/" ? 2 : 10,
-      search: searchQuery || "",
-      category: categoryQuery || "", //use for filter
-      sort: sortQuery,
-    },
-  });
+
+  let categoryParam = "";
+  if (categoryQuery) {
+    categoryParam = Array.isArray(categoryQuery)
+      ? categoryQuery.filter((c) => c !== "All").join(",")
+      : categoryQuery;
+  }
+  const params = {
+    page: pageParam,
+    limit: pathname === "/" ? 4 : 10,
+    search: searchQuery || "",
+    ...(categoryParam && { category: categoryParam }), 
+  };
+
+  const res = await axios.get(
+    '/api/menu_items',
+    {
+      params,
+    }
+  );
+
   console.log("res data: ", res.data);
   return res.data;
 };
@@ -34,8 +44,8 @@ const fetchMenus = async (
 const MenuList = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const searchQuery = searchParams.get("category") || "";
-  const sort = searchParams.get("sort") || "newest";
+  const searchQuery = searchParams.get("search") || "";
+  const categoryQuery = searchParams.get("category") || "";
 
   const {
     data,
@@ -46,9 +56,9 @@ const MenuList = () => {
     isFetchingNextPage,
     status,
   } = useInfiniteQuery({
-    queryKey: ["menu_items", searchQuery, category, sort],
+    queryKey: ["menu_items", searchQuery, categoryQuery],
     queryFn: ({ pageParam = 1 }) =>
-      fetchMenus(pageParam, searchQuery, location.pathname, category, sort),
+      fetchMenus(pageParam, searchQuery, location.pathname, categoryQuery),
     initialPageParam: 1,
     getNextPageParam: (lastPage, pages) =>
       lastPage.hasMore ? pages.length + 1 : undefined,
@@ -60,12 +70,10 @@ const MenuList = () => {
 
   const allMenus =
     data?.pages
-      ?.flatMap((page) =>
-        Array.isArray(page?.menu_items) ? page.menu_items : []
-      )
+      ?.flatMap((page) => (Array.isArray(page?.data) ? page.data : []))
       .filter((menu) => menu && menu.id) || [];
   console.log("pages:", data?.pages);
-  console.log(data); //ลองดูผลลัพธ์
+  console.log(data);
   console.log("allMenus = ", allMenus);
 
   return (
@@ -88,11 +96,3 @@ const MenuList = () => {
 };
 
 export default MenuList;
-{
-  /* <div className="flex flex-col items-center ">
-        <MenuItems />
-        <MenuItems />
-        <MenuItems />
-        <MenuItems />
-      </div> */
-}

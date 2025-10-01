@@ -8,6 +8,7 @@ import BestSellerList from "../components/BestSellerList";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import PageAnimation from "../common/PageAnimetion";
+import IKImageWrapper from "../components/IKImageWrapper";
 
 const HomePage = () => {
 
@@ -36,6 +37,9 @@ const HomePage = () => {
               {/* SIGNATURE MENU */}
 
               <div className="flex flex-col items-center mt-6 relative">
+                {/* <IKImageWrapper 
+
+                /> */}
                 <PageAnimation index={0}>
                   <img
                     src={sg1}

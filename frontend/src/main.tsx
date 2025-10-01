@@ -49,6 +49,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     {/* <App /> */}
     <QueryClientProvider client={queryClient}>
-    <RouterProvider router={router} /></QueryClientProvider>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   </StrictMode>
 );
