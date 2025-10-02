@@ -61,6 +61,7 @@ export const category = [
   "noodles",
   "Sushi & Sashimi",
   "Appetizers",
+  "rice",
   "Desserts",
   "Drinks",
 ];

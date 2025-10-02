@@ -84,12 +84,16 @@ const MenuList = () => {
         hasMore={!!hasNextPage}
         loader={<h4>Loading more menu...</h4>}
       >
+        <div className="flex flex-col justify-center items-center">
+
+  
         {/* map ตาม array ให้ แต่ละอันโชว์ <MenuItems /> */}
         {allMenus
-          .filter((menu) => menu && menu.id)
+          .filter((menu) => menu && !menu.isSignature)
           .map((menu) => (
             <MenuItems key={menu.id} menu={menu} />
           ))}
+          </div>
       </InfiniteScroll>
     </>
   );

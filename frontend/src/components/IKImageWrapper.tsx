@@ -21,7 +21,6 @@ const IKImageWrapper = ({
 
   const urlEndpoint = import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT;
 
-  // Validate environment variable
   if (!urlEndpoint) {
     console.error('VITE_IMAGEKIT_URL_ENDPOINT is not defined');
     return showPlaceholder ? (
@@ -34,7 +33,6 @@ const IKImageWrapper = ({
     ) : null;
   }
 
-  // Handle missing or invalid src
   if (!src || typeof src !== 'string' || src.trim() === '') {
     console.warn('Invalid src provided:', src);
     return showPlaceholder ? (
@@ -61,13 +59,14 @@ const IKImageWrapper = ({
   }
 
   const defaultTransformation = (transformation || [
-    {
-      width: width ? String(width) : undefined,
-      height: height ? String(height) : undefined,
-      quality: '80', 
-      format: 'auto',
-    },
-  ]) as Transformation[];
+  {
+    width: width ? String(Number(width) * 3) : undefined,
+    height: height ? String(Number(height) * 3) : undefined,
+    quality: '90',  // ไม่ใช้ 100 กันไฟล์ใหญ่เกิน
+    format: 'auto',
+  },
+]) as Transformation[];
+
 
   const handleLoad = () => {
     console.log('Image loaded successfully:', src);
@@ -95,9 +94,8 @@ const IKImageWrapper = ({
   const cleanSrc = isFullUrl ? cleanImageUrl(src) : src;
 
   return (
-    // FIX: เพิ่ม className และ relative
-    <div className={`relative inline-block ${className}`}>
-      {/* FIX: Loading skeleton ที่ถูกต้อง */}
+  
+    <div className={` ${className} `}>
       {imageLoading && (
         <div
           className={`absolute inset-0 bg-gray-300 animate-pulse z-10 ${placeholderClassName}`}
@@ -105,7 +103,6 @@ const IKImageWrapper = ({
         />
       )}
 
-      {/* FIX: ควบคุม opacity เมื่อโหลด */}
       <div className={imageLoading ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}>
         {isFullUrl ? (
           <IKImage
@@ -139,7 +136,6 @@ const IKImageWrapper = ({
   );
 };
 
-// FIX: Placeholder Image ที่ใช้ className
 const PlaceholderImage = ({
   className = '',
   width,
@@ -152,12 +148,11 @@ const PlaceholderImage = ({
   alt: string;
 }) => {
   return (
-    // FIX: ใช้ className แทน style
     <div
       className={`flex items-center justify-center bg-gray-200 ${className}`}
       style={{ 
         width: width || '100%', 
-        height: height || '200px',
+        // height: height || '100%',
       }}
       role="img"
       aria-label={alt}

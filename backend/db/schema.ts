@@ -28,7 +28,10 @@ export const group_members = pgTable('group_members', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
   group_id: integer('group_id').notNull().references(() => groups.id),
-  user_id: integer('user_id').references(() => users.id),
+  user_id: integer('user_id').references(() => users.id),// null = guest
+  diningSessionId: integer('dining_session_id').notNull(),
+  isTableAdmin: boolean('is_table_admin').default(false),
+  joinedAt: timestamp('joined_at').defaultNow(),
   note: text('note')
 });
 
@@ -113,6 +116,7 @@ export const members = pgTable("members", {
   name: varchar("name", { length: 100 }).notNull(),
   isTableAdmin: boolean("is_table_admin").default(false),
   joinedAt: timestamp("joined_at").defaultNow(),
+  note: text('note'),
 });
 
 /**
@@ -136,14 +140,24 @@ export const menuItems = pgTable("menu_items", {
 /**
  * Order items (ผูกกับ member → ใครสั่ง)
  */
-export const orderItems = pgTable("order_items", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id").notNull(),
-  menuItemId: integer("menu_item_id").notNull(),
-  memberId: integer("member_id").notNull(),
-  quantity: integer("quantity").default(1),
-  note: text("note"),
+// export const orderItems = pgTable("order_items", {
+//   id: serial("id").primaryKey(),
+//   orderId: integer("order_id").notNull(),
+//   menuItemId: integer("menu_item_id").notNull(),
+//   memberId: integer("member_id").notNull(),
+//   quantity: integer("quantity").default(1),
+//   note: text("note"),
+// });
+
+export const orderItems = pgTable('order_items', {
+  id: serial('id').primaryKey(),
+  order_id: integer('order_id').notNull().references(() => orders.id),
+  menu_item_id: integer('menu_item_id').notNull().references(() => menuItems.id),
+  member_id: integer('member_id').references(() => members.id), 
+  quantity: integer('quantity'),
+  note: text('note'),
 });
+
 
 /**
  * Bills (1 order → 1 bill)

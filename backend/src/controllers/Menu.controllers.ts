@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import express from "express";
 import "dotenv/config";
 import ImageKit from "imagekit";
-import { eq, and, isNotNull, ilike, sql, like, or } from "drizzle-orm";
+import { eq, and, isNotNull, ilike, sql, like, or, desc } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
   users,
@@ -34,9 +34,9 @@ const imagekit = new ImageKit({
 const getFileIdFromUrl = (url: string): string | null => {
   try {
     const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split('/');
+    const pathParts = urlObj.pathname.split("/");
     const fileName = pathParts[pathParts.length - 1];
-    
+
     const matches = fileName.match(/_([a-zA-Z0-9]+)\./);
     return matches ? matches[1] : null;
   } catch (error) {
@@ -79,30 +79,26 @@ export const uploadAuth = async (req: Request, res: Response) => {
   res.send(result);
 };
 
-export const getMenu = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const getMenu = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // get by id
-    const { id } = req.params;
-    const item = await dbClient.query.menuItems.findFirst({
-      where: eq(menuItems.id, parseInt(id)),
-    });
-    if (!item) {
-      return res.status(404).json({
-        success: false,
-        error: "menu not found",
-      });
+    const menuId = parseInt(req.params.id);
+    if (isNaN(menuId)) {
+      return res.status(400).json({ error: "Invalid menu id" });
     }
-    res.json({
-      success: true,
-      data: item,
-    });
-  } catch (error) {
-    console.error("[BACKEND MENUCON]Error fetching menu item:", error);
-    next(error);
+
+    const menu = await dbClient
+      .select()
+      .from(menuItems)
+      .where(eq(menuItems.id, menuId))
+      .limit(1);
+
+    if (menu.length === 0) {
+      return res.status(404).json({ error: "Menu item not found" });
+    }
+
+    return res.json(menu[0]);
+  } catch (err) {
+    next(err);
   }
 };
 
@@ -190,7 +186,6 @@ export const deleteMenu = async (
       });
     }
 
-    // Delete image from ImageKit if exists
     if (existingItem.imageUrl) {
       await deleteImageFromImageKit(existingItem.imageUrl);
     }
@@ -234,13 +229,11 @@ export const createMenu = async (
 
     let imageUrl: string | null = null;
 
-    // Handle image upload if file is present
     if (req.file) {
       const uploadResult = await uploadImageToImagekit(req.file);
       imageUrl = uploadResult.url;
     }
 
-    // Insert into database
     const [item] = await dbClient
       .insert(menuItems)
       .values({
@@ -283,7 +276,6 @@ export const updateMenu = async (
       updatedByAdminId,
     } = req.body;
 
-    // Check if menu item exists
     const existingItem = await dbClient.query.menuItems.findFirst({
       where: eq(menuItems.id, parseInt(id)),
     });
@@ -297,19 +289,15 @@ export const updateMenu = async (
 
     let imageUrl = existingItem.imageUrl;
 
-    // Handle new image upload
     if (req.file) {
-      // Delete old image if exists
       if (existingItem.imageUrl) {
         await deleteImageFromImageKit(existingItem.imageUrl);
       }
 
-      // Upload new image
       const uploadResult = await uploadImageToImagekit(req.file);
       imageUrl = uploadResult.url;
     }
 
-    // Update database
     const [updatedItem] = await dbClient
       .update(menuItems)
       .set({
@@ -340,3 +328,56 @@ export const updateMenu = async (
     next(error);
   }
 };
+
+export const getBestSeller = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // ถ้ามี order_items ใช้จำนวนสั่งจริง
+    const countOrders = await dbClient.select().from(order_items).limit(1);
+
+    let bestSellers;
+
+    if (countOrders.length > 0) {
+      bestSellers = await dbClient
+        .select({
+          id: menuItems.id,
+          name: menuItems.name,
+          description: menuItems.description,
+          price: menuItems.price,
+          imageUrl: menuItems.imageUrl,
+          totalOrders: sql<number>`SUM(${order_items.quantity})`,
+        })
+        .from(order_items)
+        .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
+        .groupBy(menuItems.id)
+        .orderBy(desc(sql`SUM(${order_items.quantity})`))
+        .limit(2);
+    } else {
+      // fallback: เลือก menu ใหม่ล่าสุด 2 เมนู
+      bestSellers = await dbClient
+        .select()
+        .from(menuItems)
+        .orderBy(desc(menuItems.createdAt))
+        .limit(2);
+    }
+
+    return res.json(bestSellers);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// const bestSellers = await dbClient
+    //   .select({
+    //     id: menuItems.id,
+    //     name: menuItems.name,
+    //     description: menuItems.description,
+    //     price: menuItems.price,
+    //     imageUrl: menuItems.imageUrl,
+    //     totalOrders: sql<number>`SUM(${order_items.quantity})`,
+    //   })
+    //   .from(order_items)
+    //   .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
+    //   .groupBy(menuItems.id)
+    //   // .orderBy(desc(sql`SUM(${order_items.quantity})`))
+    //   // .orderBy(desc(menuItems.createdAt))
+    //   .limit(2);

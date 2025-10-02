@@ -73,14 +73,11 @@ const AddMemberPage: React.FC = () => {
       const res = await axios.post<Member>("/api/group_members/add", {
         name: input,
         groupId,
+        diningSessionId: Number(sessionId),
       });
 
       await fetchGroupAndMembers();
 
-      // setMembers([
-      //   ...members,
-      //   { id: String(res.data.id), name: res.data.name },
-      // ]);
       setInput("");
       console.log("Member added successfully:", res.data.name);
     } catch (err) {

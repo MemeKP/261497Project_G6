@@ -21,23 +21,19 @@ export const addMembers = async (
   next: NextFunction
 ) => {
   try {
-    const { name, groupId, userId, note } = req.body;
+    const { name, groupId, userId, note, diningSessionId } = req.body;
 
-    if (!name || !groupId) {
+    if (!name || !groupId || !diningSessionId) {
       return res.status(400).json({
-        error: "Name and Group ID are required",
+        error: "Name, Group ID and Dining Session ID are required",
       });
     }
 
-    const group = await dbClient.query.groups?.findFirst({
-      where: eq(groups.id, groupId),
-    });
+    const group = await dbClient.query.groups.findFirst({
+  where: eq(groups.id, groupId),
+});
 
-    if (!group) {
-      return res.status(400).json({
-        error: "Group not found",
-      });
-    }
+if (!group) return res.status(400).json({ error: "Group not found" });
 
     const newMember = await dbClient
       .insert(group_members)
@@ -45,6 +41,7 @@ export const addMembers = async (
         name,
         group_id: groupId,
         user_id: userId || null,
+        diningSessionId,
         note: note || null,
       })
       .returning({
@@ -53,6 +50,7 @@ export const addMembers = async (
         group_id: group_members.group_id,
         user_id: group_members.user_id,
         note: group_members.note,
+        diningSessionId: group_members.diningSessionId,
       });
 
     res.status(201).json({
@@ -63,6 +61,7 @@ export const addMembers = async (
         groupId: newMember[0].group_id,
         userId: newMember[0].user_id,
         note: newMember[0].note,
+        diningSessionId: group_members.diningSessionId,
       },
     });
   } catch (err) {
@@ -139,7 +138,6 @@ export const deleteMember = async (
     next(err);
   }
 };
-
 
 export const getGroupMembers = async (
   req: Request,

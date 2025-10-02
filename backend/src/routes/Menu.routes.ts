@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { createMenu, deleteMenu, getMenu, getMenus, updateMenu } from "src/controllers/Menu.controllers.js";
+import { createMenu, deleteMenu, getMenu, getMenus, updateMenu, getBestSeller } from "src/controllers/Menu.controllers.js";
 
 const router = Router()
 
@@ -20,12 +20,15 @@ const upload = multer({
     },
 });
 
+router.get('/bestsellers', getBestSeller)
 router.get('/:menuId', getMenu)
 router.get('/', getMenus)
+
 router.post('/:menuId', createMenu)
 router.put('/:menuId', updateMenu)
 router.post('/', upload.single('image'), createMenu)
 router.put('/:menuId', upload.single('image'), updateMenu)
+router.delete('/:menuId', deleteMenu)
 router.delete('/:menuId', deleteMenu)
 
 export default router

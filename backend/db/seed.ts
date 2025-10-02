@@ -86,7 +86,7 @@ async function insertDiningSessionWithQR() {
     if (!session) throw new Error("Failed to insert dining session");
 
     // สร้าง QR Code เป็น URL ชี้ไปยังหน้า frontend ของโต๊ะ/กลุ่ม
-    const url =  process.env.VITE_FRONTEND_URL || 'http://localhost:5173'; // ปรับ portตาม frontend
+    const url = process.env.VITE_FRONTEND_URL || "http://localhost:5173"; // ปรับ portตาม frontend
     const qrCodeDataUrl = await QRCode.toDataURL(url);
 
     // อัปเดต dining session ด้วย QR Code
@@ -109,22 +109,26 @@ async function updateQRForDiningSession(sessionId: number) {
     });
 
     if (!existingSession) {
-      console.warn(`Dining session with ID ${sessionId} not found. Cannot update QR code.`);
+      console.warn(
+        `Dining session with ID ${sessionId} not found. Cannot update QR code.`
+      );
       dbConn.end();
       return;
     }
 
-    const url = process.env.VITE_FRONTEND_URL || 'http://localhost:5173';
+    const url = process.env.VITE_FRONTEND_URL || "http://localhost:5173";
 
     const sessionUrl = `${url}/tables/${sessionId}`;
     const newQrCodeDataUrl = await QRCode.toDataURL(sessionUrl);
-    
+
     await dbClient
       .update(diningSessions)
       .set({ qrCode: newQrCodeDataUrl })
       .where(eq(diningSessions.id, sessionId));
 
-    console.log(`Successfully updated QR Code for dining session ID: ${sessionId}`);
+    console.log(
+      `Successfully updated QR Code for dining session ID: ${sessionId}`
+    );
   } catch (err) {
     console.error(`Failed to update QR Code for session ${sessionId}:`, err);
   } finally {
@@ -191,34 +195,120 @@ async function insertMembers() {
 
 // 5. Insert Menu Items
 async function insertMenuItems() {
-  const [menu1] = await dbClient
+  // const [menu1] = await dbClient
+  //   .insert(menuItems)
+  //   .values({
+  //     name: "Ebi Fry Katsu Curry Rice",
+  //     description:
+  //       "Rich and flavorful Japanese Curry served over soft, fluffy Japanese rice. Topped with large Ebi Fry.",
+  //     price: 289.0,
+  //     isSignature: false,
+  //     category: "rice",
+  //     imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/menu1.png?updatedAt=1759220941089',
+  //   })
+  //   .returning();
+
+  // const [menu2] = await dbClient
+  //   .insert(menuItems)
+  //   .values({
+  //     name: "Enso's Secret Beef Ramen",
+  //     description:
+  //       "A luxurious bowl featuring marinated beef, soft-boiled egg, and rich broth.",
+  //     price: 159.0,
+  //     isSignature: true,
+  //     category:"noodle",
+  //     imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/signature.png?updatedAt=1759220936892'
+
+  //   })
+  //   .returning();
+
+  /*const [menu3] = await dbClient
     .insert(menuItems)
     .values({
-      name: "Ebi Fry Katsu Curry Rice",
+      name: "Kuro Mayu Chashu Ramen",
       description:
-        "Rich and flavorful Japanese Curry served over soft, fluffy Japanese rice. Topped with large Ebi Fry.",
-      price: 289.0,
+        "The ultimate rich ramen experience. A creamy, robust pork broth bowl infused with smoky-sweet black garlic oil.",
+      price: 169.0,
+      isSignature: false,
+      category: "noodle",
+      imageUrl:
+        "https://ik.imagekit.io/496kiwiBird/261497project/menu2.png?updatedAt=1759220940713",
+    })
+    .returning();
+
+  const [menu4] = await dbClient
+    .insert(menuItems)
+    .values({
+      name: "Mushroom & Soba Clarity",
+      description:
+        "A clear dashi broth paired with soba noodles, featuring an abundance of small, earthy mushrooms and a garnish of microgreens.",
+      price: 156.0,
+      isSignature: false,
+      category: "noodle",
+      imageUrl:
+        "https://ik.imagekit.io/496kiwiBird/261497project/Mask%20group%20(4).png?updatedAt=1759384870088",
+    })
+    .returning();
+
+  const [menu5] = await dbClient
+    .insert(menuItems)
+    .values({
+      name: "Spicy Chicken Soboro Ramen",
+      description:
+        "A savory and rich broth served with springy ramen noodles, topped with seasoned spicy ground chicke and sweet corn.",
+      price: 201.0,
+      isSignature: false,
+      category: "noodle",
+      imageUrl:
+        "https://ik.imagekit.io/496kiwiBird/261497project/menu3.png?updatedAt=1759220940332",
+    })
+    .returning();
+
+  const [menu6] = await dbClient
+    .insert(menuItems)
+    .values({
+      name: "The Harvest Bowl",
+      description:
+        "A vibrant and filling noodle dish that balances heat and sweetness. Features fresh corn kernels.",
+      price: 149.0,
+      isSignature: false,
+      category: "noodle",
+      imageUrl:
+        "https://ik.imagekit.io/496kiwiBird/261497project/Mask%20group%20(3).png?updatedAt=1759384859238",
+    })
+    .returning();
+
+    const [menu6] = await dbClient
+    .insert(menuItems)
+    .values({
+      name: "The Harvest Bowl",
+      description:
+        "A vibrant and filling noodle dish that balances heat and sweetness. Features fresh corn kernels.",
+      price: 149.0,
+      isSignature: false,
+      category: "noodle",
+      imageUrl:
+        "https://ik.imagekit.io/496kiwiBird/261497project/Mask%20group%20(3).png?updatedAt=1759384859238",
+    })
+    .returning();*/
+
+    const [menu7] = await dbClient
+    .insert(menuItems)
+    .values({
+      name: "Katsu curry",
+      description:
+        "A classic, comforting dish featuring tender beef chunks, slow-cooked with carrots and onions.",
+      price: 149.0,
       isSignature: false,
       category: "rice",
-      imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/menu1.png?updatedAt=1759220941089',
+      imageUrl:
+        "https://ik.imagekit.io/496kiwiBird/261497project/menu6.png?updatedAt=1759410727451",
     })
     .returning();
 
-  const [menu2] = await dbClient
-    .insert(menuItems)
-    .values({
-      name: "Enso's Secret Beef Ramen",
-      description:
-        "A luxurious bowl featuring marinated beef, soft-boiled egg, and rich broth.",
-      price: 159.0,
-      isSignature: true,
-      category:"noodle",
-      imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/signature.png?updatedAt=1759220936892'
-  
-    })
-    .returning();
+    
 
-  console.log("Inserted menu items:", [menu1, menu2]);
+  console.log("Inserted menu items:", [menu7]);
   dbConn.end();
 }
 
@@ -246,10 +336,11 @@ async function insertOrder() {
 }
 
 // 7. Insert Order Items
+/*
 async function insertOrderItems() {
   const orderList = await dbClient.query.orders.findMany();
   const menuList = await dbClient.query.menuItems.findMany();
-  const memberList = await dbClient.query.members.findMany();
+  const memberList = await dbClient.query.group_members.findMany();
 
   if (orderList.length === 0 || menuList.length < 2 || memberList.length < 2) {
     console.log("Need orders, menu items, and members first!");
@@ -267,6 +358,13 @@ async function insertOrderItems() {
     },
     {
       orderId: orderList[0].id,
+      menuItemId: menuList[2].id,
+      memberId: memberList[2].id,
+      quantity: 4,
+      note: "No beans",
+    },
+    {
+      orderId: orderList[0].id,
       menuItemId: menuList[1].id,
       memberId: memberList[1].id,
       quantity: 1,
@@ -275,7 +373,7 @@ async function insertOrderItems() {
 
   console.log("Inserted order items!");
   dbConn.end();
-}
+}*/
 
 export const insertGroup = async () => {
   try {
