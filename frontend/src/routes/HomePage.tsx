@@ -13,7 +13,6 @@ import axios from "axios";
 
 const HomePage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { menuId } = useParams<{ menuId: string }>();
 
   useEffect(() => {
     if (sessionId) {

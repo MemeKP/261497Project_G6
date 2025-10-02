@@ -10,7 +10,7 @@ import axios from "axios";
 import type { Member, SessionResponse } from "../types";
 import { useQuery } from "@tanstack/react-query";
 import IKImageWrapper from "../components/IKImageWrapper";
-import { AnimatePresence, motion, type HTMLMotionProps } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 
 const fetchMenuById = async (menuId: string) => {
   try {
