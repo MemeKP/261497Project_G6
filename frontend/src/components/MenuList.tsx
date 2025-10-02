@@ -52,8 +52,6 @@ const MenuList = () => {
     error,
     fetchNextPage,
     hasNextPage,
-    isFetching,
-    isFetchingNextPage,
     status,
   } = useInfiniteQuery({
     queryKey: ["menu_items", searchQuery, categoryQuery],
@@ -85,8 +83,6 @@ const MenuList = () => {
         loader={<h4>Loading more menu...</h4>}
       >
         <div className="flex flex-col justify-center items-center">
-
-  
         {/* map ตาม array ให้ แต่ละอันโชว์ <MenuItems /> */}
         {allMenus
           .filter((menu) => menu && !menu.isSignature)

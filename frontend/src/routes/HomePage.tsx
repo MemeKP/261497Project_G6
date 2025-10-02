@@ -5,13 +5,23 @@ import { FaArrowRightLong } from "react-icons/fa6";
 import InPageNavigation from "../components/InPageNavigation";
 import MenuList from "../components/MenuList";
 import BestSellerList from "../components/BestSellerList";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import PageAnimation from "../common/PageAnimetion";
-import IKImageWrapper from "../components/IKImageWrapper";
+import { useEffect } from "react";
+import axios from "axios";
 
 const HomePage = () => {
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const { menuId } = useParams<{ menuId: string }>();
 
+  useEffect(() => {
+    if (sessionId) {
+      axios
+        .get(`/api/dining_session/${sessionId}`)
+        .catch((err) => console.error(err));
+    }
+  }, [sessionId]);
 
   return (
     <>
@@ -57,7 +67,7 @@ const HomePage = () => {
                       A luxurious bowl featuring marinated beef, soft-boiled
                       egg.
                     </div>
-                    <Link to="/details">
+                    <Link  to={`/details/${sessionId}/4`}>
                       <FaArrowRightLong className="absolute bottom-2 right-2 w-4 h-4 text-white cursor-pointer" />
                     </Link>
                   </div>

@@ -98,7 +98,7 @@ const IKImageWrapper = ({
     <div className={` ${className} `}>
       {imageLoading && (
         <div
-          className={`absolute inset-0 bg-gray-300 animate-pulse z-10 ${placeholderClassName}`}
+          className={`${placeholderClassName}`}
           style={{ width: width || '100%', height: height || '100%' }}
         />
       )}
@@ -139,7 +139,6 @@ const IKImageWrapper = ({
 const PlaceholderImage = ({
   className = '',
   width,
-  height,
   alt,
 }: {
   className?: string;

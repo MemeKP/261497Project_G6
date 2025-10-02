@@ -79,9 +79,9 @@ export const uploadAuth = async (req: Request, res: Response) => {
   res.send(result);
 };
 
-export const getMenu = async (req: Request, res: Response, next: NextFunction) => {
+export const getMenuById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const menuId = parseInt(req.params.id);
+    const menuId = parseInt(req.params.menuId);
     if (isNaN(menuId)) {
       return res.status(400).json({ error: "Invalid menu id" });
     }
@@ -366,18 +366,3 @@ export const getBestSeller = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-// const bestSellers = await dbClient
-    //   .select({
-    //     id: menuItems.id,
-    //     name: menuItems.name,
-    //     description: menuItems.description,
-    //     price: menuItems.price,
-    //     imageUrl: menuItems.imageUrl,
-    //     totalOrders: sql<number>`SUM(${order_items.quantity})`,
-    //   })
-    //   .from(order_items)
-    //   .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
-    //   .groupBy(menuItems.id)
-    //   // .orderBy(desc(sql`SUM(${order_items.quantity})`))
-    //   // .orderBy(desc(menuItems.createdAt))
-    //   .limit(2);
