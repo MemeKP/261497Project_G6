@@ -32,12 +32,20 @@ const AddMemberPage: React.FC = () => {
       if (group && group.id && Array.isArray(group.members)) {
         setGroupId(group.id);
         setMembers(
-          group.members.map((m: any) => ({
-            id: String(m.id),
-            name: m.name,
-            note: m.note || null,
-          }))
+          group.members.map((m: unknown) => {
+            const member = m as {
+              id: number;
+              name: string;
+              note?: string | null;
+            };
+            return {
+              id: String(member.id),
+              name: member.name,
+              note: member.note || null,
+            };
+          })
         );
+
         console.log(
           `[FRONTEND] SUCCESS: Group loaded with ID: ${group.id}, Members count: ${group.members.length}`
         );
@@ -73,7 +81,7 @@ const AddMemberPage: React.FC = () => {
       const res = await axios.post<Member>("/api/group_members/add", {
         name: input,
         groupId,
-        diningSessionId: Number(sessionId),
+        diningSessionId: sessionId,
       });
 
       await fetchGroupAndMembers();
