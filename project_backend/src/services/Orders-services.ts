@@ -1,5 +1,5 @@
 import { db } from "src/db/client.js";
-import { orders, orderItems } from "src/db/schema.js";
+import { orders, orderItems ,menuItems  } from "src/db/schema.js";
 import { eq, inArray } from "drizzle-orm";
 
 const allowedStatus = ["PENDING", "PREPARING", "COMPLETED", "CANCELLED"] as const;
@@ -47,10 +47,6 @@ export async function createOrder(diningSessionId: number) {
     .returning();
   return newOrder;
 }
-
-/**
- * ดึง Orders ทั้งหมดของ Session พร้อม Items
- */
 export async function getOrdersBySession(sessionId: number) {
   // ดึง orders ของ session
   const ordersData = await db
@@ -60,20 +56,29 @@ export async function getOrdersBySession(sessionId: number) {
 
   if (ordersData.length === 0) return [];
 
-  // ดึง items ของทุก order ใน session
+  // ดึง items ของทุก order + join menuItems
   const orderIds = ordersData.map((o) => o.id);
+
   const itemsData = await db
-    .select()
+    .select({
+      id: orderItems.id,
+      orderId: orderItems.orderId,
+      quantity: orderItems.quantity,
+      note: orderItems.note,
+      menuItemId: orderItems.menuItemId,
+      menuName: menuItems.name,
+      menuPrice: menuItems.price,
+    })
     .from(orderItems)
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
     .where(inArray(orderItems.orderId, orderIds));
 
-  // group items by orderId
+  // group items ตาม order
   return ordersData.map((order) => ({
     ...order,
     items: itemsData.filter((i) => i.orderId === order.id),
   }));
 }
-
 
 /**
  * อัปเดตสถานะของ Order
@@ -95,13 +100,39 @@ export async function updateOrderStatus(orderId: number, status: string) {
 /**
  * ดึง Order ตาม ID พร้อม Items
  */
+// ----- version ok ----- //
+// export async function getOrderById(orderId: number) {
+//   const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+//   if (!order) return null;
+
+//   const items = await db
+//     .select()
+//     .from(orderItems)
+//     .where(eq(orderItems.orderId, orderId));
+
+//   return { ...order, items };
+// }
+
 export async function getOrderById(orderId: number) {
-  const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+  const [order] = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.id, orderId));
+
   if (!order) return null;
 
   const items = await db
-    .select()
+    .select({
+      id: orderItems.id,
+      orderId: orderItems.orderId,
+      quantity: orderItems.quantity,
+      note: orderItems.note,
+      menuItemId: orderItems.menuItemId,
+      menuName: menuItems.name,
+      menuPrice: menuItems.price,
+    })
     .from(orderItems)
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
     .where(eq(orderItems.orderId, orderId));
 
   return { ...order, items };
@@ -133,3 +164,4 @@ export async function deleteOrder(orderId: number) {
   const [deleted] = await db.delete(orders).where(eq(orders.id, orderId)).returning();
   return deleted || null;
 }
+
