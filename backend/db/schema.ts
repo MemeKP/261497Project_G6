@@ -35,7 +35,6 @@ export const group_members = pgTable('group_members', {
   note: text('note')
 });
 
-
 /**
  * Orders
  */
@@ -53,6 +52,7 @@ export const order_items = pgTable('order_items', {
   id: serial('id').primaryKey(),
   order_id: integer('order_id').notNull().references(() => orders.id),
   menu_item_id: integer('menu_item_id').notNull().references(() => menuItems.id),
+  member_id: integer('member_id').notNull().references(() => group_members.id),
   quantity: integer('quantity'),
   note: text('note')
 });

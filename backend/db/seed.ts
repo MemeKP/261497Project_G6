@@ -51,7 +51,7 @@ async function insertTable() {
   const [table] = await dbClient
     .insert(tables)
     .values({
-      number: 1,
+      number: 2,
       status: "OCCUPIED",
     })
     .returning();
@@ -76,7 +76,7 @@ async function insertDiningSessionWithQR() {
     const [session] = await dbClient
       .insert(diningSessions)
       .values({
-        tableId: tableList[0].id,
+        tableId: tableList[1].id,
         openedByAdminId: adminList[0].id,
         qrCode: "", // สร้างทีหลัง
         status: "ACTIVE",
@@ -86,7 +86,7 @@ async function insertDiningSessionWithQR() {
     if (!session) throw new Error("Failed to insert dining session");
 
     // สร้าง QR Code เป็น URL ชี้ไปยังหน้า frontend ของโต๊ะ/กลุ่ม
-    const url = process.env.VITE_FRONTEND_URL || "http://localhost:5173"; // ปรับ portตาม frontend
+    const url = process.env.VITE_FRONTEND_URL || "http://10.0.0.51:5173"; // ปรับ portตาม frontend
     const qrCodeDataUrl = await QRCode.toDataURL(url);
 
     // อัปเดต dining session ด้วย QR Code
@@ -174,7 +174,7 @@ async function insertMembers() {
   const [member1] = await dbClient
     .insert(members)
     .values({
-      diningSessionId: sessions[0].id,
+      diningSessionId: sessions[1].id,
       name: "Alice",
       isTableAdmin: true,
     })
@@ -189,7 +189,7 @@ async function insertMembers() {
     })
     .returning();
 
-  console.log("Inserted members:", [member1, member2]);
+  console.log("Inserted members:", [member1]);
   dbConn.end();
 }
 
@@ -325,8 +325,8 @@ async function insertOrder() {
   const [order] = await dbClient
     .insert(orders)
     .values({
-      table_id: 1,
-      dining_session_id: sessions[0].id,
+      table_id: 4,
+      dining_session_id: sessions[1].id,
       status: "PENDING",
     })
     .returning();
@@ -336,7 +336,7 @@ async function insertOrder() {
 }
 
 // 7. Insert Order Items
-/*
+
 async function insertOrderItems() {
   const orderList = await dbClient.query.orders.findMany();
   const menuList = await dbClient.query.menuItems.findMany();
@@ -349,36 +349,37 @@ async function insertOrderItems() {
   }
 
   await dbClient.insert(orderItems).values([
-    {
-      orderId: orderList[0].id,
-      menuItemId: menuList[0].id,
-      memberId: memberList[0].id,
-      quantity: 2,
-      note: "Extra spicy",
-    },
-    {
-      orderId: orderList[0].id,
-      menuItemId: menuList[2].id,
-      memberId: memberList[2].id,
-      quantity: 4,
-      note: "No beans",
-    },
-    {
-      orderId: orderList[0].id,
-      menuItemId: menuList[1].id,
-      memberId: memberList[1].id,
-      quantity: 1,
-    },
-  ]);
+  {
+    order_id: orderList[1].id,
+    menu_item_id: menuList[0].id,
+    member_id: memberList[0].id,
+    quantity: 2,
+    note: "Extra spicy",
+  },
+  {
+    order_id: orderList[1].id,
+    menu_item_id: menuList[2].id,
+    member_id: memberList[0].id,
+    quantity: 4,
+    note: "No beans",
+  },
+  {
+    order_id: orderList[1].id,
+    menu_item_id: menuList[1].id,
+    member_id: memberList[0].id,
+    quantity: 1,
+  },
+]);
+
 
   console.log("Inserted order items!");
   dbConn.end();
-}*/
+}
 
 export const insertGroup = async () => {
   try {
     const existingSessions = await dbClient.query.diningSessions.findMany({
-      where: eq(diningSessions.tableId, 1),
+      where: eq(diningSessions.tableId, 4),
       orderBy: (diningSessions, { desc }) => [desc(diningSessions.id)],
       limit: 1,
     });
@@ -395,13 +396,13 @@ export const insertGroup = async () => {
       qrCode = existingSessions[0].qrCode;
     } else {
       // สร้าง session ใหม่พร้อม QR Code
-      const url = `http://localhost:5173/tables/1`;
+      const url = `http://localhost:5173/tables/4`;
       const qrCodeDataUrl = await QRCode.toDataURL(url);
 
       const newSession = await dbClient
         .insert(diningSessions)
         .values({
-          tableId: 1,
+          tableId: 4,
           openedByAdminId: 3,
           status: "ACTIVE",
           startedAt: new Date(),
@@ -492,9 +493,9 @@ async function queryOrderItems() {
 // insertDiningSession();
 // insertDiningSessionWithQR();
 // insertMembers();
-insertMenuItems();
+// insertMenuItems();
 // insertOrder();
-// insertOrderItems();
+insertOrderItems();
 
 // queryAdmins();
 // queryTables();

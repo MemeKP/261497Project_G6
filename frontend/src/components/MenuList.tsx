@@ -10,7 +10,7 @@ const fetchMenus = async (
   pathname: string,
   categoryQuery: string | string[],
 ) => {
-  console.log(" fetching post with: ", {
+  console.log(" fetching menu with: ", {
     pageParam,
     searchQuery,
     pathname,

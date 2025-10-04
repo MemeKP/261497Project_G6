@@ -7,7 +7,7 @@ const OverAll = () => {
     <div className="pt-6 grid grid-cols-2 gap-6"> 
       
       {/* ORDER */}
-      <div className="flex items-center bg-white rounded-2xl p-4 shadow-md"> 
+      <div className="flex items-center bg-white rounded-2xl p-2 shadow-md"> 
         <BsClipboard2CheckFill className="text-3xl text-black mr-1" /> 
         <div className="flex flex-col ml-2"> 
           <p className="text-sm font-bold text-black">Total Orders</p>
@@ -16,7 +16,7 @@ const OverAll = () => {
       </div>
 
       {/* CANCEL */}
-      <div className="flex items-center bg-white rounded-2xl p-4 shadow-md">
+      <div className="flex items-center bg-white rounded-2xl p-2 shadow-md">
         <BsClipboard2XFill className="text-3xl text-black mr-1" /> 
         <div className="flex flex-col ml-2"> 
           <p className="text-sm font-bold text-black">Total Canceled</p>
@@ -25,7 +25,7 @@ const OverAll = () => {
       </div>
       
       {/* REVENUE */}
-      <div className="flex items-center bg-white rounded-2xl p-4 shadow-md">
+      <div className="flex items-center bg-white rounded-2xl p-2 shadow-md">
         <img src={revenue} alt="total revonue" className="h-8 w-8 mr-3" /> 
         <div className="flex flex-col ml-2"> 
           <p className="text-sm font-bold text-black">Total Revenue</p>
@@ -34,7 +34,7 @@ const OverAll = () => {
       </div>
       
       {/* ACTIVE SESSION */}
-      <div className="flex items-center bg-green-100 rounded-2xl p-4 shadow-md"> 
+      <div className="flex items-center bg-green-100 rounded-2xl p-2 shadow-md"> 
         <IoIosPeople className="text-3xl text-green-600 mr-1" /> 
         <div className="flex flex-col ml-2"> 
           <p className="text-sm font-bold text-green-600">Active sessions</p>

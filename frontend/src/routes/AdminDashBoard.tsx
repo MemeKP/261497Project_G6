@@ -1,5 +1,7 @@
 import AdminNav from '../components/AdminNav'
+import OrderProgress from '../components/OrderProgress'
 import OverAll from '../components/OverAll'
+import TableAndSession from '../components/TableAndSession'
 
 const AdminDashBoard = () => {
   return (
@@ -15,8 +17,10 @@ const AdminDashBoard = () => {
       <OverAll/>
 
       {/* TABLE & SESSION */}
+      <TableAndSession/>
       
       {/* ORDER IN PROGRESS */}
+      <OrderProgress/>
     </div>
   )
 }

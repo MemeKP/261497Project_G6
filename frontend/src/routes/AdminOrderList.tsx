@@ -1,9 +1,18 @@
-import React from 'react'
+import AdminNav from "../components/AdminNav";
+import Search from "../components/Search";
+import AdminMenuList from "../components/AdminMenuList";
 
 const AdminOrderList = () => {
   return (
-    <div>AdminOrderList</div>
-  )
-}
+   <div className='bg-[#F4F3F7] min-h-screen w-full font-[Gantari] p-4'>
+      {/* NAVBAR (admin) */}
+      <AdminNav />
+      
+      {/* SEARCH */}
+      {/* TABLE OF ORDER LIST */}
+      <AdminMenuList/>
+    </div>
+  );
+};
 
-export default AdminOrderList
+export default AdminOrderList;

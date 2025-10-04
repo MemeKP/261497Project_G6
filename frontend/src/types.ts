@@ -41,8 +41,26 @@ export interface MenuItem {
   updatedAt: Date | null;
 }
 
+export interface MenuResponse {
+  success: boolean;
+  data: MenuItem[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export interface MenuItemsProps {
   menu: MenuItem;
+}
+
+export interface MenuFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  menuItem?: MenuItem | null;
+  mode: 'create' | 'edit';
 }
 
 export interface IKImageWrapperProps {
@@ -64,5 +82,11 @@ export interface IKImageWrapperProps {
   placeholderClassName?: string;
   onLoad?: () => void;
   onError?: () => void;
+}
+
+export interface Table {
+  id: number;
+  number: number;
+  status: string;
 }
 

@@ -110,6 +110,7 @@ export const getMenus = async (
   try {
     const page = parseInt((req.query.page as string) || "1");
     const nolimit = req.query.nolimit === "true";
+     const showAll = req.query.showAll === "true"; //ให้adminใช้
     const defaultLimit = 5;
     const limit = req.query.limit
       ? parseInt(req.query.limit as string)
@@ -121,7 +122,8 @@ export const getMenus = async (
     const search = (req.query.search as string)?.trim() || "";
     const category = (req.query.category as string)?.trim() || "";
 
-    const whereConditions = [eq(menuItems.isAvailable, true)];
+    const whereConditions = showAll ? [] : [eq(menuItems.isAvailable, true)];
+
     if (search) {
       const searchPattern = `%${search}%`;
       whereConditions.push(like(menuItems.name, searchPattern));
@@ -265,7 +267,7 @@ export const updateMenu = async (
   next: NextFunction
 ) => {
   try {
-    const { id } = req.params;
+    const { menuId } = req.params;
     const {
       name,
       price,
@@ -277,7 +279,7 @@ export const updateMenu = async (
     } = req.body;
 
     const existingItem = await dbClient.query.menuItems.findFirst({
-      where: eq(menuItems.id, parseInt(id)),
+      where: eq(menuItems.id, parseInt(menuId)),
     });
 
     if (!existingItem) {
@@ -316,7 +318,7 @@ export const updateMenu = async (
           : existingItem.updatedByAdminId,
         updatedAt: new Date(),
       })
-      .where(eq(menuItems.id, parseInt(id)))
+      .where(eq(menuItems.id, parseInt(menuId)))
       .returning();
 
     res.json({
@@ -365,4 +367,92 @@ export const getBestSeller = async (req: Request, res: Response, next: NextFunct
     next(err);
   }
 };
+
+// export const updateMenu = async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//         const { id } = req.params;
+//         const { 
+//             name, 
+//             price, 
+//             description, 
+//             category, 
+//             isSignature,
+//             isAvailable,
+//             updatedByAdminId 
+//         } = req.body;
+
+//         // Check if menu item exists
+//         const existingItem = await dbClient.query.menuItems.findFirst({
+//             where: eq(menuItems.id, parseInt(id)),
+//         });
+
+//         if (!existingItem) {
+//             return res.status(404).json({
+//                 success: false,
+//                 error: 'Menu item not found',
+//             });
+//         }
+
+//         let imageUrl = existingItem.imageUrl;
+
+//         // Handle new image upload
+//         if (req.file) {
+//             // Delete old image if exists
+//             if (existingItem.imageUrl) {
+//                 await deleteImageFromImageKit(existingItem.imageUrl);
+//             }
+
+//             // Upload new image
+//             const uploadResult = await uploadImageToImagekit(req.file);
+//             imageUrl = uploadResult.url;
+//         }
+
+//         // Helper function to parse boolean from string
+//         const parseBoolean = (value: any): boolean | undefined => {
+//             if (value === undefined || value === null || value === '') return undefined;
+//             if (typeof value === 'boolean') return value;
+//             if (typeof value === 'string') {
+//                 const lowerValue = value.toLowerCase();
+//                 if (lowerValue === 'true') return true;
+//                 if (lowerValue === 'false') return false;
+//             }
+//             return undefined;
+//         };
+
+//         // Parse boolean values
+//         const parsedIsSignature = parseBoolean(isSignature);
+//         const parsedIsAvailable = parseBoolean(isAvailable);
+
+//         // Build update object with only defined values
+//         const updateData: any = {
+//             updatedAt: new Date(),
+//         };
+
+//         if (name !== undefined && name !== '') updateData.name = name;
+//         if (price !== undefined && price !== '') updateData.price = price;
+//         if (description !== undefined) updateData.description = description;
+//         if (imageUrl !== existingItem.imageUrl) updateData.imageUrl = imageUrl;
+//         if (category !== undefined && category !== '') updateData.category = category;
+//         if (parsedIsSignature !== undefined) updateData.isSignature = parsedIsSignature;
+//         if (parsedIsAvailable !== undefined) updateData.isAvailable = parsedIsAvailable;
+//         if (updatedByAdminId) updateData.updatedByAdminId = parseInt(updatedByAdminId);
+
+//         console.log('[BACKEND] Update data:', updateData);
+
+//         // Update database
+//         const [updatedItem] = await dbClient
+//             .update(menuItems)
+//             .set(updateData)
+//             .where(eq(menuItems.id, parseInt(id)))
+//             .returning();
+
+//         res.json({
+//             success: true,
+//             data: updatedItem,
+//         });
+//     } catch (error) {
+//         console.error('[BACKEND MENUCON] Error updating menu item:', error);
+//         next(error);
+//     }
+// };
 
