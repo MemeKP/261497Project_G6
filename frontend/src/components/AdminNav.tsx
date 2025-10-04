@@ -9,7 +9,7 @@ const AdminNav = () => {
     <div className="relative flex flex-row justify-between items-center py-1 bg-none">
       {/* HAMBURGER */}
       <div
-        className="cursor-pointer text-3xl z-50"
+        className="cursor-pointer text-3xl z-[9999]"
         onClick={() => setOpen((prev) => !prev)}
       >
         {open ? "✕" : <IoMenu />}
@@ -20,7 +20,7 @@ const AdminNav = () => {
 
       {/* MENU LIST */}
       <div
-        className={`fixed top-0 left-0 w-full h-screen bg-white flex flex-col items-center font-bold text-xl justify-center gap-8 transition-all duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 w-full h-screen bg-white flex flex-col items-center font-bold text-xl justify-center gap-8 transition-all duration-300 ease-in-out z-[9990] ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
