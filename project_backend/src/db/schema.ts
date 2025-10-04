@@ -100,6 +100,7 @@ export const orderItems = pgTable("order_items", {
   memberId: integer("member_id").notNull().references(() => members.id),
   quantity: integer("quantity").default(1),
   note: text("note"),
+  status: varchar("status", { length: 20 }).default("PREPARING"), // PREPARING, READY TO SERVE, CANCELLED , COMPLETE
 });
 
 /**
@@ -107,7 +108,7 @@ export const orderItems = pgTable("order_items", {
  */
 export const bills = pgTable("bills", {
   id: serial("id").primaryKey(),
-  orderId: integer("order_id").notNull().references(() => orders.id),
+  orderId: integer("order_id").references(() => orders.id),
   diningSessionId: integer("dining_session_id").notNull().references(() => diningSessions.id),
   subtotal: money("subtotal").default(0),
   serviceCharge: money("service_charge").default(0),

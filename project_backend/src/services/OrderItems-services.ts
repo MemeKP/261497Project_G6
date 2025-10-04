@@ -12,30 +12,30 @@ export async function addOrderItem(
   quantity: number,
   note?: string
 ) {
-  // 1. ตรวจว่า orderId มีอยู่จริง
+  // checkว่า orderId มีอยู่จริง
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
   if (!order) throw new Error("Order not found");
 
-  // 2. ตรวจว่า memberId มีอยู่จริง
+  // checkว่า memberId มีอยู่จริง
   const [member] = await db.select().from(members).where(eq(members.id, memberId));
   if (!member) throw new Error("Member not found");
 
-  // 3. ตรวจว่า member กับ order อยู่ใน session เดียวกัน
+  //  checkว่า member กับ order อยู่ใน session เดียวกัน
   if (member.diningSessionId !== order.diningSessionId) {
     throw new Error("Member and Order do not belong to the same session");
   }
 
-  // 4. ตรวจว่าเมนูยัง available อยู่
+  //  checkว่าเมนูยัง available อยู่
   const [menu] = await db.select().from(menuItems).where(eq(menuItems.id, menuItemId));
   if (!menu) throw new Error("Menu item not found");
   if (!menu.isAvailable) {
     throw new Error("This menu item is not available");
   }
 
-  // 5. ตรวจ qty
+  // check qty
   if (quantity <= 0) throw new Error("Quantity must be at least 1");
 
-  // 6. insert order item
+  //  insert order item
   const [newItem] = await db
     .insert(orderItems)
     .values({
@@ -47,7 +47,7 @@ export async function addOrderItem(
     })
     .returning();
 
-  // 7. return item พร้อมข้อมูลเมนู
+  // return item พร้อมข้อมูลเมนู
   return {
     ...newItem,
     menuName: menu.name,
@@ -79,6 +79,42 @@ export async function getOrderItemsByOrderId(orderId: number) {
 }
 
 /**
+ * ดึง OrderItems ทั้งหมดของ Session (ใช้ในหน้า Order Status)
+ */
+export async function getOrderItemsBySession(sessionId: number) {
+  return await db
+    .select({
+      id: orderItems.id,
+      menuName: menuItems.name,
+      quantity: orderItems.quantity,
+      status: orderItems.status,
+    })
+    .from(orderItems)
+    .innerJoin(orders, eq(orderItems.orderId, orders.id))
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+    .where(eq(orders.diningSessionId, sessionId));
+}
+
+/**
+ * อัปเดทสถานะของ OrderItem
+ */
+export async function updateStatus(itemId: number, status: string) {
+  const allowed = ["PENDING", "PREPARING", "SERVED", "CANCELLED"];
+  if (!allowed.includes(status)) {
+    throw new Error(`Invalid status. Allowed: ${allowed.join(", ")}`);
+  }
+
+  const [updated] = await db
+    .update(orderItems)
+    .set({ status })
+    .where(eq(orderItems.id, itemId))
+    .returning();
+
+  return updated || null;
+}
+
+
+/**
  * อัปเดต OrderItem (แก้ qty/note)
  */
 export async function updateOrderItem(id: number, quantity?: number, note?: string) {
@@ -100,7 +136,7 @@ export async function updateOrderItem(id: number, quantity?: number, note?: stri
 
   if (!updated) return null;
 
-  // ดึงข้อมูลเมนูมาด้วย (เพื่อให้ UI ใช้สะดวก)
+  // ดึงข้อมูลเมนู
   const [menu] = await db
     .select()
     .from(menuItems)
@@ -124,7 +160,7 @@ export async function deleteOrderItem(id: number) {
 
   if (!deleted) return null;
 
-  // ลบแล้วไม่จำเป็นต้อง join menu → return ข้อมูลพื้นฐานพอ
+  // ลบแล้วไม่จำเป็นต้อง join menu 
   return { ...deleted, message: "Deleted successfully" };
 }
 

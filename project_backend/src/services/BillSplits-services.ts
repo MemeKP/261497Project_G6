@@ -1,10 +1,7 @@
 import { db } from "src/db/client.js";
 import { bills, billSplits, orderItems, menuItems, members, orders } from "src/db/schema.js";
-import { eq, and } from "drizzle-orm";
+import { eq, and , inArray } from "drizzle-orm";
 
-/**
- * Generate a new bill for an order
- */
 export async function generateBill(orderId: number) {
   // check ว่า order มีจริงไหม
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
@@ -13,7 +10,9 @@ export async function generateBill(orderId: number) {
   // check ว่า orderId นี้มี bill อยู่แล้วหรือยัง
   const existingBill = await db.select().from(bills).where(eq(bills.orderId, orderId));
   if (existingBill.length > 0) {
-    return existingBill[0]; // ถ้ามีแล้ว return ไปเลย ไม่สร้างซ้ำ
+    // ดึง splits ของบิลเก่ามาด้วย
+    const splits = await getSplit(existingBill[0].id);
+    return { ...existingBill[0], splits };
   }
 
   const diningSessionId = order.diningSessionId;
@@ -37,6 +36,7 @@ export async function generateBill(orderId: number) {
   const serviceCharge = +(subtotal * 0.07).toFixed(2);
   const total = +(subtotal + serviceCharge).toFixed(2);
 
+  // insert bill
   const [bill] = await db
     .insert(bills)
     .values({
@@ -50,11 +50,68 @@ export async function generateBill(orderId: number) {
     })
     .returning();
 
-  // หลังจากสร้าง bill แล้ว → สร้าง splits เลย
   await calculateSplit(orderId, bill.id, serviceCharge);
 
-  return bill;
+  // ดึง splits ที่เพิ่งสร้างมา
+  const splits = await getSplit(bill.id);
+
+  // return bill + splits
+  return {
+    ...bill,
+    splits,
+  };
 }
+
+/**
+ * Generate bill รวมทั้ง session 
+ */
+export async function generateBillForSession(sessionId: number) {
+  // ดึง orders ทั้งหมดของ session
+  const ordersData = await db.select().from(orders).where(eq(orders.diningSessionId, sessionId));
+  if (ordersData.length === 0) throw new Error("No orders found for this session");
+
+  const orderIds = ordersData.map(o => o.id);
+
+  // ดึง orderItems + menuItems ทั้งหมด
+  const items = await db
+    .select({
+      memberId: orderItems.memberId,
+      price: menuItems.price,
+      quantity: orderItems.quantity,
+      menuName: menuItems.name,
+    })
+    .from(orderItems)
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+    .where(inArray(orderItems.orderId, orderIds));
+
+  // คำนวณ subtotal
+  const subtotal = items.reduce((sum, i) => sum + i.price * (i.quantity ?? 0), 0);
+
+  const serviceCharge = +(subtotal * 0.07).toFixed(2);
+  const total = +(subtotal + serviceCharge).toFixed(2);
+
+  // check มี bill ของ session แล้วหรือยัง
+  const existing = await db.select().from(bills).where(eq(bills.diningSessionId, sessionId));
+  if (existing.length > 0) {
+    return { ...existing[0], items };
+  }
+
+  // insert bill 
+  const [bill] = await db
+    .insert(bills)
+    .values({
+      diningSessionId: sessionId,
+      subtotal,
+      serviceCharge,
+      vat: 0,
+      total,
+      status: "UNPAID",
+    })
+    .returning();
+
+  return { ...bill, items };
+}
+
 
 /**
  * Recalculate split by members (service charge หารเท่า ๆ กัน)
@@ -85,7 +142,7 @@ export async function calculateSplit(orderId: number, billId: number, serviceCha
     memberTotals[item.memberId] = (memberTotals[item.memberId] || 0) + amount;
   }
 
-  // ใช้ serviceChargeOverride จาก generateBill
+  // ใช้ serviceChargeOverride 
   const serviceCharge = serviceChargeOverride ?? bill.serviceCharge ?? 0;
   const memberCount = Object.keys(memberTotals).length || 1;
   const servicePerMember = +(serviceCharge / memberCount).toFixed(2);
@@ -120,6 +177,7 @@ export async function getSplit(billId: number) {
     .where(eq(billSplits.billId, billId));
 }
 
+
 /**
  * Update payment status for a member
  */
@@ -146,3 +204,6 @@ export async function updatePayment(billId: number, memberId: number) {
 
   return { ...updated, allPaid };
 }
+
+
+

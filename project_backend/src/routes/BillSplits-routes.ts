@@ -6,6 +6,12 @@ const router = Router();
 // สร้างbill จากorder
 router.post("/orders/:id/bill", billSplitController.createBill);
 
+// สร้าง full bill ของทั้ง session
+router.post("/sessions/:id/bill", billSplitController.createSessionBill);
+
+// ดูรายละเอียดบิลทั้งหมด (หน้า Your Order)
+router.get("/sessions/:id/bill", billSplitController.getSessionBill);
+
 // คำนวณsplitใหม่
 router.patch("/orders/:id/splits/calc", billSplitController.recalcSplit);
 

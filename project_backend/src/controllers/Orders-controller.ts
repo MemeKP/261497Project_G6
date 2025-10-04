@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import * as orderService from "src/services/Orders-services.js";
 
 // Allowed status values
-const allowedStatus = ["PENDING", "PREPARING", "COMPLETED", "CANCELLED"] as const;
+const allowedStatus = ["PENDING", "PREPARING", "READY_TO_SERVE", "CANCELLED", "COMPLETE"] as const;
 
 export async function createOrder(req: Request, res: Response) {
   try {
@@ -16,7 +16,6 @@ export async function createOrder(req: Request, res: Response) {
       return res.status(400).json({ error: "Order items are required" });
     }
 
-    // items ควรเป็น array ของ { menuId, qty, note? }
     for (const item of items) {
       if (!item.menuId || isNaN(Number(item.menuId))) {
         return res.status(400).json({ error: "Each item must have a valid menuId" });

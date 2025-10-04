@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import * as paymentService from "src/services/Payment-services.js";
 
-// ✅ Create payment (PromptPay)
+// Create payment (PromptPay)
 export async function createPayment(req: Request, res: Response) {
   try {
     const { billId, memberId } = req.body;
@@ -21,7 +21,7 @@ export async function createPayment(req: Request, res: Response) {
   }
 }
 
-// ✅ Manual confirm
+// Manual confirm
 export async function confirmPayment(req: Request, res: Response) {
   try {
     const { paymentId } = req.params;
@@ -41,7 +41,7 @@ export async function confirmPayment(req: Request, res: Response) {
   }
 }
 
-// ✅ Mock callback
+// Mock callback
 export async function mockCallback(req: Request, res: Response) {
   try {
     const { paymentId } = req.body;

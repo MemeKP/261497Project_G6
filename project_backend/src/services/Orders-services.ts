@@ -2,7 +2,7 @@ import { db } from "src/db/client.js";
 import { orders, orderItems ,menuItems  } from "src/db/schema.js";
 import { eq, inArray } from "drizzle-orm";
 
-const allowedStatus = ["PENDING", "PREPARING", "COMPLETED", "CANCELLED"] as const;
+const allowedStatus = ["PENDING", "PREPARING", "READY_TO_SERVE", "CANCELLED", "COMPLETE"] as const;
 
 /**
  * สร้าง Order พร้อม Items (ใช้ตอน Checkout)
@@ -11,13 +11,13 @@ export async function createOrderWithItems(
   diningSessionId: number,
   items: { menuId: number; memberId: number; qty: number; note?: string }[]
 ) {
-  // 1. create order
+  // create order
   const [newOrder] = await db
     .insert(orders)
     .values({ diningSessionId })
     .returning();
 
-  // 2. insert order items
+  // insert order items
   const insertedItems = [];
   for (const item of items) {
     const [inserted] = await db
@@ -33,12 +33,12 @@ export async function createOrderWithItems(
     insertedItems.push(inserted);
   }
 
-  // 3. return order + items
+  //  return order + items
   return { ...newOrder, items: insertedItems };
 }
 
 /**
- * สร้าง Order ว่าง ๆ (ไม่ควรใช้แล้ว แต่เก็บไว้เผื่อ admin/debug)
+ * สร้าง Order
  */
 export async function createOrder(diningSessionId: number) {
   const [newOrder] = await db
@@ -80,6 +80,7 @@ export async function getOrdersBySession(sessionId: number) {
   }));
 }
 
+
 /**
  * อัปเดตสถานะของ Order
  */
@@ -96,23 +97,6 @@ export async function updateOrderStatus(orderId: number, status: string) {
 
   return updated;
 }
-
-/**
- * ดึง Order ตาม ID พร้อม Items
- */
-// ----- version ok ----- //
-// export async function getOrderById(orderId: number) {
-//   const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
-//   if (!order) return null;
-
-//   const items = await db
-//     .select()
-//     .from(orderItems)
-//     .where(eq(orderItems.orderId, orderId));
-
-//   return { ...order, items };
-// }
-
 export async function getOrderById(orderId: number) {
   const [order] = await db
     .select()
@@ -139,7 +123,7 @@ export async function getOrderById(orderId: number) {
 }
 
 /**
- * ดึง Orders ทั้งหมด (admin/debug)
+ * ดึง Orders ทั้งหมด 
  */
 export async function getAllOrders() {
   const ordersData = await db.select().from(orders);

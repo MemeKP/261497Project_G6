@@ -18,7 +18,7 @@ async function calculateSplitTotal(billSplitId: number): Promise<number> {
   return Number(split.amount); // เป็นยอดสุทธิของ member นั้นแล้ว
 }
 
-/** สร้าง PromptPay QR จาก bill ทั้งbill or billsplit */
+/** สร้าง PromptPay QR จาก bill ทั้งบิลหรือจากบิลสปลิต */
 export async function createQrPayment({
   billId,
   memberId,
@@ -33,7 +33,7 @@ export async function createQrPayment({
   let billSplitId: number | undefined;
 
   if (memberId) {
-    // หา split ตาม billId + memberId
+    //  หา split ตาม billId + memberId
     const [split] = await db
       .select()
       .from(billSplits)
@@ -43,13 +43,13 @@ export async function createQrPayment({
     amount = Number(split.amount);
     billSplitId = split.id;
   } else {
-    // จ่ายfull bill
+    //  จ่ายเต็มโต๊ะ
     const [bill] = await db.select().from(bills).where(eq(bills.id, billId));
     if (!bill) throw new Error("Bill not found");
     amount = Number(bill.total);
   }
 
-  // generate PromptPay QR
+  //  สร้าง PromptPay QR
   const payload = generatePayload(promptPayId, { amount });
   const qrCode = await QRCode.toDataURL(payload);
 
@@ -78,7 +78,7 @@ export async function createQrPayment({
 }
 
 
-/** กดยืนยันว่าจ่ายแล้ว (manual/admin or mock callback) */
+/** กดยืนยันว่าจ่ายแล้ว (manual/admin หรือ mock callback) */
 export async function confirmPayment(paymentId: number) {
   const [updated] = await db
     .update(payments)
@@ -114,8 +114,7 @@ export async function confirmPayment(paymentId: number) {
   return updated;
 }
 
-/** mock callback: ใช้ตอนtestแทน callback จริงจากธนาคาร */
+/** mock callback: ใช้ตอนทดสอบแทน callback จริงจากธนาคาร */
 export async function mockCallback(paymentId: number) {
   return confirmPayment(paymentId);
 }
-

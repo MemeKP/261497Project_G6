@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "OrderItems API ",
+    "name": "OrderItems API (Seed Data Test)",
     "_postman_id": "orderitems-seed-5678",
     "description": "Test OrderItems endpoints using seed.ts data (Alice & Bob)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -60,7 +60,7 @@
       }
     },
     {
-      "name": "4. Update OrderItem (id=1 → Change qty to 3)",
+      "name": "4. Update OrderItem  ",
       "request": {
         "method": "PATCH",
         "header": [
@@ -80,7 +80,42 @@
       }
     },
     {
-      "name": "5. Delete OrderItem (id=1)",
+  "name": "5. Get OrderItems by Session 1 (Order Status)",
+  "request": {
+    "method": "GET",
+    "url": {
+      "raw": "http://localhost:3000/order-items/sessions/1/items",
+      "protocol": "http",
+      "host": ["localhost"],
+      "port": "3000",
+      "path": ["order-items", "sessions", "1", "items"]
+    }
+  }
+}
+,
+{
+  "name": "6. Update OrderItem Status ",
+  "request": {
+    "method": "PATCH",
+    "header": [
+      { "key": "Content-Type", "value": "application/json" }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{ \"status\": \"PREPARING\" }"
+    },
+    "url": {
+      "raw": "http://localhost:3000/order-items/1/status",
+      "protocol": "http",
+      "host": ["localhost"],
+      "port": "3000",
+      "path": ["order-items", "1", "status"]
+    }
+  }
+}
+,
+    {
+      "name": "7. Delete OrderItem ",
       "request": {
         "method": "DELETE",
         "url": {
