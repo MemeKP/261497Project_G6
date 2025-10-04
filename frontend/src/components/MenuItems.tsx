@@ -4,7 +4,7 @@ import IKImageWrapper from "./IKImageWrapper";
 import { Link, useParams } from "react-router-dom";
 
 const MenuItems: React.FC<MenuItemsProps> = ({ menu }) => {
-  const { menuId, sessionId } = useParams<{ menuId: string; sessionId: string }>();
+  const { sessionId } = useParams<{ menuId: string; sessionId: string }>();
   return (
     <div className="w-[90%] sm:w-100 md:w-96 h-32 mt-5">
        <div className="h-24 relative bg-black rounded-tr-3xl rounded-br-3xl ml-6 sm:ml-6 md:ml-10">

@@ -86,6 +86,7 @@ const IKImageWrapper = ({
       const urlObj = new URL(url);
       return `${urlObj.origin}${urlObj.pathname}`;
     } catch (error) {
+      console.log("cannot get path:", error)
       return url;
     }
   };
