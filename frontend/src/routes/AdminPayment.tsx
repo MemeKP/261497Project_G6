@@ -1,6 +1,7 @@
 import React from "react";
 import AdminNav from "../components/AdminNav";
 import PaymentGraph from "../components/PaymentGraph"
+import PaymentHistory from "../components/PaymentHistory"
 
 const AdminPayment = () => {
   return (
@@ -9,8 +10,9 @@ const AdminPayment = () => {
 
       {/* GRAPH */}
       <PaymentGraph/>
+      
       {/* TABLE & PAYMENT HISTORY */}
-
+      <PaymentHistory/>
     </div>
   );
 };

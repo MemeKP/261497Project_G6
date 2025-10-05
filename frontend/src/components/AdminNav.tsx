@@ -1,9 +1,34 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IoMenu, IoPersonCircleSharp } from "react-icons/io5";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const AdminNav = () => {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate()
+  const [showDropdown, setDropdown] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const handleLogout = async () => {
+    try {
+      //
+      navigate('/login')
+    } catch (error) {
+      console.log("Cannot logout: ", error)
+    }
+  }
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="relative flex flex-row justify-between items-center py-1 bg-none">
@@ -16,7 +41,24 @@ const AdminNav = () => {
       </div>
 
       {/* PROFILE IMG */}
-      <IoPersonCircleSharp className="text-4xl" />
+      <div className="relative" ref={dropdownRef}>
+        <IoPersonCircleSharp
+          className="text-4xl cursor-pointer hover:opacity-80 transition"
+          onClick={() => setDropdown((prev) => !prev)}
+        />
+      
+        {showDropdown && (
+          <div
+            className="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-lg text-sm z-[50] animate-fadeIn"
+          >
+            <button
+              onClick={handleLogout}
+              className="w-full text-left px-2 py-1 text-red-500 rounded-xl hover:bg-red-50 hover:text-red-600 transition"
+            >
+              Logout
+            </button>
+          </div>
+        )}
 
       {/* MENU LIST */}
       <div
@@ -28,6 +70,7 @@ const AdminNav = () => {
         <Link to="/admin/order">Order List</Link>
         <Link to="/admin/payment">Payment</Link>
       </div>
+    </div>
     </div>
   );
 };
