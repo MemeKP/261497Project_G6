@@ -28,33 +28,39 @@ const OrderStatusPage = () => {
   };
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const res = await fetch(`/api/orders/session/${sessionId}`);
-        const rawData = await res.json();
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch(`/api/orders/session/${sessionId}`);
+      const rawData = await res.json();
 
-        // ✅ ปรับโครงสร้างข้อมูลให้ตรงกับที่ frontend ใช้
-        const data = (rawData || []).map((order: any) => ({
-          id: order.id,
-          status: order.status || "PREPARING",
-          tableId: order.table_id,
-          items: (order.items || []).map((item: any) => ({
-            id: item.id,
-            menuName: item.menuItem?.name || "Unnamed Item",
-            quantity: item.quantity ?? 0,
-            status: item.status || order.status || "PREPARING",
-          })),
-        }));
+      // ✅ ปรับโครงสร้างข้อมูลให้รองรับทั้ง menuItem และ menuName/menuPrice
+      const data = (rawData || []).map((order: any) => ({
+        id: order.id,
+        status: order.status || "PREPARING",
+        tableId: order.table_id,
+        items: (order.items || []).map((item: any) => ({
+          id: item.id,
+          // 🔹 ใช้ชื่อจาก menuName ก่อน ถ้าไม่มีค่อย fallback ไป menuItem.name
+          menuName:
+            item.menuName ||
+            item.menu_item_name ||
+            item.menuItem?.name ||
+            "Unnamed Item",
+          quantity: item.quantity ?? 0,
+          status: item.status || order.status || "PREPARING",
+        })),
+      }));
 
-        setOrders(data);
-      } catch (err) {
-        console.error("Error fetching order status:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrders();
-  }, [sessionId]);
+      setOrders(data);
+    } catch (err) {
+      console.error("Error fetching order status:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchOrders();
+}, [sessionId]);
+
 
   if (loading) return <div className="text-white p-4">Loading...</div>;
 

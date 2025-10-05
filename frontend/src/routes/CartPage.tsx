@@ -32,13 +32,15 @@ const CartPage = () => {
         const mapped: CartItem[] =
           data[0]?.items?.map((item: any) => ({
             id: item.id,
-            menuId: item.menuItem?.id, // ✅ ใช้เพื่อกลับไปหน้า detail
-            name: item.menuItem?.name || "Unknown",
-            price: parseFloat(item.menuItem?.price || "0"),
+            menuId: item.menuItem?.id || item.menuItemId, // ✅ รองรับทั้งสองแบบ
+            name: item.menuName || item.menuItem?.name || "Unknown",
+            price: parseFloat(item.menuPrice ?? item.menuItem?.price ?? "0"),
             qty: item.quantity,
-            note: item.note || "", // ✅ ดึง note มา
+            note: item.note || "",
             image: item.menuItem?.imageUrl || "/fallback.png",
           })) || [];
+
+
 
         setCart(mapped);
       } catch (err) {

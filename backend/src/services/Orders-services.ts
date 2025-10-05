@@ -8,7 +8,7 @@ const allowedStatus = ["PENDING", "PREPARING", "READY_TO_SERVE", "CANCELLED", "C
  */
 export async function createOrderWithItems(
   diningSessionId: number,
- tableId: number,
+  tableId: number,
   items: { menuId: number; memberId: number; qty: number; note?: string }[]
 ) {
   // create order

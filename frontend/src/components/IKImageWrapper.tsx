@@ -21,7 +21,6 @@ const IKImageWrapper = ({
 
   const urlEndpoint = import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT;
 
-  // Validate environment variable
   if (!urlEndpoint) {
     console.error('VITE_IMAGEKIT_URL_ENDPOINT is not defined');
     return showPlaceholder ? (
@@ -34,8 +33,8 @@ const IKImageWrapper = ({
     ) : null;
   }
 
-  // Handle missing or invalid src
   if (!src || typeof src !== 'string' || src.trim() === '') {
+    console.warn('Invalid src provided:', src);
     return showPlaceholder ? (
       <PlaceholderImage 
         className={className} 
@@ -48,6 +47,7 @@ const IKImageWrapper = ({
 
   // Handle error state
   if (imageError) {
+    console.warn('Image error state for src:', src);
     return showPlaceholder ? (
       <PlaceholderImage 
         className={className} 
@@ -60,56 +60,87 @@ const IKImageWrapper = ({
 
   const defaultTransformation = (transformation || [
   {
-    width: width ? String(width) : undefined,
-    height: height ? String(height) : undefined,
-    quality: '80', 
+    width: width ? String(Number(width) * 3) : undefined,
+    height: height ? String(Number(height) * 3) : undefined,
+    quality: '90',  // ไม่ใช้ 100 กันไฟล์ใหญ่เกิน
     format: 'auto',
   },
 ]) as Transformation[];
 
+
   const handleLoad = () => {
+    console.log('Image loaded successfully:', src);
     setImageLoading(false);
     onLoad?.();
   };
 
-  const handleError = () => {
+  // เปลี่ยนตรงนี้
+  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    console.error('Image load error event:', e, 'for src:', src);
     setImageError(true);
     setImageLoading(false);
     onError?.();
   };
 
+  const cleanImageUrl = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      return `${urlObj.origin}${urlObj.pathname}`;
+    } catch (error) {
+      console.log("cannot get path:", error)
+      return url;
+    }
+  };
+
+  const isFullUrl = src.startsWith('http');
+  const cleanSrc = isFullUrl ? cleanImageUrl(src) : src;
+
   return (
-    <div className="relative inline-block">
-      {/* Loading skeleton */}
+  
+    <div className={` ${className} `}>
       {imageLoading && (
         <div
-          className={`absolute inset-0 bg-gray-300 animate-pulse ${placeholderClassName}`}
-          style={{ width, height }}
+          className={`${placeholderClassName}`}
+          style={{ width: width || '100%', height: height || '100%' }}
         />
       )}
 
-      <IKImage
-        urlEndpoint={urlEndpoint}
-        path={src}
-        className={`${className} ${imageLoading ? 'invisible' : 'visible'}`}
-        loading="lazy"
-        lqip={{ active: true, quality: lqipQuality }}
-        alt={alt}
-        width={width}
-        height={height}
-        transformation={defaultTransformation}
-        onLoad={handleLoad}
-        onError={handleError}
-      />
+      <div className={imageLoading ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}>
+        {isFullUrl ? (
+          <IKImage
+            urlEndpoint={urlEndpoint}
+            src={cleanSrc}
+            loading="lazy"
+            lqip={{ active: true, quality: lqipQuality }}
+            alt={alt || 'Menu item image'}
+            width={width}
+            height={height}
+            transformation={defaultTransformation}
+            onLoad={handleLoad}
+            onError={handleError}
+          />
+        ) : (
+          <IKImage
+            urlEndpoint={urlEndpoint}
+            path={cleanSrc}
+            loading="lazy"
+            lqip={{ active: true, quality: lqipQuality }}
+            alt={alt || 'Menu item image'}
+            width={width}
+            height={height}
+            transformation={defaultTransformation}
+            onLoad={handleLoad}
+            onError={handleError}
+          />
+        )}
+      </div>
     </div>
   );
 };
 
-// Placeholder component
 const PlaceholderImage = ({
-  className,
+  className = '',
   width,
-  height,
   alt,
 }: {
   className?: string;
@@ -122,8 +153,7 @@ const PlaceholderImage = ({
       className={`flex items-center justify-center bg-gray-200 ${className}`}
       style={{ 
         width: width || '100%', 
-        height: height || '100%',
-        minHeight: height || '200px',
+        // height: height || '100%',
       }}
       role="img"
       aria-label={alt}

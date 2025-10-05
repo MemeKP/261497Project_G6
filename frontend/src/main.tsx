@@ -12,13 +12,14 @@ import QrDisplay from "./components/QrDisplay.tsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import RegisterPage from "./routes/RegisterPage.tsx";
 import CartPage from "./routes/CartPage.tsx";
+
 import OrderStatusPage from "./routes/OrderStatusPage.tsx";
 import BillPage from "./routes/BillPage.tsx";
 import LoginPage from "./routes/LoginPage.tsx";
 import AdminDashBoard from "./routes/AdminDashBoard.tsx";
 import AdminOrderList from "./routes/AdminOrderList.tsx";
 import AdminPayment from "./routes/AdminPayment.tsx";
-
+import PaymentPage from "./routes/PaymentPage.tsx";
 const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
@@ -69,6 +70,14 @@ const router = createBrowserRouter([
         path: "/billpage/:sessionId",
         element: <BillPage />,
       },
+      {
+        path: "/payment/:billId",
+        element: <PaymentPage />,
+      },
+      {
+        path: "/payment/:billId/:memberId",
+        element: <PaymentPage />,
+      },      
       {
         path:"/admin/dashboard",
         element: <AdminDashBoard />,

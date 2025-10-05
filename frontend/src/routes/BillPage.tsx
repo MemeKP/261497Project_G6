@@ -76,10 +76,8 @@ const BillPage = () => {
           />
         </button>
         <h1 className="title1 text-2xl tracking-wider">ENSO</h1>
-        <div className="w-5 md:w-6" /> {/* Spacer ให้สมดุล */}
+        <div className="w-5 md:w-6" /> {/* Spacer */}
       </div>
-
-
 
       <h2 className="text-xl text-center mb-6">Your Bill</h2>
 
@@ -136,16 +134,18 @@ const BillPage = () => {
       </div>
 
       {/* Buttons */}
-      <div className="mt-auto flex gap-4 justify-center pt-8">
+      <div className="mt-auto flex flex-col gap-4 items-center pt-8 pb-4">
         <button
-          className="w-[150px] h-12 rounded-full text-sm font-semibold text-black 
+          onClick={() => navigate(`/payment/${bill.billId}`)} // ✅ ไปหน้า Payment
+          className="w-[280px] h-12 rounded-full text-base font-semibold text-black 
                      shadow-[0px_4px_18px_rgba(217,217,217,1.00)] 
                      bg-gradient-to-r from-white to-black hover:opacity-90 transition"
         >
           Pay Entire Bill
         </button>
         <button
-          className="w-[150px] h-12 rounded-full text-sm font-semibold text-black 
+          onClick={() => navigate(`/splitbill/${bill.billId}`)} // ✅ ไปหน้า Split Bill
+          className="w-[280px] h-12 rounded-full text-base font-semibold text-black 
                      shadow-[0px_4px_18px_rgba(217,217,217,1.00)] 
                      bg-gradient-to-r from-white to-black hover:opacity-90 transition"
         >
