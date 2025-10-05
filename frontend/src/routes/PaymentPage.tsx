@@ -9,7 +9,7 @@ interface PaymentData {
   billSplitId?: number | null;
   memberId?: number | null;
   amount: string;
-  qrCode: string; // ✅ ใช้ field นี้ตรงกับ backend
+  qrCode: string;
 }
 
 const PaymentPage = () => {
@@ -66,51 +66,55 @@ const PaymentPage = () => {
     return () => clearInterval(interval);
   }, [payment]);
 
-  if (loading) return <p className="text-white text-center mt-10">Loading...</p>;
-  if (!payment) return <p className="text-white text-center mt-10">No payment data available.</p>;
+  if (loading) return <p className="text-center text-white mt-10">Loading...</p>;
+  if (!payment) return <p className="text-center text-white mt-10">No payment data available.</p>;
 
   return (
-    <div className="w-full min-h-screen bg-[#1E1E1E] text-white flex flex-col items-center p-6">
+    <div className="w-full min-h-screen relative bg-[#1E1E1E] text-white p-6 flex flex-col">
       {/* Header */}
-      <div className="w-full flex justify-between items-center mb-4">
-        <img src={backIcon} alt="back" className="w-6 h-6 cursor-pointer" onClick={() => navigate(-1)} />
-        <h1 className="font-bold text-2xl">ENSO</h1>
-        <div className="w-6" />
+      <div className="flex justify-between items-center mb-6">
+        <button onClick={() => navigate(-1)} className="p-2 hover:opacity-80 transition">
+          <img src={backIcon} alt="Back" className="w-5 h-5 md:w-6 md:h-6 object-contain" />
+        </button>
+        <h1 className="title1 text-2xl tracking-wider">ENSO</h1>
+        <div className="w-5 md:w-6" />
       </div>
 
-      <h2 className="text-xl mb-2">Payment</h2>
-      <p className="text-gray-400 mb-6">
+      <h2 className="text-xl text-center mb-2">Payment</h2>
+      <p className="text-sm text-center text-gray-400 mb-6">
         {memberId ? `For Member #${memberId}` : "Full Bill Payment"}
       </p>
 
       {/* Payment Card */}
-      <div className="bg-white text-black p-6 rounded-xl shadow-lg w-[90%] max-w-sm text-center">
-        <img src={logo} alt="ENSO" className="w-12 h-12 mx-auto mb-2 rounded-full" />
-        <h3 className="font-bold text-lg mb-2">THAI QR PAYMENT</h3>
-
-        <img
-          src={payment.qrCode} // ✅ ใช้ฟิลด์จาก backend โดยตรง
-          alt="QR Code"
-          className="w-56 h-56 mx-auto border rounded-md"
-        />
-
-        <p className="mt-3 font-semibold text-lg">
-          Total: {Number(payment.amount).toFixed(2)} ฿
-        </p>
-
-        {confirmed ? (
-          <p className="mt-4 text-green-500 font-semibold">✅ Payment Received!</p>
-        ) : (
-          <p className="mt-4 text-gray-500 text-sm">Waiting for payment confirmation...</p>
-        )}
+      <div className="bg-white text-black rounded-2xl p-6 w-[90%] mx-auto shadow-lg text-center">
+        <div className="flex flex-col items-center">
+          <img src={logo} alt="ENSO" className="w-12 h-12 rounded-full mb-2" />
+          <h3 className="font-bold text-lg mb-3">THAI QR PAYMENT</h3>
+          <img
+            src={payment.qrCode}
+            alt="QR Code"
+            className="w-56 h-56 border rounded-md shadow-md"
+          />
+          <p className="mt-4 font-bold text-lg">Total: {Number(payment.amount).toFixed(2)} ฿</p>
+          {confirmed ? (
+            <p className="mt-4 text-green-600 font-semibold">✅ Payment Received!</p>
+          ) : (
+            <p className="mt-4 text-gray-500 text-sm">Waiting for payment confirmation...</p>
+          )}
+        </div>
       </div>
 
-      <button
-        onClick={() => navigate(-1)}
-        className="mt-10 bg-gradient-to-r from-white to-gray-300 text-black px-6 py-2 rounded-full font-semibold hover:opacity-80 transition"
-      >
-        Back to Bill
-      </button>
+      {/* Buttons */}
+      <div className="mt-auto flex flex-col gap-4 items-center pt-8 pb-4">
+        <button
+          onClick={() => navigate(`/billpage/${billId}`)}
+          className="w-[280px] h-12 rounded-full text-base font-semibold text-black 
+                     shadow-[0px_4px_18px_rgba(217,217,217,1.00)] 
+                     bg-gradient-to-r from-white to-black hover:opacity-90 transition"
+        >
+          Back to Bill
+        </button>
+      </div>
     </div>
   );
 };

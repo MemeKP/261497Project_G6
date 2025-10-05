@@ -10,6 +10,7 @@ interface OrderItem {
 }
 
 interface BillData {
+  id?: number; 
   billId: number;
   orderId: number;
   subtotal: number;
@@ -136,7 +137,7 @@ const BillPage = () => {
       {/* Buttons */}
       <div className="mt-auto flex flex-col gap-4 items-center pt-8 pb-4">
         <button
-          onClick={() => navigate(`/payment/${bill.billId}`)} // ✅ ไปหน้า Payment
+          onClick={() => navigate(`/payment/${bill.id}`)} // ✅ ไปหน้า Payment
           className="w-[280px] h-12 rounded-full text-base font-semibold text-black 
                      shadow-[0px_4px_18px_rgba(217,217,217,1.00)] 
                      bg-gradient-to-r from-white to-black hover:opacity-90 transition"
@@ -144,7 +145,7 @@ const BillPage = () => {
           Pay Entire Bill
         </button>
         <button
-          onClick={() => navigate(`/splitbill/${bill.billId}`)} // ✅ ไปหน้า Split Bill
+          onClick={() => navigate(`/splitbill/${bill.id}`)} // ✅ ไปหน้า Split Bill
           className="w-[280px] h-12 rounded-full text-base font-semibold text-black 
                      shadow-[0px_4px_18px_rgba(217,217,217,1.00)] 
                      bg-gradient-to-r from-white to-black hover:opacity-90 transition"
