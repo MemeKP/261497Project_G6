@@ -1,9 +1,22 @@
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import bg1 from "../assets/imgs/bg-1.png";
 import PageAnimation from "../common/PageAnimetion";
 import ButtonAnimation from "../common/ButtonAnimetion";
+import { useEffect } from "react";
+import axios from "axios";
 
 const LandingPage = () => {
+   const { sessionId } = useParams<{ sessionId: string }>();
+
+  useEffect(() => {
+    if (sessionId) {
+      axios.get(`/api/dining_session/${sessionId}`)
+        .then(res => {
+          console.log("Session data:", res.data);
+        })
+        .catch(err => console.error(err));
+    }
+  }, [sessionId]);
   return (
     <>
       <div className="w-full h-screen relative bg-black overflow-hidden ">
@@ -33,14 +46,14 @@ const LandingPage = () => {
             </p>
           </PageAnimation>
           <PageAnimation index={2}>
-            <Link to="/homepage">
+            <Link to={`/homepage/${sessionId}`}>
               <ButtonAnimation className="flex flex-col items-center mt-25 w-60 bg-white rounded-full p-2 text-2xl font-medium shadow-[0px_4px_18px_0px_rgba(217,217,217,1.00)] border-3 font-[Gantari]">
                 For One
               </ButtonAnimation>
             </Link>
           </PageAnimation>
           <PageAnimation index={3}>
-            <Link to="/addmember">
+            <Link to={`/addmember/${sessionId}`}>
               <ButtonAnimation className="flex flex-col mt-10 w-60 items-center bg-white rounded-full p-2 text-2xl font-medium shadow-[0px_4px_18px_0px_rgba(217,217,217,1.00)] border-3 font-[Gantari]">
                 Shared Table
               </ButtonAnimation>

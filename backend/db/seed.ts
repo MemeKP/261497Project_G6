@@ -13,236 +13,156 @@ import {
 } from "@db/schema.js";
 import bcrypt from "bcrypt";
 
-// 1. Insert Admin
-async function insertAdmin() {
-  try {
-    const plainPassword = "1234";
-    const passwordHash = await bcrypt.hash(plainPassword, 10);
+// 🧹 Clear all data before seeding
+async function clearDatabase() {
+  await dbClient.delete(orderItems);
+  await dbClient.delete(orders);
+  await dbClient.delete(menuItems);
+  await dbClient.delete(members);
+  await dbClient.delete(diningSessions);
+  await dbClient.delete(tables);
+  await dbClient.delete(groups);
+  await dbClient.delete(admins);
 
-    const [admin] = await dbClient
-      .insert(admins)
-      .values({
-        username: "admin2",
-        name: "Admin 2",
-        phone: "9999999999",
-        address: "123 Admin Street",
-        email: "admin2@example.com",
-        password: passwordHash,
-      })
-      .returning({
-        id: admins.id,
-        username: admins.username,
-        name: admins.name,
-        phone: admins.phone,
-        address: admins.address,
-        email: admins.email,
-        createdAt: admins.createdAt,
-        updatedAt: admins.updatedAt,
-      });
-
-    console.log("Inserted admin:", admin);
-  } catch (err) {
-    console.error("Failed to insert admin:", err);
-  }
+  console.log("✅ Database cleared!");
 }
 
-// 2. Insert Table
-async function insertTable() {
-  const [table] = await dbClient
+// 1. Insert Admin
+async function insertAdmins() {
+  const plainPassword = "1234";
+  const passwordHash = await bcrypt.hash(plainPassword, 10);
+
+  const inserted = await dbClient
+    .insert(admins)
+    .values([
+      {
+        username: "admin1",
+        name: "Admin 1",
+        phone: "0811111111",
+        address: "Headquarters",
+        email: "admin1@example.com",
+        password: passwordHash,
+      },
+      {
+        username: "admin2",
+        name: "Admin 2",
+        phone: "0999999999",
+        address: "Branch Office",
+        email: "admin2@example.com",
+        password: passwordHash,
+      },
+    ])
+    .returning();
+
+  console.log("Inserted admins:", inserted);
+}
+
+// 2. Insert Tables
+async function insertTables() {
+  const inserted = await dbClient
     .insert(tables)
+    .values([
+      { number: 1, status: "OCCUPIED" },
+      { number: 2, status: "AVAILABLE" },
+    ])
+    .returning();
+
+  console.log("Inserted tables:", inserted);
+}
+
+// 3. Insert Dining Session with QR
+async function insertDiningSessions() {
+  const adminList = await dbClient.query.admins.findMany();
+  const tableList = await dbClient.query.tables.findMany();
+
+  if (adminList.length === 0 || tableList.length === 0) return;
+
+  const [session] = await dbClient
+    .insert(diningSessions)
     .values({
-      number: 1,
-      status: "OCCUPIED",
+      tableId: tableList[0].id,
+      openedByAdminId: adminList[0].id,
+      qrCode: "",
+      status: "ACTIVE",
     })
     .returning();
 
-  console.log("Inserted table:", table);
-  dbConn.end();
+  const url = process.env.VITE_FRONTEND_URL || "http://localhost:5173";
+  const qrCodeDataUrl = await QRCode.toDataURL(`${url}/tables/${session.id}`);
+
+  await dbClient
+    .update(diningSessions)
+    .set({ qrCode: qrCodeDataUrl })
+    .where(eq(diningSessions.id, session.id));
+
+  console.log("Inserted dining session:", session.id);
 }
-
-async function insertDiningSessionWithQR() {
-  try {
-    // ดึง admin และ table ที่มีอยู่
-    const adminList = await dbClient.query.admins.findMany();
-    const tableList = await dbClient.query.tables.findMany();
-
-    if (adminList.length === 0 || tableList.length === 0) {
-      console.log("Need admin and table first!");
-      dbConn.end();
-      return;
-    }
-
-    // สร้าง dining session
-    const [session] = await dbClient
-      .insert(diningSessions)
-      .values({
-        tableId: tableList[0].id,
-        openedByAdminId: adminList[0].id,
-        qrCode: "", // สร้างทีหลัง
-        status: "ACTIVE",
-      })
-      .returning();
-
-    if (!session) throw new Error("Failed to insert dining session");
-
-    // สร้าง QR Code เป็น URL ชี้ไปยังหน้า frontend ของโต๊ะ/กลุ่ม
-    const url =  process.env.VITE_FRONTEND_URL || 'http://localhost:5173'; // ปรับ portตาม frontend
-    const qrCodeDataUrl = await QRCode.toDataURL(url);
-
-    // อัปเดต dining session ด้วย QR Code
-    await dbClient
-      .update(diningSessions)
-      .set({ qrCode: qrCodeDataUrl })
-      .where(eq(diningSessions.id, session.id));
-    console.log("Inserted dining session with QR Code:", session.id);
-  } catch (err) {
-    console.error("Failed to insert dining session:", err);
-  } finally {
-    dbConn.end();
-  }
-}
-
-async function updateQRForDiningSession(sessionId: number) {
-  try {
-    const existingSession = await dbClient.query.diningSessions.findFirst({
-      where: eq(diningSessions.id, sessionId),
-    });
-
-    if (!existingSession) {
-      console.warn(`Dining session with ID ${sessionId} not found. Cannot update QR code.`);
-      dbConn.end();
-      return;
-    }
-
-    const url = process.env.VITE_FRONTEND_URL || 'http://localhost:5173';
-
-    const sessionUrl = `${url}/tables/${sessionId}`;
-    const newQrCodeDataUrl = await QRCode.toDataURL(sessionUrl);
-    
-    await dbClient
-      .update(diningSessions)
-      .set({ qrCode: newQrCodeDataUrl })
-      .where(eq(diningSessions.id, sessionId));
-
-    console.log(`Successfully updated QR Code for dining session ID: ${sessionId}`);
-  } catch (err) {
-    console.error(`Failed to update QR Code for session ${sessionId}:`, err);
-  } finally {
-    dbConn.end();
-  }
-}
-
-// 3. Insert Dining Session
-// async function insertDiningSession() {
-//   const adminList = await dbClient.query.admins.findMany();
-//   const tableList = await dbClient.query.tables.findMany();
-
-//   if (adminList.length === 0 || tableList.length === 0) {
-//     console.log("Need admin and table first!");
-//     dbConn.end();
-//     return;
-//   }
-
-//   const [session] = await dbClient
-//     .insert(diningSessions)
-//     .values({
-//       tableId: tableList[0].id,
-//       openedByAdminId: adminList[0].id,
-//       qrCode: "http://example.com/qr/1",
-//       status: "ACTIVE",
-//     })
-//     .returning();
-
-//   console.log("Inserted dining session:", session);
-//   dbConn.end();
-// }
 
 // 4. Insert Members
 async function insertMembers() {
   const sessions = await dbClient.query.diningSessions.findMany();
+  if (sessions.length === 0) return;
 
-  if (sessions.length === 0) {
-    console.log("Need dining session first!");
-    dbConn.end();
-    return;
-  }
-
-  const [member1] = await dbClient
+  const inserted = await dbClient
     .insert(members)
-    .values({
-      diningSessionId: sessions[0].id,
-      name: "Alice",
-      isTableAdmin: true,
-    })
+    .values([
+      { diningSessionId: sessions[0].id, name: "Alice", isTableAdmin: true },
+      { diningSessionId: sessions[0].id, name: "Bob", isTableAdmin: false },
+      { diningSessionId: sessions[0].id, name: "Charlie", isTableAdmin: false },
+    ])
     .returning();
 
-  const [member2] = await dbClient
-    .insert(members)
-    .values({
-      diningSessionId: sessions[0].id,
-      name: "Bob",
-      isTableAdmin: false,
-    })
-    .returning();
-
-  console.log("Inserted members:", [member1, member2]);
-  dbConn.end();
+  console.log("Inserted members:", inserted);
 }
 
 // 5. Insert Menu Items
 async function insertMenuItems() {
-  const [menu1] = await dbClient
+  const inserted = await dbClient
     .insert(menuItems)
-    .values({
-      name: "Ebi Fry Katsu Curry Rice",
-      description:
-        "Rich and flavorful Japanese Curry served over soft, fluffy Japanese rice. Topped with large Ebi Fry.",
-      price: 289.0,
-      isSignature: false,
-      category: "rice",
-      imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/menu1.png?updatedAt=1759220941089',
-    })
+    .values([
+      {
+        name: "Katsu Curry",
+        description: "Japanese curry with breaded pork cutlet",
+        price: 149.0,
+        category: "rice",
+        imageUrl: "https://ik.imagekit.io/496kiwiBird/261497project/menu6.png",
+      },
+      {
+        name: "Beef Ramen",
+        description: "Ramen noodles with beef and broth",
+        price: 159.0,
+        category: "noodle",
+        imageUrl: "https://ik.imagekit.io/496kiwiBird/261497project/menu1.png",
+      },
+      {
+        name: "Green Tea",
+        description: "Refreshing Japanese green tea",
+        price: 39.0,
+        category: "drink",
+        imageUrl: "https://ik.imagekit.io/496kiwiBird/261497project/menu2.png",
+      },
+    ])
     .returning();
 
-  const [menu2] = await dbClient
-    .insert(menuItems)
-    .values({
-      name: "Enso's Secret Beef Ramen",
-      description:
-        "A luxurious bowl featuring marinated beef, soft-boiled egg, and rich broth.",
-      price: 159.0,
-      isSignature: true,
-      category:"noodle",
-      imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/signature.png?updatedAt=1759220936892'
-  
-    })
-    .returning();
-
-  console.log("Inserted menu items:", [menu1, menu2]);
-  dbConn.end();
+  console.log("Inserted menu items:", inserted);
 }
 
 // 6. Insert Order
 async function insertOrder() {
   const sessions = await dbClient.query.diningSessions.findMany();
-
-  if (sessions.length === 0) {
-    console.log("Need dining session first!");
-    dbConn.end();
-    return;
-  }
+  if (sessions.length === 0) return;
 
   const [order] = await dbClient
-    .insert(orders)
-    .values({
-      table_id: 1,
-      dining_session_id: sessions[0].id,
-      status: "PENDING",
-    })
-    .returning();
+  .insert(orders)
+  .values({
+    tableId: 1,
+    diningSessionId: sessions[0].id, // ✅ ใช้ camelCase
+    status: "PENDING",
+  })
+  .returning();
+
 
   console.log("Inserted order:", order);
-  dbConn.end();
 }
 
 // 7. Insert Order Items
@@ -251,157 +171,54 @@ async function insertOrderItems() {
   const menuList = await dbClient.query.menuItems.findMany();
   const memberList = await dbClient.query.members.findMany();
 
-  if (orderList.length === 0 || menuList.length < 2 || memberList.length < 2) {
-    console.log("Need orders, menu items, and members first!");
-    dbConn.end();
+  if (orderList.length === 0 || menuList.length === 0 || memberList.length === 0)
     return;
-  }
 
-  await dbClient.insert(orderItems).values([
-    {
-      orderId: orderList[0].id,
-      menuItemId: menuList[0].id,
-      memberId: memberList[0].id,
-      quantity: 2,
-      note: "Extra spicy",
-    },
-    {
-      orderId: orderList[0].id,
-      menuItemId: menuList[1].id,
-      memberId: memberList[1].id,
-      quantity: 1,
-    },
-  ]);
+await dbClient.insert(orderItems).values([
+  {
+    orderId: orderList[0].id,
+    menuItemId: menuList[0].id,
+    memberId: memberList[0].id,
+    quantity: 2,
+    note: "Extra spicy",
+  },
+  {
+    orderId: orderList[0].id,
+    menuItemId: menuList[1].id,
+    memberId: memberList[1].id,
+    quantity: 1,
+    note: "No onion",
+  },
+  {
+    orderId: orderList[0].id,
+    menuItemId: menuList[2].id,
+    memberId: memberList[2].id,
+    quantity: 3,
+    note: "Less sugar",
+  },
+]);
 
   console.log("Inserted order items!");
-  dbConn.end();
 }
 
-export const insertGroup = async () => {
-  try {
-    const existingSessions = await dbClient.query.diningSessions.findMany({
-      where: eq(diningSessions.tableId, 1),
-      orderBy: (diningSessions, { desc }) => [desc(diningSessions.id)],
-      limit: 1,
-    });
-
-    let sessionId: number;
-    let tableId: number;
-    let qrCode: string;
-
-    if (existingSessions.length > 0) {
-      // ใช้ session ที่มีอยู่
-      console.log("Using existing dining session:", existingSessions[0]);
-      sessionId = existingSessions[0].id;
-      tableId = existingSessions[0].tableId;
-      qrCode = existingSessions[0].qrCode;
-    } else {
-      // สร้าง session ใหม่พร้อม QR Code
-      const url = `http://localhost:5173/tables/1`;
-      const qrCodeDataUrl = await QRCode.toDataURL(url);
-
-      const newSession = await dbClient
-        .insert(diningSessions)
-        .values({
-          tableId: 1,
-          openedByAdminId: 3,
-          status: "ACTIVE",
-          startedAt: new Date(),
-          createdAt: new Date(),
-          qrCode: qrCodeDataUrl,
-        })
-        .returning({
-          id: diningSessions.id,
-          tableId: diningSessions.tableId,
-          qrCode: diningSessions.qrCode,
-        });
-
-      sessionId = newSession[0].id;
-      tableId = newSession[0].tableId;
-      qrCode = newSession[0].qrCode;
-
-      console.log("Dining session created:", newSession[0]);
-    }
-
-    // สร้าง group สำหรับ session/โต๊ะนั้น
-    const newGroup = await dbClient
-      .insert(groups)
-      .values({
-        table_id: tableId,
-        creator_user_id: 3,
-        created_at: new Date(),
-      })
-      .returning({
-        id: groups.id,
-        table_id: groups.table_id,
-        creator_user_id: groups.creator_user_id,
-      });
-
-    console.log("Group created:", newGroup[0]);
-    console.log("Seeding completed successfully!");
-  } catch (err) {
-    console.error("Seeding failed:", err);
-  }
-};
-
-// Query functions
-async function queryAdmins() {
-  const results = await dbClient.query.admins.findMany();
-  console.log("Admins:", results);
-  dbConn.end();
+// Main runner
+async function main() {
+  await clearDatabase();
+  await insertAdmins();
+  await insertTables();
+  await insertDiningSessions();
+  await insertMembers();
+  await insertMenuItems();
+  await insertOrder();
+  await insertOrderItems();
 }
 
-async function queryTables() {
-  const results = await dbClient.query.tables.findMany();
-  console.log("Tables:", results);
-  dbConn.end();
-}
-
-async function queryDiningSessions() {
-  const results = await dbClient.query.diningSessions.findMany();
-  console.log("Dining Sessions:", results);
-  dbConn.end();
-}
-
-async function queryMembers() {
-  const results = await dbClient.query.members.findMany();
-  console.log("Members:", results);
-  dbConn.end();
-}
-
-async function queryMenuItems() {
-  const results = await dbClient.query.menuItems.findMany();
-  console.log("Menu Items:", results);
-  dbConn.end();
-}
-
-async function queryOrders() {
-  const results = await dbClient.query.orders.findMany();
-  console.log("Orders:", results);
-  dbConn.end();
-}
-
-async function queryOrderItems() {
-  const results = await dbClient.query.orderItems.findMany();
-  console.log("Order Items:", results);
-  dbConn.end();
-}
-
-// insertAdmin();
-// insertTable();
-// insertGroup()
-// updateQRForDiningSession(1)
-// insertDiningSession();
-// insertDiningSessionWithQR();
-// insertMembers();
-insertMenuItems();
-// insertOrder();
-// insertOrderItems();
-
-// queryAdmins();
-// queryTables();
-// queryDiningSessions();
-// queryMembers();
-// queryMenuItems();
-// queryOrders();
-// queryOrderItems();
+main()
+  .then(() => {
+    console.log("✅ Seed completed successfully!");
+    dbConn.end();
+  })
+  .catch((err) => {
+    console.error("❌ Seed failed:", err);
+    dbConn.end();
+  });

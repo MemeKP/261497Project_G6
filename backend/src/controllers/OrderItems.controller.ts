@@ -33,6 +33,23 @@ export async function createOrderItem(req: Request, res: Response) {
   }
 }
 
+export async function getOrderItems(req: Request, res: Response) {
+  try {
+    const { orderId } = req.params;
+    const numericOrderId = Number(orderId);
+
+    if (isNaN(numericOrderId)) {
+      return res.status(400).json({ error: "Invalid orderId" });
+    }
+
+    const items = await orderItemService.getOrderItemsByOrderId(numericOrderId);
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+
 export async function updateOrderItem(req: Request, res: Response) {
   try {
     const { id } = req.params;
@@ -47,6 +64,46 @@ export async function updateOrderItem(req: Request, res: Response) {
     }
 
     const updated = await orderItemService.updateOrderItem(itemId, quantity, note);
+    if (!updated) return res.status(404).json({ error: "Order item not found" });
+
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * ใช้สำหรับหน้า Order Status
+ */
+export async function getOrderItemsBySession(req: Request, res: Response) {
+  try {
+    const { sessionId } = req.params;
+    const numericSessionId = Number(sessionId);
+    if (isNaN(numericSessionId)) {
+      return res.status(400).json({ error: "Invalid sessionId" });
+    }
+
+    const items = await orderItemService.getOrderItemsBySession(numericSessionId);
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ *  อัพเดทสถานะของ order item
+ */
+export async function updateOrderItemStatus(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const itemId = Number(id);
+    if (isNaN(itemId)) {
+      return res.status(400).json({ error: "Invalid item id" });
+    }
+
+    const updated = await orderItemService.updateStatus(itemId, status);
     if (!updated) return res.status(404).json({ error: "Order item not found" });
 
     res.json(updated);
@@ -72,3 +129,4 @@ export async function deleteOrderItem(req: Request, res: Response) {
     res.status(500).json({ error: err.message });
   }
 }
+

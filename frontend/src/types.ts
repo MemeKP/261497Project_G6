@@ -1,7 +1,7 @@
 export interface Member {
   id: string;
   name: string;
-  groupId?: string;          
+  groupId?: string;         
   diningSessionId?: string; //session?
 }
 

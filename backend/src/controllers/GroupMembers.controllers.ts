@@ -1,6 +1,4 @@
 import { type Request, type Response, type NextFunction } from "express";
-import QRCode from "qrcode";
-import express from "express";
 import "dotenv/config";
 import { eq, and, isNotNull } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
@@ -12,7 +10,8 @@ import {
   group_members,
   menuItems as menu_items,
   orders,
-  order_items,
+  orderItems,
+  diningSessions,
 } from "@db/schema.js";
 
 export const addMembers = async (
@@ -21,30 +20,33 @@ export const addMembers = async (
   next: NextFunction
 ) => {
   try {
-    const { name, groupId, userId, note } = req.body;
-
-    if (!name || !groupId) {
+    const { name, groupId, userId, note, diningSessionId } = req.body;
+    if (!name || !groupId || !diningSessionId) {
       return res.status(400).json({
-        error: "Name and Group ID are required",
+        error: "Name, Group ID and Dining Session ID are required",
       });
     }
-
-    const group = await dbClient.query.groups?.findFirst({
+    const group = await dbClient.query.groups.findFirst({
       where: eq(groups.id, groupId),
     });
-
     if (!group) {
-      return res.status(400).json({
-        error: "Group not found",
-      });
+      return res.status(400).json({ error: "Group not found" });
     }
-
+    const session = await dbClient.query.diningSessions.findFirst({
+      where: eq(diningSessions.tableId, group.table_id),
+    });
+    if (!session) {
+      return res
+        .status(400)
+        .json({ error: "Dining session not found for this group" });
+    }
     const newMember = await dbClient
       .insert(group_members)
       .values({
         name,
         group_id: groupId,
         user_id: userId || null,
+        diningSessionId: session.id,
         note: note || null,
       })
       .returning({
@@ -53,16 +55,16 @@ export const addMembers = async (
         group_id: group_members.group_id,
         user_id: group_members.user_id,
         note: group_members.note,
+        diningSessionId: group_members.diningSessionId,
       });
 
     res.status(201).json({
       message: "Member added successfully",
       member: {
-        id: newMember[0].id,
-        name: newMember[0].name,
-        groupId: newMember[0].group_id,
-        userId: newMember[0].user_id,
-        note: newMember[0].note,
+        name,
+        groupId,
+        userId,
+        note,
       },
     });
   } catch (err) {
@@ -139,7 +141,6 @@ export const deleteMember = async (
     next(err);
   }
 };
-
 
 export const getGroupMembers = async (
   req: Request,

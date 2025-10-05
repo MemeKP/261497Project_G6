@@ -1,20 +1,25 @@
 import { Router } from "express";
 import * as ordersController from "src/controllers/Orders.controller.js";
-import { requireAdmin } from "src/middleware/Requireadmin.js";
 
 const router = Router();
 
+// Create order (checkout พร้อม items)
 router.post("/", ordersController.createOrder);                     // POST /orders
-router.get("/", ordersController.getAllOrders);                     // GET /orders
-router.get("/:id", ordersController.getOrderById);                  // GET /orders/:id
-router.get("/session/:sessionId", ordersController.getOrders);      // GET /orders/session/:sessionId
-router.patch("/:id/status", ordersController.updateOrderStatus);    // PATCH /orders/:id/status
-router.delete("/:id", ordersController.deleteOrder);                // DELETE /orders/:id
 
-// Admin part
-router.get('/', requireAdmin, ordersController.getOrderAdmin)
-router.get('/:orderId', requireAdmin, ordersController.getOrderByIdAdmin)
-router.put('/:orderId/status', requireAdmin, ordersController.updateOrderStatusByAdmin)
+// Get all orders (admin/debug)
+router.get("/", ordersController.getAllOrders);                     // GET /orders
+
+// Get orders by session → ต้องมาก่อน /:id
+router.get("/session/:sessionId", ordersController.getOrders);      // GET /orders/session/:sessionId
+
+// Get single order by id
+router.get("/:id", ordersController.getOrderById);                  // GET /orders/:id
+
+// Update order status
+router.patch("/:id/status", ordersController.updateOrderStatus);    // PATCH /orders/:id/status
+
+// Delete order
+router.delete("/:id", ordersController.deleteOrder);                // DELETE /orders/:id
 
 export default router;
 

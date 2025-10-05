@@ -1,101 +1,85 @@
-import axios from "axios";
-// import { db } from "src/db/client2.js";
+import generatePayload from "promptpay-qr";
 import { dbClient as db } from "@db/client.js";
 import { payments, billSplits, bills } from "db/schema.js";
 import { eq, and } from "drizzle-orm";
+import QRCode from "qrcode";
 
-const SCB_BASE_URL = "https://api-sandbox.partners.scb/partners/sandbox/v3";
-const CLIENT_ID = process.env.SCB_CLIENT_ID!;
-const CLIENT_SECRET = process.env.SCB_CLIENT_SECRET!;
-const BIZ_ID = process.env.SCB_BIZ_ID!; // merchant id
 
-// Step 1: Get access token
-async function getAccessToken() {
-  const res = await axios.post(
-    `${SCB_BASE_URL}/oauth/token`,
-    {
-      applicationKey: CLIENT_ID,
-      applicationSecret: CLIENT_SECRET,
-    },
-    { headers: { "Content-Type": "application/json" } }
-  );
-
-  return res.data.data.accessToken;
+/** ใช้ยอดที่คำนวณและบันทึกไว้แล้วในตาราง bills */
+async function calculateBillTotal(billId: number): Promise<number> {
+  const [bill] = await db.select().from(bills).where(eq(bills.id, billId));
+  if (!bill) throw new Error("Bill not found");
+  return Number(bill.total); // รวม service แล้ว ตาม flow generateBill
 }
 
-// Step 2: Generate QR code + save payment record
+/** ใช้ยอดที่คำนวณและบันทึกไว้แล้วในตาราง bill_splits */
+async function calculateSplitTotal(billSplitId: number): Promise<number> {
+  const [split] = await db.select().from(billSplits).where(eq(billSplits.id, billSplitId));
+  if (!split) throw new Error("Bill split not found");
+  return Number(split.amount); // เป็นยอดสุทธิของ member นั้นแล้ว
+}
+
+/** สร้าง PromptPay QR จาก bill ทั้งบิลหรือจากบิลสปลิต */
 export async function createQrPayment({
   billId,
-  billSplitId,
   memberId,
-  amount,
-  method,
 }: {
   billId: number;
-  billSplitId?: number;
   memberId?: number;
-  amount: number;
-  method: string;
 }) {
-  try {
-    const accessToken = await getAccessToken();
+  const promptPayId = process.env.PROMPTPAY_ID!;
+  if (!promptPayId) throw new Error("PROMPTPAY_ID not configured in .env");
 
-    const transactionId = `BILL-${billId}-${Date.now()}`;
-    const payload = {
-      qrType: "PP",
-      ppType: "BILLERID",
-      ppId: BIZ_ID,
-      amount: amount.toFixed(2),
-      // ✅ SCB sandbox ต้องการ ref1 เป็นตัวเลข 20 หลัก
-      ref1: billId.toString().padStart(20, "0"),
-      ref2: "RESTAURANT",
-      ref3: "NLP", // ตาม Reference 3 Prefix ใน SCB Portal
-    };
+  let amount: number;
+  let billSplitId: number | undefined;
 
-   const res = await axios.post(
-  `${SCB_BASE_URL}/payment/qrcode/create`,
-  payload,
-  {
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${accessToken}`,
-      "resourceOwnerId": CLIENT_ID,
-      "requestUId": transactionId,
-    },
+  if (memberId) {
+    //  หา split ตาม billId + memberId
+    const [split] = await db
+      .select()
+      .from(billSplits)
+      .where(and(eq(billSplits.billId, billId), eq(billSplits.memberId, memberId)));
+
+    if (!split) throw new Error("Bill split not found for this member");
+    amount = Number(split.amount);
+    billSplitId = split.id;
+  } else {
+    //  จ่ายเต็มโต๊ะ
+    const [bill] = await db.select().from(bills).where(eq(bills.id, billId));
+    if (!bill) throw new Error("Bill not found");
+    amount = Number(bill.total);
   }
-);
 
-    const qrRawData = res.data.data.qrRawData;
+  //  สร้าง PromptPay QR
+  const payload = generatePayload(promptPayId, { amount });
+  const qrCode = await QRCode.toDataURL(payload);
 
-    const [payment] = await db
-      .insert(payments)
-      .values({
-        billId,
-        billSplitId,
-        memberId,
-        amount,
-        method,
-        status: "PENDING",
-      })
-      .returning();
+  const [payment] = await db
+    .insert(payments)
+    .values({
+      billId,
+      billSplitId,
+      memberId,
+      amount,
+      method: "QR",
+      status: "PENDING",
+    })
+    .returning();
 
-    return {
-      paymentId: payment.id,
-      billId: payment.billId,
-      billSplitId: payment.billSplitId,
-      memberId: payment.memberId,
-      amount: payment.amount,
-      qrCode: qrRawData,
-      status: payment.status,
-    };
-  } catch (err: any) {
-    const errorMsg = err.response?.data || err.message;
-    console.error("createQrPayment error:", errorMsg);
-    throw new Error(JSON.stringify(errorMsg));
-  }
+  return {
+    paymentId: payment.id,
+    billId: payment.billId,
+    billSplitId: payment.billSplitId,
+    memberId: payment.memberId,
+    amount: payment.amount,
+    qrCode,
+    payload,
+    status: payment.status,
+  };
 }
 
-// Step 3: Manual confirm (admin confirm)
+
+/** กดยืนยันว่าจ่ายแล้ว (manual/admin หรือ mock callback) */
 export async function confirmPayment(paymentId: number) {
   const [updated] = await db
     .update(payments)
@@ -105,7 +89,7 @@ export async function confirmPayment(paymentId: number) {
 
   if (!updated) return null;
 
-  // ถ้าเป็น split → update billSplits.paid = true
+  // ถ้าเป็นการจ่ายแบบแยก ให้ติ๊ก paid ใน bill_splits ด้วย
   if (updated.billSplitId && updated.memberId) {
     await db
       .update(billSplits)
@@ -113,18 +97,16 @@ export async function confirmPayment(paymentId: number) {
       .where(
         and(
           eq(billSplits.id, updated.billSplitId),
-          eq(billSplits.memberId, updated.memberId)
-        )
+          eq(billSplits.memberId, updated.memberId),
+        ),
       );
   }
 
-  // check ว่าทุก split จ่ายครบหรือยัง → mark bill เป็น PAID
+  // ถ้าทุก split ของบิลนี้จ่ายครบแล้ว → ปิดบิลเป็น PAID
   const remaining = await db
     .select()
     .from(billSplits)
-    .where(
-      and(eq(billSplits.billId, updated.billId), eq(billSplits.paid, false))
-    );
+    .where(and(eq(billSplits.billId, updated.billId), eq(billSplits.paid, false)));
 
   if (remaining.length === 0) {
     await db.update(bills).set({ status: "PAID" }).where(eq(bills.id, updated.billId));
@@ -133,21 +115,7 @@ export async function confirmPayment(paymentId: number) {
   return updated;
 }
 
-// Step 4: Confirm by SCB callback (ใช้ ref1)
-export async function markAsPaidByRef1(ref1: string) {
-  // ref1 = billId ที่ถูก padStart(20, "0")
-  const billId = parseInt(ref1, 10);
-
-  const [updated] = await db
-    .update(payments)
-    .set({ status: "PAID", paidAt: new Date() })
-    .where(eq(payments.billId, billId))
-    .returning();
-
-  if (updated) {
-    await db.update(bills).set({ status: "PAID" }).where(eq(bills.id, billId));
-  }
-
-  return updated;
+/** mock callback: ใช้ตอนทดสอบแทน callback จริงจากธนาคาร */
+export async function mockCallback(paymentId: number) {
+  return confirmPayment(paymentId);
 }
-

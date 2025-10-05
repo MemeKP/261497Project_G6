@@ -59,7 +59,7 @@ const LoginPage = () => {
           {/* Username or Email */}
           <div className="flex flex-col gap-1 w-full">
             <label className="text-xs text-white font-[Gantari]">
-              username or email
+              email
             </label>
             <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12 w-full">
               <FaUser className="text-gray-400" />

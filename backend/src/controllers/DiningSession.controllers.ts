@@ -12,7 +12,7 @@ import {
   group_members,
   menuItems,
   orders,
-  order_items,
+  orderItems,
 } from "@db/schema.js";
 
 export const startSession = async (
