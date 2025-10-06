@@ -50,6 +50,7 @@ export const diningSessions = pgTable("dining_sessions", {
   startedAt: timestamp("started_at").defaultNow(),
   endedAt: timestamp("ended_at"),
   status: varchar("status", { length: 20 }).default("ACTIVE"), // ACTIVE, CLOSED
+  total: decimal("total", { precision: 10, scale: 2 }).$type<number>().default(0), 
   createdAt: timestamp("created_at").defaultNow(),
 });
 
