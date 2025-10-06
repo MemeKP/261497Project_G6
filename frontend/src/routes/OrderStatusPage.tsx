@@ -111,9 +111,11 @@ const OrderStatusPage = () => {
           <div className="mt-2 text-sm">
             {preparing.length > 0 ? (
               preparing.map((item) => (
-                <p key={item.id}>
-                  {item.menuName} x {item.quantity}
-                </p>
+                <div key={item.id} className="flex justify-between px-1">
+                  <span>{item.menuName}</span>
+                  <span className="text-gray-700 font-medium">x {item.quantity}</span>
+                </div>
+
               ))
             ) : (
               <p className="text-gray-500">No items preparing.</p>
@@ -141,9 +143,11 @@ const OrderStatusPage = () => {
           <div className="mt-2 text-sm">
             {ready.length > 0 ? (
               ready.map((item) => (
-                <p key={item.id}>
-                  {item.menuName} x {item.quantity}
-                </p>
+                <div key={item.id} className="flex justify-between px-1">
+                  <span>{item.menuName}</span>
+                  <span className="text-gray-700 font-medium">x {item.quantity}</span>
+                </div>
+
               ))
             ) : (
               <p className="text-gray-500">No ready items.</p>
@@ -169,9 +173,11 @@ const OrderStatusPage = () => {
           <div className="mt-2 text-sm">
             {completed.length > 0 ? (
               completed.map((item) => (
-                <p key={item.id}>
-                  {item.menuName} x {item.quantity}
-                </p>
+                <div key={item.id} className="flex justify-between px-1">
+                  <span>{item.menuName}</span>
+                  <span className="text-gray-700 font-medium">x {item.quantity}</span>
+                </div>
+
               ))
             ) : (
               <p className="text-gray-500">No completed items.</p>

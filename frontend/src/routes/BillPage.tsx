@@ -137,28 +137,7 @@ const BillPage = () => {
       {/* Buttons */}
       <div className="mt-auto flex flex-col gap-4 items-center pt-8 pb-4">
         <button
-          onClick={async () => {
-            try {
-              // ✅ เรียก backend เพื่อสร้าง payment QR
-              const res = await fetch(`/api/payments`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ billId: bill.id }), // ส่ง billId ตามที่ backend ต้องการ
-              });
-
-              const data = await res.json();
-              if (!res.ok) throw new Error(data.error || "Failed to create payment");
-
-              console.log("✅ Payment created:", data);
-
-              // ✅ ไปหน้า PaymentPage พร้อม billId และ QR ที่สร้าง
-              navigate(`/payment/${bill.id}`);
-            } catch (err) {
-              console.error("Error creating payment:", err);
-              alert("Failed to create payment. Please try again.");
-            }
-          }}
+          onClick={() => navigate(`/payment/${bill.id}`)}
           className="w-[280px] h-12 rounded-full text-base font-semibold text-black 
                     shadow-[0px_4px_18px_rgba(217,217,217,1.00)] 
                     bg-gradient-to-r from-white to-black hover:opacity-90 transition"

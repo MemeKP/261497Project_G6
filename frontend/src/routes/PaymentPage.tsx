@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import backIcon from "../assets/imgs/back.png";
 import logo from "../assets/imgs/logo.png";
@@ -19,11 +19,13 @@ const PaymentPage = () => {
   const [payment, setPayment] = useState<PaymentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmed, setConfirmed] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+
+  // 🧠 ป้องกันยิง POST ซ้ำ
+  const hasCreated = useRef(false);
 
   useEffect(() => {
-    if (isCreating) return; // 🧠 ป้องกันไม่ให้ยิงซ้ำ
-    setIsCreating(true);
+    if (hasCreated.current) return; // ✅ กันยิงซ้ำเด็ดขาด
+    hasCreated.current = true;
 
     const createPayment = async () => {
       try {
@@ -51,6 +53,7 @@ const PaymentPage = () => {
     createPayment();
   }, [billId, memberId]);
 
+  // 🔄 Poll สถานะจ่ายเงิน
   useEffect(() => {
     if (!payment) return;
 
@@ -107,7 +110,6 @@ const PaymentPage = () => {
           )}
         </div>
       </div>
-
     </div>
   );
 };
