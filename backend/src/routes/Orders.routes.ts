@@ -4,10 +4,12 @@ import { requireAdmin } from "src/middleware/Requireadmin.js";
 
 const router = Router();
 
+
 router.post("/", ordersController.createOrder);                     // POST /orders
 router.get("/", ordersController.getAllOrders);                     // GET /orders
-router.get("/:id", ordersController.getOrderById);                  // GET /orders/:id
 router.get("/session/:sessionId", ordersController.getOrders);      // GET /orders/session/:sessionId
+router.get("/:id", ordersController.getOrderById);                  // GET /orders/:id
+
 router.patch("/:id/status", ordersController.updateOrderStatus);    // PATCH /orders/:id/status
 router.delete("/:id", ordersController.deleteOrder);                // DELETE /orders/:id
 

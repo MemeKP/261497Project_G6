@@ -1,18 +1,36 @@
 import React, { useState } from "react";
 import type { Table } from "../types";
 import { AnimatePresence, motion } from "motion/react";
+import { tables } from "../config/dummy_data";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
 
-const tables: Table[] = [
-  { id: 1, number: 1, status: "AVAILABLE" },
-  { id: 2, number: 2, status: "OCCUPIED" },
-  { id: 3, number: 3, status: "AVAILABLE" },
-  { id: 4, number: 4, status: "AVAILABLE" },
-  { id: 5, number: 5, status: "OCCUPIED" },
-  { id: 6, number: 6, status: "OCCUPIED" },
-  { id: 7, number: 7, status: "AVAILABLE" },
-  { id: 8, number: 8, status: "OCCUPIED" },
-  { id: 9, number: 9, status: "AVAILABLE" },
-];
+const fetchSession = async () => {
+  try {
+    const res = await axios.get('/api/dining_session')
+    console.log("[FRONTEND] SESSIONS DATA: ", res.data)
+    return res.data;
+  } catch (error) {
+    console.log("[FRONTEND] ERROR: Failed to fetch sessions data.", error)
+  }
+}
+
+function Sessions() {
+  const{isPending, isError , error, data} = useQuery({
+    queryKey:[],
+    queryFn: fetchSession,
+  })
+
+  
+  if (isPending) {
+    return <span>Loading...</span>
+  }
+
+  if (isError) {
+    return <span>Error: {error.message}</span>
+  }
+
+}
 
 const TableAndSession: React.FC = () => {
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);

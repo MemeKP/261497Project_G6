@@ -90,3 +90,45 @@ export interface Table {
   status: string;
 }
 
+export interface PaymentData {
+  date: string;
+  thisMonth: number;
+  lastMonth: number;
+}
+
+export interface PaymentGraphProps {
+  data?: PaymentData[];
+  period?: 'week' | 'month' | 'year';
+  onPeriodChange?: (period: 'week' | 'month' | 'year') => void;
+}
+
+export interface ActiveSession {
+  id: number;
+  tableId: number;
+  startedAt: string;
+  status: string;
+  totalCustomers: number;
+  createdAt: string;
+  group: {
+    id: number;
+    members: { id: number; name: string; note: string | null }[];
+  } | null;
+}
+
+export interface ActiveSessionGroup {
+  activeSessions: ActiveSession[];
+  totalActiveTables: number;
+}
+
+export interface Order {
+  id: number;
+  table_id: number;
+  group_id: number | null;
+  user_id: number | null;
+  dining_session_id: number;
+  status: "PENDING" | "PREPARING" | "COMPLETED" | "SERVED" | string;
+  created_at: string;
+  totalPrice?: number;
+  key: string;
+}
+

@@ -7,10 +7,14 @@ const AdminNav = () => {
   const navigate = useNavigate()
   const [showDropdown, setDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const [userLogin, setUserLogin] = useState(false)
+  const [ currentUser, setCurrentUser] = useState(null)
 
   const handleLogout = async () => {
     try {
       //
+      setCurrentUser(null)
+      setUserLogin(false)
       navigate('/login')
     } catch (error) {
       console.log("Cannot logout: ", error)
@@ -53,7 +57,7 @@ const AdminNav = () => {
           >
             <button
               onClick={handleLogout}
-              className="w-full text-left px-2 py-1 text-red-500 rounded-xl hover:bg-red-50 hover:text-red-600 transition"
+              className="w-full cursor-pointer text-left px-2 py-1 text-red-500 rounded-xl hover:bg-red-50 hover:text-red-600 transition"
             >
               Logout
             </button>

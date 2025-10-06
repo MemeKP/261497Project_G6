@@ -48,13 +48,24 @@ export const orders = pgTable('orders', {
   created_at: timestamp('created_at').defaultNow()
 });
 
+// export const orderItems = pgTable('order_items', {
+//   id: serial('id').primaryKey(),
+//   order_id: integer('order_id').notNull().references(() => orders.id),
+//   menu_item_id: integer('menu_item_id').notNull().references(() => menuItems.id),
+//   member_id: integer('member_id').references(() => members.id), 
+//   quantity: integer("quantity").default(1),
+//   note: text('note'),
+//   status: varchar("status", { length: 20 }).default("PREPARING"),
+// });
+
 export const order_items = pgTable('order_items', {
   id: serial('id').primaryKey(),
   order_id: integer('order_id').notNull().references(() => orders.id),
   menu_item_id: integer('menu_item_id').notNull().references(() => menuItems.id),
   member_id: integer('member_id').notNull().references(() => group_members.id),
-  quantity: integer('quantity'),
-  note: text('note')
+  quantity: integer('quantity').default(1),
+  note: text('note'),
+  status: varchar("status", { length: 20 }).default("PREPARING"),
 });
 
 
@@ -148,15 +159,6 @@ export const menuItems = pgTable("menu_items", {
 //   quantity: integer("quantity").default(1),
 //   note: text("note"),
 // });
-
-export const orderItems = pgTable('order_items', {
-  id: serial('id').primaryKey(),
-  order_id: integer('order_id').notNull().references(() => orders.id),
-  menu_item_id: integer('menu_item_id').notNull().references(() => menuItems.id),
-  member_id: integer('member_id').references(() => members.id), 
-  quantity: integer('quantity'),
-  note: text('note'),
-});
 
 
 /**

@@ -1,21 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Chart, registerables, ChartConfiguration } from 'chart.js';
 import { TrendingUp } from 'lucide-react';
+import type { PaymentGraphProps } from '../types';
+import { defaultData } from '../config/dummy_data';
 
 // Register Chart.js components
 Chart.register(...registerables);
-
-interface PaymentData {
-  date: string;
-  thisMonth: number;
-  lastMonth: number;
-}
-
-interface PaymentGraphProps {
-  data?: PaymentData[];
-  period?: 'week' | 'month' | 'year';
-  onPeriodChange?: (period: 'week' | 'month' | 'year') => void;
-}
 
 const PaymentGraph = ({ 
   data, 
@@ -25,14 +15,6 @@ const PaymentGraph = ({
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState(period);
-
-  // Default demo data
-  const defaultData: PaymentData[] = [
-    { date: 'Week 1', thisMonth: 4500, lastMonth: 3800 },
-    { date: 'Week 2', thisMonth: 5200, lastMonth: 4200 },
-    { date: 'Week 3', thisMonth: 4800, lastMonth: 5000 },
-    { date: 'Week 4', thisMonth: 6500, lastMonth: 4500 },
-  ];
 
   const chartData = data || defaultData;
 

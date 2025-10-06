@@ -1,24 +1,10 @@
 import React, { useState } from "react";
+import type { ActiveSession, Order } from "../types";
+import { useQuery } from "@tanstack/react-query";
 
-/** ORDER SCHEMA
- * export const orders = pgTable('orders', {
-   id: serial('id').primaryKey(),
-   table_id: integer('table_id').notNull(),
-   group_id: integer('group_id').references(() => groups.id), 
-   user_id: integer('user_id').references(() => users.id), 
-   dining_session_id: integer('dining_session_id').references(() => diningSessions.id),
-   status: varchar('status', { length: 20 }).default("PENDING"), 
-   created_at: timestamp('created_at').defaultNow()
- });
- */
-
-const orders = [
-  { id: "001", table: 7, status: "PENDING", time: "17:11" },
-  { id: "002", table: 2, status: "PREPARING", time: "17:30" },
-  { id: "003", table: 2, status: "PENDING", time: "17:31" },
-  { id: "004", table: 1, status: "COMPLETED", time: "18:01" },
-  { id: "005", table: 5, status: "SERVED", time: "18:48" },
-];
+interface OrderProgressProps {
+  activeSessions: ActiveSession[];
+}
 
 const statusColor = (status: string) => {
   switch (status) {
@@ -35,19 +21,47 @@ const statusColor = (status: string) => {
   }
 };
 
-const OrderProgress = () => {
-  const [selectedTable, setSelectedTable] = useState("all");
+const OrderProgress: React.FC<OrderProgressProps> = ({ activeSessions }) => {
+   const [selectedTable, setSelectedTable] = useState<"all" | number>("all");
+  const allSessionIds = activeSessions?.map((s) => s.id) || [];
 
-  // ดึงเฉพาะtableที่มีอยู่จริง (เพื่อใส่ใน dropdown)
-  const uniqueTables = Array.from(new Set(orders.map((o) => o.table))).sort(
-    (a, b) => a - b
-  );
+  // Fetch orders สำหรับทุก active session
+  const { data: orders = [] } = useQuery<Order[]>({
+    queryKey: ["ordersForAllSessions", allSessionIds],
+    queryFn: async () => {
+      if (allSessionIds.length === 0) return [];
 
-  // กรองorderตามโต๊ะที่เลือก
+      const ordersBySession = await Promise.all(
+        allSessionIds.map(async (sessionId) => {
+          const res = await fetch(`/api/orders/session/${sessionId}`, {
+            method: "GET",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          });
+          if (!res.ok) return [];
+          return res.json() as Promise<Order[]>;
+        })
+      );
+
+      return ordersBySession.flat();
+    },
+    enabled: allSessionIds.length > 0,
+    refetchInterval: 5000, // 5 sec
+  });
+
+  // ดึงเฉพาะ table ที่มีอยู่จริง
+const uniqueTables =
+  orders && orders.length > 0
+    ? Array.from(new Set(orders.map((o) => o.table_id))).sort((a, b) => a - b)
+    : [];
+    console.log("Orders in OrderProgress:", orders);
+
+
+  // กรอง order ตาม table
   const filteredOrders =
     selectedTable === "all"
       ? orders
-      : orders.filter((o) => o.table === Number(selectedTable));
+      : orders.filter((o) => o.table_id === selectedTable);
 
   return (
     <div className="mt-6">
@@ -58,8 +72,12 @@ const OrderProgress = () => {
         {/* DROPDOWN */}
         <select
           value={selectedTable}
-          onChange={(e) => setSelectedTable(e.target.value)}
-          className="border border-gray-300 rounded-lg text-sm px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          onChange={(e) =>
+            setSelectedTable(
+              e.target.value === "all" ? "all" : Number(e.target.value)
+            )
+          }
+            className="border border-gray-300 rounded-lg text-sm px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
           <option value="all">All Tables</option>
           {uniqueTables.map((table) => (
@@ -88,7 +106,7 @@ const OrderProgress = () => {
                 className="text-neutral-500 font-medium border-b last:border-0"
               >
                 <td className="py-2">{order.id}</td>
-                <td>{order.table}</td>
+                <td>{order.table_id}</td>
                 <td>
                   <span
                     className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor(
@@ -98,7 +116,8 @@ const OrderProgress = () => {
                     {order.status}
                   </span>
                 </td>
-                <td>{order.time}</td>
+                <td>{new Date(order.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</td>
+        
               </tr>
             ))}
 
