@@ -1,5 +1,5 @@
 import { dbClient as db } from "db/client.js";
-import { bills, billSplits, orderItems, menuItems, members, orders } from "db/schema.js";
+import { bills, billSplits, orderItems, menuItems, members, orders, diningSessions } from "db/schema.js";
 import { eq, and , inArray } from "drizzle-orm";
 
 export async function generateBill(orderId: number) {
@@ -198,11 +198,42 @@ export async function updatePayment(billId: number, memberId: number) {
 
   let allPaid = false;
   if (remaining.length === 0) {
+    //  อัปเดตสถานะ bill
     await db.update(bills).set({ status: "PAID" }).where(eq(bills.id, billId));
     allPaid = true;
+
+    //  ตรวจว่าบิลทั้งหมดใน session นี้จ่ายครบหรือยัง
+    const [bill] = await db.select().from(bills).where(eq(bills.id, billId));
+    if (bill) {
+      const unpaidBills = await db
+        .select()
+        .from(bills)
+        .where(
+          and(
+            eq(bills.diningSessionId, bill.diningSessionId),
+            eq(bills.status, "UNPAID")
+          )
+        );
+
+      //  ถ้าไม่มีบิลเหลือให้จ่ายแล้ว → session เสร็จสมบูรณ์
+      if (unpaidBills.length === 0) {
+        const allBills = await db
+          .select()
+          .from(bills)
+          .where(eq(bills.diningSessionId, bill.diningSessionId));
+
+        const totalAmount = allBills.reduce(
+          (sum, b) => sum + (b.total ?? 0),
+          0
+        );
+
+        await db.update(diningSessions)
+          .set({ status: "COMPLETED", total: totalAmount })
+          .where(eq(diningSessions.id, bill.diningSessionId));
+      }
+    }
   }
 
   return { ...updated, allPaid };
 }
-
 

@@ -211,29 +211,47 @@ async function insertOrder(sessionId: number, tableId: number) {
 /** 9. Insert Order Items */
 async function insertOrderItems(orderId: number, members: any[], menus: any[]) {
   await dbClient.insert(orderItems).values([
-    {
-      orderId,
-      menuItemId: menus[0].id,
-      memberId: members[0].id,
-      quantity: 2,
-      note: "Extra spicy",
-    },
-    {
-      orderId,
-      menuItemId: menus[1].id,
-      memberId: members[1].id,
-      quantity: 1,
-      note: "No onion",
-    },
-    {
-      orderId,
-      menuItemId: menus[2].id,
-      memberId: members[2].id,
-      quantity: 3,
-      note: "Less sugar",
-    },
-  ]);
+  // 🍛 Katsu Curry — Alice + Bob สั่งเมนูเดียวกัน
+  {
+    orderId,
+    menuItemId: menus[0].id,
+    memberId: members[0].id, // Alice
+    quantity: 1,
+    note: "Extra spicy",
+  },
+  {
+    orderId,
+    menuItemId: menus[0].id,
+    memberId: members[1].id, // Bob
+    quantity: 1,
+    note: "Extra spicy",
+  },
 
+  // 🍜 Beef Ramen — Charlie
+  {
+    orderId,
+    menuItemId: menus[1].id,
+    memberId: members[2].id,
+    quantity: 1,
+    note: "No onion",
+  },
+
+  // 🍵 Green Tea — Alice + Charlie
+  {
+    orderId,
+    menuItemId: menus[2].id,
+    memberId: members[0].id,
+    quantity: 1,
+    note: "Less sugar",
+  },
+  {
+    orderId,
+    menuItemId: menus[2].id,
+    memberId: members[2].id,
+    quantity: 2,
+    note: "Less sugar",
+  },
+]);
   console.log("Inserted order items!");
 }
 

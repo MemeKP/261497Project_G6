@@ -7,7 +7,6 @@ import {
   boolean,
   text,
   decimal,
-  numeric,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -50,7 +49,7 @@ export const diningSessions = pgTable("dining_sessions", {
   id: serial("id").primaryKey(),
   tableId: integer("table_id").notNull().references(() => tables.id),
   openedByAdminId: integer("opened_by_admin_id").notNull().references(() => admins.id),
-  total: numeric("total", { precision: 10, scale: 2 }).default("0.00"),
+  total: decimal("total", { precision: 10, scale: 2 }).$type<number>().default(0), 
   total_customers: integer("total_customers"),
   qrCode: text("qr_code").notNull(),
   startedAt: timestamp("started_at").defaultNow(),

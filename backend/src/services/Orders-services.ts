@@ -1,5 +1,5 @@
 import { dbClient as db } from "db/client.js";
-import { orders, orderItems ,menuItems  } from "db/schema.js";
+import { orders, orderItems ,menuItems ,members  } from "db/schema.js";
 import { eq, inArray } from "drizzle-orm";
 const allowedStatus = ["PENDING", "PREPARING", "READY_TO_SERVE", "CANCELLED", "COMPLETE"] as const;
 
@@ -74,10 +74,11 @@ export async function getOrdersBySession(sessionId: number) {
       menuItemId: orderItems.menuItemId,
       menuName: menuItems.name,
       menuPrice: menuItems.price,
+      memberName: members.name, //add
     })
     .from(orderItems)
     .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
-    .where(inArray(orderItems.orderId, orderIds));
+    .leftJoin(members, eq(orderItems.memberId, members.id)) // add
 
   // group items ตาม order
   return ordersData.map((order) => ({
@@ -120,6 +121,7 @@ export async function getOrderById(orderId: number) {
       menuItemId: orderItems.menuItemId,
       menuName: menuItems.name,
       menuPrice: menuItems.price,
+      memberName: members.name,
     })
     .from(orderItems)
     .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))

@@ -7,6 +7,8 @@ interface OrderItem {
   menuName: string;
   quantity: number;
   status: string;
+  memberName?: string; // ✅ เพิ่มบรรทัดนี้
+  note?: string; 
 }
 
 interface Order {
@@ -48,6 +50,7 @@ const OrderStatusPage = () => {
             "Unnamed Item",
           quantity: item.quantity ?? 0,
           status: item.status || order.status || "PREPARING",
+          memberName: item.memberName || "Unknown", // ✅ เพิ่มบรรทัดนี้
         })),
       }));
 
@@ -76,6 +79,19 @@ const OrderStatusPage = () => {
   const preparing = allItems.filter((i) => i.status === "PREPARING" || i.status === "PENDING");
   const ready = allItems.filter((i) => i.status === "READY");
   const completed = allItems.filter((i) => i.status === "COMPLETED");
+  
+  // ✅ เพิ่มตรงก่อน return ใน OrderStatusPage
+  const groupedItems = preparing.reduce((acc: any, item) => {
+    const key = item.menuName;
+    if (!acc[key]) {
+      acc[key] = { ...item, quantity: 0, members: [] };
+    }
+    acc[key].quantity += item.quantity;
+    acc[key].members.push(item.memberName);
+    return acc;
+  }, {});
+
+const groupedList = Object.values(groupedItems);
 
   return (
     <div className="w-full min-h-screen relative bg-[#1E1E1E] text-white p-6 flex flex-col">
@@ -107,21 +123,26 @@ const OrderStatusPage = () => {
             )}
           </span>
         </div>
+
         {openSection === "preparing" && (
-          <div className="mt-2 text-sm">
-            {preparing.length > 0 ? (
-              preparing.map((item) => (
-                <div key={item.id} className="flex justify-between px-1">
+        <div className="mt-2 text-sm">
+          {groupedList.length > 0 ? (
+            groupedList.map((item: any, idx) => (
+              <div key={idx} className="flex flex-col px-1 mb-2">
+                <div className="flex justify-between">
                   <span>{item.menuName}</span>
                   <span className="text-gray-700 font-medium">x {item.quantity}</span>
                 </div>
-
-              ))
-            ) : (
-              <p className="text-gray-500">No items preparing.</p>
-            )}
-          </div>
-        )}
+                <span className="text-gray-500 text-xs">
+                  👤 {item.members.join(", ")}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500">No items preparing.</p>
+          )}
+        </div>
+      )}
       </div>
 
       {/* Ready Section */}

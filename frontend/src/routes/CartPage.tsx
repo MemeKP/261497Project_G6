@@ -12,6 +12,7 @@ interface CartItem {
   qty: number;
   note?: string;
   image?: string;
+  memberName?: string;
 }
 
 const CartPage = () => {
@@ -38,6 +39,7 @@ const CartPage = () => {
             qty: item.quantity,
             note: item.note || "",
             image: item.menuItem?.imageUrl || "/fallback.png",
+            memberName: item.member?.name || item.memberName || "", // ✅ ดึงชื่อ member
           })) || [];
 
         setCart(mapped);
@@ -122,9 +124,17 @@ const CartPage = () => {
               >
                 <p className="font-bold text-lg text-white">{item.name}</p>
                 <p className="text-sm text-gray-300">{item.price}.-</p>
-                {item.note && (
-                  <p className="text-xs text-gray-400 italic">Note: {item.note}</p>
-                )}
+               {item.memberName && (
+                <p className="text-xs text-pink-400 font-semibold mb-1">
+                  Member: {item.memberName}
+                </p>
+              )}
+              {item.note && (
+                <p className="text-xs text-gray-400 italic">
+                  Note: {item.note}
+                </p>
+              )}
+
               </div>
 
               <div className="flex items-center gap-2 ml-auto">

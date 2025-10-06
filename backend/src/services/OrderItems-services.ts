@@ -99,7 +99,7 @@ export async function getOrderItemsBySession(sessionId: number) {
  * อัปเดทสถานะของ OrderItem
  */
 export async function updateStatus(itemId: number, status: string) {
-  const allowed = ["PENDING", "PREPARING", "SERVED", "CANCELLED"];
+  const allowed = ["PENDING", "PREPARING", "READY_TO_SERVE", "CANCELLED", "COMPLETE"];
   if (!allowed.includes(status)) {
     throw new Error(`Invalid status. Allowed: ${allowed.join(", ")}`);
   }
