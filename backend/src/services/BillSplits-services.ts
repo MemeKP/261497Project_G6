@@ -3,7 +3,7 @@ import { dbClient } from "@db/client.js";
 import {
   bills,
   billSplits,
-  orderItems,
+  order_items as orderItems,
   menuItems,
   members,
   orders,

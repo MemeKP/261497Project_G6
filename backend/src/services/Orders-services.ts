@@ -14,6 +14,7 @@ export async function createOrder(dining_session_id: number, table_id: number) {
   return newOrder;
 }
 
+
 export async function getOrdersBySession(sessionId: number) {
   return await db
     .select()

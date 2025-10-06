@@ -1,6 +1,6 @@
 // import { db } from "src/db/client2.js";
 import { dbClient as db } from "@db/client.js";
-import { orderItems, orders, menuItems, members } from "db/schema.js";
+import { order_items, orders, menuItems, members } from "db/schema.js";
 import { eq } from "drizzle-orm";
 
 export async function addOrderItem(orderId: number, menuItemId: number, memberId: number, quantity: number, note?: string) {
@@ -17,11 +17,16 @@ export async function addOrderItem(orderId: number, menuItemId: number, memberId
   if (!member) throw new Error("Member not found");
 
   const [newItem] = await db
-    .insert(orderItems)
-    .values({ orderId, menuItemId, memberId, quantity, note })
-    .returning();
+  .insert(order_items)
+  .values({
+    order_id: orderId,
+    menu_item_id: menuItemId,
+    member_id: memberId,
+    quantity,
+    note,
+  })
+  .returning();
 
-  return newItem;
 }
 
 export async function updateOrderItem(id: number, quantity?: number, note?: string) {

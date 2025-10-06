@@ -1,39 +1,73 @@
 import React, { useState } from "react";
-import type { Table } from "../types";
 import { AnimatePresence, motion } from "motion/react";
-import { tables } from "../config/dummy_data";
-import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { ActiveSession } from "../types";
 
-const fetchSession = async () => {
-  try {
-    const res = await axios.get('/api/dining_session')
-    console.log("[FRONTEND] SESSIONS DATA: ", res.data)
-    return res.data;
-  } catch (error) {
-    console.log("[FRONTEND] ERROR: Failed to fetch sessions data.", error)
-  }
+interface Table {
+  id: number;
+  number: number;
+  status: "OCCUPIED" | "FREE";
 }
 
-function Sessions() {
-  const{isPending, isError , error, data} = useQuery({
-    queryKey:[],
-    queryFn: fetchSession,
-  })
-
-  
-  if (isPending) {
-    return <span>Loading...</span>
-  }
-
-  if (isError) {
-    return <span>Error: {error.message}</span>
-  }
-
-}
+const TOTAL_TABLES = 9; // fix ให้ร้านมี 9 โต๊ะ
 
 const TableAndSession: React.FC = () => {
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  const queryClient = useQueryClient();
+
+  // Fetch active sessions
+  const { data: activeSessions = [] } = useQuery<ActiveSession[]>({
+    queryKey: ["activeSessions"],
+    queryFn: async () => {
+      const res = await fetch("/api/dining_session/active", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch active sessions");
+      const data = await res.json();
+      return data.activeSessions;
+    },
+  });
+
+  // แปลงเป็น tables
+  const tables: Table[] = Array.from({ length: TOTAL_TABLES }, (_, i) => {
+    const tableId = i + 1;
+    const occupied = activeSessions.some((s) => s.tableId === tableId);
+    return {
+      id: tableId,
+      number: tableId,
+      status: occupied ? "OCCUPIED" : "FREE",
+    };
+  });
+
+  // Mutation: Set Table (สร้าง session)
+  const mutation = useMutation({
+  mutationFn: async (tableId: number) => {
+    const res = await fetch(`/api/dining_session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tableId }),
+    });
+    if (!res.ok) throw new Error("Failed to set table");
+    return res.json();
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries(["activeSessions"]);
+  },
+});
+
+
+  // Generate QR
+  const generateQRMutation = useMutation({
+  mutationFn: async (tableId: number) => {
+    const res = await fetch(`/api/dining_session/${tableId}/qr`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error("Failed to generate QR");
+    return res.json();
+  },
+  onSuccess: (data) => {
+    alert(`QR Code generated!\n${data.qrUrl}`);
+  },
+});
+
 
   return (
     <div className="pt-6">
@@ -42,21 +76,11 @@ const TableAndSession: React.FC = () => {
         <div className="grid grid-cols-3 gap-3">
           {tables.map((table) => (
             <button
-              onClick={() => setSelectedTable(table)}
               key={table.id}
-              className={`py-4 rounded-lg font-semibold text-center items-center justify-center 
-                ${
-                  table.status === "OCCUPIED"
-                    ? "bg-emerald-500 text-white"
-                    : "bg-zinc-300 text-black"
-                }
-              ${
-                selectedTable?.id === table.id
-                  ? table.status === "OCCUPIED"
-                    ? "border-4 border-teal-400" 
-                    : "border-4 border-black" 
-                  : "border border-transparent" 
-              }
+              onClick={() => setSelectedTable(table)}
+              className={`py-4 rounded-lg cursor-pointer font-semibold text-center 
+                ${table.status === "OCCUPIED" ? "bg-emerald-500 text-white" : "bg-zinc-300 text-black"}
+                ${selectedTable?.id === table.id ? "border-4 border-black" : "border border-transparent"}
               `}
             >
               Table {table.number}
@@ -83,20 +107,14 @@ const TableAndSession: React.FC = () => {
             >
               <button
                 onClick={() => setSelectedTable(null)}
-                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                className="absolute cursor-pointer top-2 right-2 text-gray-500 hover:text-gray-700"
               >
                 ✕
               </button>
 
               {/* Status */}
               <h2 className="text-stone-400 text-sm mb-1">Status</h2>
-              <p
-                className={`text-2xl font-bold mb-4 ${
-                  selectedTable.status === "OCCUPIED"
-                    ? "text-emerald-500"
-                    : "text-gray-400"
-                }`}
-              >
+              <p className={`text-2xl font-bold mb-4 ${selectedTable.status === "OCCUPIED" ? "text-emerald-500" : "text-gray-400"}`}>
                 {selectedTable.status === "OCCUPIED" ? "Active" : "Free"}
               </p>
 
@@ -104,14 +122,19 @@ const TableAndSession: React.FC = () => {
               <div className="mt-2">
                 <h3 className="text-stone-400 text-sm mb-2">Action</h3>
                 <div className="flex gap-2">
-                  <button className="px-3 py-1 rounded bg-gray-200 text-gray-600 text-sm">
+                  <button
+                    className="px-3 py-1 rounded cursor-pointer bg-gray-200 text-gray-600 text-sm"
+                    onClick={() => {
+                      if (selectedTable.status === "FREE") {
+                        mutation.mutate(selectedTable.id);
+                      }
+                    }}
+                  >
                     Set this table
                   </button>
                   <button
-                    className="px-3 py-1 rounded bg-purple-200 text-purple-700 text-sm"
-                    onClick={() =>
-                      alert(`Generate QR for table ${selectedTable.number}`)
-                    }
+                    className="px-3 py-1 cursor-pointer rounded bg-purple-200 text-purple-700 text-sm"
+                    onClick={() => generateQRMutation.mutate(selectedTable.id)}
                   >
                     QR
                   </button>
