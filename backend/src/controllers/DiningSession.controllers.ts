@@ -264,6 +264,7 @@ export const getSession = async (req: Request, res: Response, next: NextFunction
         endedAt: diningSessions.endedAt,
         status: diningSessions.status,
         totalCustomers: diningSessions.total_customers,
+        total: diningSessions.total, // ✅ เพิ่มบรรทัดนี้
         createdAt: diningSessions.createdAt,
         qrCode: diningSessions.qrCode,
       })
@@ -305,6 +306,7 @@ export const getSession = async (req: Request, res: Response, next: NextFunction
         qrCode: sessionData.qrCode,
         status: sessionData.status,
         totalCustomers: members.length,
+        total: Number(sessionData.total) ?? 0,
         createdAt: sessionData.createdAt,
         durationMinutes: duration,
       },

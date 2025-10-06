@@ -137,21 +137,75 @@ const BillPage = () => {
       {/* Buttons */}
       <div className="mt-auto flex flex-col gap-4 items-center pt-8 pb-4">
         <button
-          onClick={() => navigate(`/payment/${bill.id}`)} // ✅ ไปหน้า Payment
+          onClick={async () => {
+            try {
+              // ✅ เรียก backend เพื่อสร้าง payment QR
+              const res = await fetch(`/api/payments`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ billId: bill.id }), // ส่ง billId ตามที่ backend ต้องการ
+              });
+
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || "Failed to create payment");
+
+              console.log("✅ Payment created:", data);
+
+              // ✅ ไปหน้า PaymentPage พร้อม billId และ QR ที่สร้าง
+              navigate(`/payment/${bill.id}`);
+            } catch (err) {
+              console.error("Error creating payment:", err);
+              alert("Failed to create payment. Please try again.");
+            }
+          }}
           className="w-[280px] h-12 rounded-full text-base font-semibold text-black 
-                     shadow-[0px_4px_18px_rgba(217,217,217,1.00)] 
-                     bg-gradient-to-r from-white to-black hover:opacity-90 transition"
+                    shadow-[0px_4px_18px_rgba(217,217,217,1.00)] 
+                    bg-gradient-to-r from-white to-black hover:opacity-90 transition"
         >
           Pay Entire Bill
         </button>
+
         <button
-          onClick={() => navigate(`/splitbill/${bill.id}`)} // ✅ ไปหน้า Split Bill
+          onClick={async () => {
+            try {
+              // ✅ ดึง order ล่าสุดใน session (เพื่อให้ได้ orderId)
+              const orderRes = await fetch(`/api/orders/session/${sessionId}`, {
+                credentials: "include",
+              });
+              const orders = await orderRes.json();
+              if (!orders || orders.length === 0) {
+                alert("No orders found for this session.");
+                return;
+              }
+
+              const latestOrder = orders[orders.length - 1];
+              const orderId = latestOrder.id;
+
+              // ✅ สร้าง Split Bill จาก orderId
+              const res = await fetch(`/api/bill-splits/orders/${orderId}/bill`, {
+                method: "POST",
+                credentials: "include",
+              });
+
+              if (!res.ok) throw new Error("Failed to split bill");
+              const billData = await res.json();
+
+              console.log("✅ Split Bill created:", billData);
+              navigate(`/splitbill/${billData.id}`);
+            } catch (err) {
+              console.error("Error splitting bill:", err);
+              alert("Failed to split bill. Please try again.");
+            }
+          }}
           className="w-[280px] h-12 rounded-full text-base font-semibold text-black 
-                     shadow-[0px_4px_18px_rgba(217,217,217,1.00)] 
-                     bg-gradient-to-r from-white to-black hover:opacity-90 transition"
+                    shadow-[0px_4px_18px_rgba(217,217,217,1.00)] 
+                    bg-gradient-to-r from-white to-black hover:opacity-90 transition"
         >
           Split Bill
         </button>
+
+    
       </div>
     </div>
   );

@@ -32,15 +32,13 @@ const CartPage = () => {
         const mapped: CartItem[] =
           data[0]?.items?.map((item: any) => ({
             id: item.id,
-            menuId: item.menuItem?.id || item.menuItemId, // ✅ รองรับทั้งสองแบบ
+            menuId: item.menuItem?.id || item.menuItemId, 
             name: item.menuName || item.menuItem?.name || "Unknown",
             price: parseFloat(item.menuPrice ?? item.menuItem?.price ?? "0"),
             qty: item.quantity,
             note: item.note || "",
             image: item.menuItem?.imageUrl || "/fallback.png",
           })) || [];
-
-
 
         setCart(mapped);
       } catch (err) {
@@ -68,12 +66,12 @@ const CartPage = () => {
     );
   };
 
-  const confirmDelete = () => {
-    if (confirmItem) {
-      setCart((prev) => prev.filter((i) => i.id !== confirmItem.id));
-      setConfirmItem(null);
-    }
-  };
+  // const confirmDelete = () => {
+  //   if (confirmItem) {
+  //     setCart((prev) => prev.filter((i) => i.id !== confirmItem.id));
+  //     setConfirmItem(null);
+  //   }
+  // };
 
   const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 

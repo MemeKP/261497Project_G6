@@ -19,8 +19,12 @@ const PaymentPage = () => {
   const [payment, setPayment] = useState<PaymentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmed, setConfirmed] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
+    if (isCreating) return; // 🧠 ป้องกันไม่ให้ยิงซ้ำ
+    setIsCreating(true);
+
     const createPayment = async () => {
       try {
         const res = await fetch(`/api/payments`, {
@@ -104,17 +108,6 @@ const PaymentPage = () => {
         </div>
       </div>
 
-      {/* Buttons */}
-      <div className="mt-auto flex flex-col gap-4 items-center pt-8 pb-4">
-        <button
-          onClick={() => navigate(`/billpage/${billId}`)}
-          className="w-[280px] h-12 rounded-full text-base font-semibold text-black 
-                     shadow-[0px_4px_18px_rgba(217,217,217,1.00)] 
-                     bg-gradient-to-r from-white to-black hover:opacity-90 transition"
-        >
-          Back to Bill
-        </button>
-      </div>
     </div>
   );
 };
