@@ -1,7 +1,7 @@
 // import { db } from "src/db/client2.js";
 import { dbClient as db } from "@db/client.js";
 import { order_items, orders, menuItems, members } from "db/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export async function addOrderItem(orderId: number, menuItemId: number, memberId: number, quantity: number, note?: string) {
   if (quantity < 1) throw new Error("Quantity must be at least 1");
@@ -56,3 +56,11 @@ export async function deleteOrderItem(id: number) {
   return deleted || null;
 }
 
+export async function getOrderItemCount(orderId: number) {
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(order_items)
+    .where(eq(order_items.order_id, orderId));
+  
+  return result[0]?.count || 0;
+}

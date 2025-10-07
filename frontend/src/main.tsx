@@ -22,6 +22,7 @@ import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./context/AuthProvider.tsx";
 import PaymentPage from "./routes/PaymentPage.tsx";
 import SplitBillPage from "./routes/SplitBillPage.tsx";
+import { CartProvider } from "./context/CartContext.tsx";
 
 const queryClient = new QueryClient();
 
@@ -118,7 +119,9 @@ createRoot(document.getElementById("root")!).render(
     {/* <App /> */}
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <CartProvider>
       <RouterProvider router={router} />
+      </CartProvider>
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>

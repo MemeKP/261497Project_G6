@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'; 
 import MenuList from '../components/MenuList';
 
@@ -25,10 +24,6 @@ const MenuPage = () => {
     }
     return "All menu items."
   }
-  
-  // const headingText = query 
-  //   ? `Search results for "${query}"` 
-  //   : "All Menu Items"; 
 
   const headingText =  getHeadingText()
   const showClearButton = query || category

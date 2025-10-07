@@ -72,3 +72,18 @@ export async function deleteOrderItem(req: Request, res: Response) {
     res.status(500).json({ error: err.message });
   }
 }
+
+export async function getCartItemCount(req: Request, res: Response) {
+  try {
+    const { orderId } = req.query;
+
+    if (!orderId || isNaN(Number(orderId))) {
+      return res.status(400).json({ error: "Valid orderId is required" });
+    }
+
+    const count = await orderItemService.getOrderItemCount(Number(orderId));
+    res.json({ count });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+}
