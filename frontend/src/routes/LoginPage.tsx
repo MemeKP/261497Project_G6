@@ -27,7 +27,7 @@ const LoginPage = () => {
         return;
       }
 
-      navigate("/admin");
+      navigate("/admin/dashboard");
     } catch (err) {
       console.error(err);
       setError("error");

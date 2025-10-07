@@ -41,8 +41,26 @@ export interface MenuItem {
   updatedAt: Date | null;
 }
 
+export interface MenuResponse {
+  success: boolean;
+  data: MenuItem[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export interface MenuItemsProps {
   menu: MenuItem;
+}
+
+export interface MenuFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  menuItem?: MenuItem | null;
+  mode: 'create' | 'edit';
 }
 
 export interface IKImageWrapperProps {
@@ -65,3 +83,52 @@ export interface IKImageWrapperProps {
   onLoad?: () => void;
   onError?: () => void;
 }
+
+export interface Table {
+  id: number;
+  number: number;
+  status: string;
+}
+
+export interface PaymentData {
+  date: string;
+  thisMonth: number;
+  lastMonth: number;
+}
+
+export interface PaymentGraphProps {
+  data?: PaymentData[];
+  period?: 'week' | 'month' | 'year';
+  onPeriodChange?: (period: 'week' | 'month' | 'year') => void;
+}
+
+export interface ActiveSession {
+  id: number;
+  tableId: number;
+  startedAt: string;
+  status: string;
+  totalCustomers: number;
+  createdAt: string;
+  group: {
+    id: number;
+    members: { id: number; name: string; note: string | null }[];
+  } | null;
+}
+
+export interface ActiveSessionGroup {
+  activeSessions: ActiveSession[];
+  totalActiveTables: number;
+}
+
+export interface Order {
+  id: number;
+  table_id: number;
+  group_id: number | null;
+  user_id: number | null;
+  dining_session_id: number;
+  status: "PENDING" | "PREPARING" | "COMPLETED" | "SERVED" | string;
+  created_at: string;
+  totalPrice?: number;
+  key: string;
+}
+

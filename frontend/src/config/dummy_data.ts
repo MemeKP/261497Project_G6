@@ -1,3 +1,5 @@
+import type { Table ,PaymentData } from "../types";
+
 export const menus = [
   {
     id: 1,
@@ -61,6 +63,27 @@ export const category = [
   "noodles",
   "Sushi & Sashimi",
   "Appetizers",
+  "rice",
   "Desserts",
   "Drinks",
 ];
+
+export const tables: Table[] = [
+  { id: 1, number: 1, status: "AVAILABLE" },
+  { id: 2, number: 2, status: "OCCUPIED" },
+  { id: 3, number: 3, status: "AVAILABLE" },
+  { id: 4, number: 4, status: "AVAILABLE" },
+  { id: 5, number: 5, status: "OCCUPIED" },
+  { id: 6, number: 6, status: "OCCUPIED" },
+  { id: 7, number: 7, status: "AVAILABLE" },
+  { id: 8, number: 8, status: "OCCUPIED" },
+  { id: 9, number: 9, status: "AVAILABLE" },
+];
+
+ // Default demo data
+export const defaultData: PaymentData[] = [
+    { date: 'Week 1', thisMonth: 4500, lastMonth: 3800 },
+    { date: 'Week 2', thisMonth: 5200, lastMonth: 4200 },
+    { date: 'Week 3', thisMonth: 4800, lastMonth: 5000 },
+    { date: 'Week 4', thisMonth: 6500, lastMonth: 4500 },
+  ];

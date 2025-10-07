@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { FaMinus, FaPlus } from "react-icons/fa";
 import { IoIosArrowBack } from "react-icons/io";
 import { FaBasketShopping } from "react-icons/fa6";
+import basketIcon from "../assets/imgs/basket.png"; // ✅ import รูป
+
 
 interface CartItem {
   id: number;
@@ -93,7 +95,11 @@ const CartPage = () => {
           <h1 className="title1 text-2xl">ENSO</h1>
 
           <button onClick={() => {}} className="text-2xl">
-            <FaBasketShopping />
+            <img
+              src={basketIcon}
+              alt="Basket"
+              className="w-7 h-7 inline-block" 
+            />
           </button>
         </div>
 

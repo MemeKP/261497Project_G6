@@ -1,4 +1,4 @@
-import React from "react";
+
 import basket from "../assets/imgs/basket.png";
 
 const Navbar = () => {

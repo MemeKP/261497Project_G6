@@ -1,48 +1,37 @@
 import { FaArrowRightLong } from "react-icons/fa6";
-import sg3 from "../assets/imgs/menu3.png";
 import type {  MenuItemsProps } from "../types";
 import IKImageWrapper from "./IKImageWrapper";
+import { Link, useParams } from "react-router-dom";
 
 const MenuItems: React.FC<MenuItemsProps> = ({ menu }) => {
-  const getImagePath = (url: string | null) => {
-    if (!url) return null;
-    if (!url.startsWith("http")) return url;
-    try {
-      const urlObj = new URL(url);
-      return urlObj.pathname;
-    } catch {
-      return url;
-    }
-  };
+  const { sessionId } = useParams<{ menuId: string; sessionId: string }>();
   return (
     <div className="w-[90%] sm:w-100 md:w-96 h-32 mt-5">
-      <div className="h-28 relative bg-black rounded-tr-3xl rounded-br-3xl ml-6 sm:ml-6 md:ml-10">
+       <div className="h-24 relative bg-black rounded-tr-3xl rounded-br-3xl ml-6 sm:ml-6 md:ml-10">
         <IKImageWrapper 
-        src={getImagePath(menu.imageUrl)} alt={menu.name || "menu image"}
+        src={menu.imageUrl}
+        width={125}
+        className="absolute -top-1/8 left-1/14 -translate-x-1/2 w-32 h-32 sm:w-36 sm:h-36 md:w-38 md:h-38"
+        alt="menu image"
         />
-
-        <img
-          src={sg3}
-          alt="menu1"
-          className="absolute -top-1/10 left-1/22 -translate-x-1/2 w-32 h-32 sm:w-36 sm:h-36 md:w-38 md:h-38"
-        />
-
-        <div className="justify-start text-white pl-22 sm:pl-25 md:pl-25 p-4">
+        <div className="justify-start text-white pl-24 p-4">
           <div className="text-xs sm:text-sm md:text-base font-semibold">
-            Lorem Ipsum
+            {menu.name}
           </div>
-          <div className="text-[10px] sm:text-xs md:text-sm font-normal">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. maximus
-            consectetur nisi in porta.
+          <div className="text-[10px] line-clamp-2 sm:text-xs md:text-sm font-normal">
+            {menu.description}
           </div>
           <div className="flex justify-end items-center">
-            <div className="flex w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 bg-white rounded-full items-center justify-center">
+            {/* <div className="flex w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 bg-white rounded-full items-center justify-center">
               <p className="flex text-black font-semibold text-xs sm:text-sm md:text-base">
                 1
               </p>
-            </div>
+            </div> */}
+            <Link to={`/details/${sessionId}/${menu.id}`}>
             <FaArrowRightLong className="h-6 sm:h-7 md:h-8 text-white ml-3" />
-          </div>
+      
+            </Link>
+                </div>
         </div>
       </div>
     </div>
