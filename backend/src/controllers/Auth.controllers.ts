@@ -136,13 +136,15 @@ export const getCurrentUser = async (
 ) => {
   try {
     const { userId, userType } = req.session;
+    res.set('Cache-Control', 'no-store');
+    console.log("Session Data:", req.session);
 
     if (!userId || userType !== "admin") {
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    const admin: any = await dbClient.query.admins.findFirst({
-      where: eq(admins.id, userId),
+    const admin = await dbClient.query.admins.findFirst({
+      where: eq(admins.id, userId), 
       columns: {
         id: true,
         name: true,
@@ -155,10 +157,11 @@ export const getCurrentUser = async (
       return res.status(404).json({ error: "Admin not found" });
     }
 
-    res.json({
-      admin: formatAdmin(admin),
-    });
+    const formattedAdmin = formatAdmin(admin);
+    return res.status(200).json({ admin: formattedAdmin });
   } catch (err) {
-    next(err);
+    console.error("Error in getCurrentUser:", err); 
+    next(err); 
   }
 };
+

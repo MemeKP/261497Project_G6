@@ -18,7 +18,7 @@ import LoginPage from "./routes/LoginPage.tsx";
 import AdminDashBoard from "./routes/AdminDashBoard.tsx";
 import AdminOrderList from "./routes/AdminOrderList.tsx";
 import AdminPayment from "./routes/AdminPayment.tsx";
-import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
+import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./context/AuthProvider.tsx";
 
 const queryClient = new QueryClient();
@@ -105,7 +105,8 @@ createRoot(document.getElementById("root")!).render(
     {/* <App /> */}
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-      <RouterProvider router={router} /></AuthProvider>
+      <RouterProvider router={router} />
+      </AuthProvider>
     </QueryClientProvider>
   </StrictMode>
 );

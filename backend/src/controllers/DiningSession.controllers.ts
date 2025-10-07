@@ -69,7 +69,7 @@ export const startSession = async (
       sessionId: newSession[0].id,
       tableId: tableId,
       url: `${
-        process.env.VITE_FRONTEND_URL || "http://10.0.0.51:5173"
+        process.env.PRODUCTION_FRONTEND_URL || "http://10.0.0.51:5173"
       }/tables/${newSession[0].id}`, // Dynamic URL ไม่รุ้อ่ะ
     };
 
@@ -149,6 +149,7 @@ export const getQrForTable = async (
     next(error);
   }
 };
+
 export const endSession = async (
   req: Request,
   res: Response,

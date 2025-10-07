@@ -28,6 +28,7 @@ const TableAndSession: React.FC = () => {
       const data = await res.json();
       return data.activeSessions;
     },
+    refetchInterval: 5000,
   });
 
   // แปลงเป็น tables
@@ -67,6 +68,10 @@ const TableAndSession: React.FC = () => {
           `Session started successfully!\nTable: ${data.session.tableId}\nSession ID: ${data.session.id}`
         );
       }
+      createGroupMutation.mutate({
+      tableId: data.session.tableId,
+      sessionId: data.session.id,
+    });
 
       setSelectedTable(null);
     },
