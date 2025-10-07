@@ -18,6 +18,8 @@ import LoginPage from "./routes/LoginPage.tsx";
 import AdminDashBoard from "./routes/AdminDashBoard.tsx";
 import AdminOrderList from "./routes/AdminOrderList.tsx";
 import AdminPayment from "./routes/AdminPayment.tsx";
+import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
+import { AuthProvider } from "./context/AuthProvider.tsx";
 
 const queryClient = new QueryClient();
 
@@ -69,17 +71,30 @@ const router = createBrowserRouter([
         path: "/billpage",
         element: <BillPage />,
       },
+      // Protected Admin Routes - แยกแต่ละ route
       {
-        path:"/admin/dashboard",
-        element: <AdminDashBoard />,
+        path: "/admin/dashboard",
+        element: (
+          <ProtectedRoute>
+            <AdminDashBoard />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/admin/order",
-        element: <AdminOrderList />
+        element: (
+          <ProtectedRoute>
+            <AdminOrderList />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/admin/payment",
-        element: <AdminPayment/>
+        element: (
+          <ProtectedRoute>
+            <AdminPayment />
+          </ProtectedRoute>
+        ),
       },
     ],
   },
@@ -89,7 +104,8 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     {/* <App /> */}
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <AuthProvider>
+      <RouterProvider router={router} /></AuthProvider>
     </QueryClientProvider>
   </StrictMode>
 );

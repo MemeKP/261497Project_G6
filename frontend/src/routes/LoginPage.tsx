@@ -2,12 +2,14 @@ import bg1 from "../assets/imgs/bg-1.png";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUser, FaLock } from "react-icons/fa";
+import { useAuth } from "../context/useAuth";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const {login} = useAuth()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +28,7 @@ const LoginPage = () => {
         setError(data.error || "Login failed");
         return;
       }
-
+      login()
       navigate("/admin/dashboard");
     } catch (err) {
       console.error(err);
