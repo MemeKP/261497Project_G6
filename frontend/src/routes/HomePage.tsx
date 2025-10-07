@@ -10,6 +10,7 @@ import Navbar from "../components/Navbar";
 import PageAnimation from "../common/PageAnimetion";
 import { useEffect } from "react";
 import axios from "axios";
+import Search from "../components/Search";
 
 const HomePage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -29,12 +30,13 @@ const HomePage = () => {
         <section>
           <div className="w-full bg-[#1B1C20] text-white font-[Epilogue]">
             {/* SEARCH */}
-            <div className="flex justify-center pt-2">
+            <Search/>
+            {/* <div className="flex justify-center pt-2">
               <div className="flex items-center bg-zinc-300 rounded-full px-3 py-2 text-sm text-[#6D6D71] w-80">
                 <LuSearch className="mr-2 text-lg" />
                 search your favorite food
               </div>
-            </div>
+            </div> */}
             {/* NAVIGATION */}
             <InPageNavigation />
 
@@ -46,9 +48,6 @@ const HomePage = () => {
               {/* SIGNATURE MENU */}
 
               <div className="flex flex-col items-center mt-6 relative">
-                {/* <IKImageWrapper 
-
-                /> */}
                 <PageAnimation index={0}>
                   <img
                     src={sg1}

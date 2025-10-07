@@ -1,22 +1,36 @@
+import { useNavigate, useParams } from "react-router-dom";
 
 const InPageNavigation = () => {
+  const navigate = useNavigate()
+  const { sessionId } = useParams<{ sessionId: string }>();
+ 
   const category = [
-    "All",
-    "noodles",
-    "Sushi & Sashimi",
-    "Appetizers",
-    "Desserts",
-    "Drinks",
+    {label: "All", value: ""},
+    {label: "Noodles", value: "noodle"},
+    {label: "Sushi & Sashimi", value: "sushi"},
+    {label: "Appetizers", value: "appetizer"},
+    {label: "Rice", value: "rice"},
+    {label: "Desserts", value: "dessert"},
+    {label: "Drinks", value: "drink"},
   ];
+
+  const handleCategory = (categoryVal: string) =>{
+    if (sessionId) {
+      if (categoryVal) {
+        navigate(`/menu/${sessionId}?category=${categoryVal}`)
+      } 
+    }
+  }
   return (
     <>
       <div className="flex flex-nowrap overflow-x-auto no-scrollbar items-center mt-5 px-4">
         {category.map((category, index) => (
           <button
             key={index}
+            onClick={()=>handleCategory(category.value)}
             className="text-white pr-3 cursor-pointer hover:text-yellow-400 transition-all duration-200 whitespace-nowrap"
           >
-            {category}
+            {category.label}
           </button>
         ))}
       </div>

@@ -110,24 +110,35 @@ export const getMenus = async (
   try {
     const page = parseInt((req.query.page as string) || "1");
     const nolimit = req.query.nolimit === "true";
-     const showAll = req.query.showAll === "true"; //ให้adminใช้
+    const showAll = req.query.showAll === "true"; //ให้adminใช้
     const defaultLimit = 5;
     const limit = req.query.limit
       ? parseInt(req.query.limit as string)
       : nolimit
-      ? 0
-      : defaultLimit;
+        ? 0
+        : defaultLimit;
 
     const offset = (page - 1) * limit;
     const search = (req.query.search as string)?.trim() || "";
     const category = (req.query.category as string)?.trim() || "";
 
-    const whereConditions = showAll ? [] : [eq(menuItems.isAvailable, true)];
-
-    if (search) {
-      const searchPattern = `%${search}%`;
-      whereConditions.push(like(menuItems.name, searchPattern));
+    //const whereConditions = showAll ? [] : [eq(menuItems.isAvailable, true)];
+    const whereConditions: any[] = [];
+    
+    if (!showAll) {
+      whereConditions.push(eq(menuItems.isAvailable, true));
     }
+    if (search) {
+  if (search.length <= 50) { 
+    const searchPattern = `%${search}%`;
+    whereConditions.push(
+      or(
+        ilike(menuItems.name, searchPattern),
+        ilike(menuItems.description, searchPattern)
+      )
+    );
+  }
+}
 
     if (category) {
       whereConditions.push(eq(menuItems.category, category));
@@ -371,14 +382,14 @@ export const getBestSeller = async (req: Request, res: Response, next: NextFunct
 // export const updateMenu = async (req: Request, res: Response, next: NextFunction) => {
 //     try {
 //         const { id } = req.params;
-//         const { 
-//             name, 
-//             price, 
-//             description, 
-//             category, 
+//         const {
+//             name,
+//             price,
+//             description,
+//             category,
 //             isSignature,
 //             isAvailable,
-//             updatedByAdminId 
+//             updatedByAdminId
 //         } = req.body;
 
 //         // Check if menu item exists

@@ -20,6 +20,8 @@ import AdminOrderList from "./routes/AdminOrderList.tsx";
 import AdminPayment from "./routes/AdminPayment.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./context/AuthProvider.tsx";
+import PaymentPage from "./routes/PaymentPage.tsx";
+import SplitBillPage from "./routes/SplitBillPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -36,7 +38,7 @@ const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
-        path: "/menu/:groupId",
+        path: "/menu/:sessionId",
         element: <MenuPage />,
       },
       {
@@ -60,18 +62,29 @@ const router = createBrowserRouter([
         element: <RegisterPage />,
       },
       {
-        path: "/cart",
+        path: "/cart/:sessionId",
         element: <CartPage />,
       },
       {
-        path: "/orderstatus",
+        path: "/orderstatus/:sessionId",
         element: <OrderStatusPage />,
       },
       {
-        path: "/billpage",
+        path: "/billpage/:sessionId",
         element: <BillPage />,
       },
-      // Protected Admin Routes - แยกแต่ละ route
+            {
+        path: "/splitbill/:billId",
+        element: <SplitBillPage />,
+      },
+      {
+        path: "/payment/:billId",
+        element: <PaymentPage />,
+      },
+      {
+        path: "/payment/:billId/:memberId",
+        element: <PaymentPage />,
+      },     
       {
         path: "/admin/dashboard",
         element: (
