@@ -105,7 +105,12 @@ const groupedList = Object.values(groupedItems);
       <h2 className="text-xl text-center mb-2">Order Status</h2>
       <p className="text-sm text-center mb-6">
         Orders in progress:{" "}
-        <span className="font-semibold">{preparing.length + ready.length} items</span>
+        <span className="font-semibold">
+          {preparing.reduce((sum, item) => sum + item.quantity, 0) +
+          ready.reduce((sum, item) => sum + item.quantity, 0)}{" "}
+          items
+        </span>
+
       </p>
 
       {/* Preparing Section */}

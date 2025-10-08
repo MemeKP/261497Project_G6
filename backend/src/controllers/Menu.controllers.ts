@@ -13,7 +13,7 @@ import {
   group_members,
   menuItems as menu_items,
   orders,
-  orderItems,
+  order_items,
   menuItems,
 } from "@db/schema.js";
 
@@ -332,7 +332,7 @@ export const updateMenu = async (
 export const getBestSeller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // ถ้ามี order_items ใช้จำนวนสั่งจริง
-    const countOrders = await dbClient.select().from(orderItems).limit(1);
+    const countOrders = await dbClient.select().from(order_items).limit(1);
 
     let bestSellers;
 
@@ -344,12 +344,12 @@ export const getBestSeller = async (req: Request, res: Response, next: NextFunct
           description: menuItems.description,
           price: menuItems.price,
           imageUrl: menuItems.imageUrl,
-          totalOrders: sql<number>`SUM(${orderItems.quantity})`,
+          totalOrders: sql<number>`SUM(${order_items.quantity})`,
         })
-        .from(orderItems)
-        .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+        .from(order_items)
+        .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
         .groupBy(menuItems.id)
-        .orderBy(desc(sql`SUM(${orderItems.quantity})`))
+        .orderBy(desc(sql`SUM(${order_items.quantity})`))
         .limit(2);
     } else {
       // fallback: เลือก menu ใหม่ล่าสุด 2 เมนู

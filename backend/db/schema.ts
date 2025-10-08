@@ -78,29 +78,31 @@ export const menuItems = pgTable("menu_items", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-
 /**
  * Orders
  */
-export const orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
-  tableId: integer("table_id").notNull().references(() => tables.id),
-  diningSessionId: integer("dining_session_id").notNull().references(() => diningSessions.id),
-  status: varchar("status", { length: 20 }).default("PENDING"), // PENDING, PREPARING, SERVED, PAID
-  createdAt: timestamp("created_at").defaultNow(),
+export const orders = pgTable('orders', {
+  id: serial('id').primaryKey(),
+  table_id: integer('table_id').notNull(),
+  group_id: integer('group_id').references(() => groups.id), 
+  user_id: integer('user_id').references(() => users.id), 
+  dining_session_id: integer('dining_session_id').references(() => diningSessions.id),
+  status: varchar('status', { length: 20 }).default("PENDING"), 
+  created_at: timestamp('created_at').defaultNow()
 });
+
 
 /**
  * Order items (ผูกกับ member → ใครสั่ง)
  */
-export const orderItems = pgTable("order_items", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id").notNull().references(() => orders.id),
-  menuItemId: integer("menu_item_id").notNull().references(() => menuItems.id),
-  memberId: integer("member_id").notNull().references(() => members.id),
-  quantity: integer("quantity").default(1),
-  note: text("note"),
-  status: varchar("status", { length: 20 }).default("PREPARING"), // PREPARING, READY TO SERVE, CANCELLED , COMPLETE
+export const order_items = pgTable('order_items', {
+  id: serial('id').primaryKey(),
+  order_id: integer('order_id').notNull().references(() => orders.id),
+  menu_item_id: integer('menu_item_id').notNull().references(() => menuItems.id),
+  member_id: integer('member_id').notNull().references(() => group_members.id),
+  quantity: integer('quantity').default(1),
+  note: text('note'),
+  status: varchar("status", { length: 20 }).default("PREPARING"),
 });
 
 /**
@@ -182,3 +184,25 @@ export const members = pgTable("members", {
   joinedAt: timestamp("joined_at").defaultNow(),
   note: text('note'),
 });
+
+//------------------------------------
+// export const orderItems = pgTable("order_items", {
+//   id: serial("id").primaryKey(),
+//   orderId: integer("order_id").notNull().references(() => orders.id),
+//   menuItemId: integer("menu_item_id").notNull().references(() => menuItems.id),
+//   memberId: integer("member_id").notNull().references(() => members.id),
+//   quantity: integer("quantity").default(1),
+//   note: text("note"),
+//   status: varchar("status", { length: 20 }).default("PREPARING"), // PREPARING, READY TO SERVE, CANCELLED , COMPLETE
+// });
+
+// /**
+//  * Orders
+//  */
+// export const orders = pgTable("orders", {
+//   id: serial("id").primaryKey(),
+//   tableId: integer("table_id").notNull().references(() => tables.id),
+//   diningSessionId: integer("dining_session_id").notNull().references(() => diningSessions.id),
+//   status: varchar("status", { length: 20 }).default("PENDING"), // PENDING, PREPARING, SERVED, PAID
+//   createdAt: timestamp("created_at").defaultNow(),
+// });

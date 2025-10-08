@@ -36,6 +36,7 @@ const DetailsPage = () => {
   const [selectMembers, setSelectMembers] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState("");
+  const [currentOrder, setCurrentOrder] = useState(null);
 
   useEffect(() => {
     if (sessionId) {
@@ -94,23 +95,47 @@ const DetailsPage = () => {
   const calculateTotalPrice = () => {
     return (parseFloat(menu.price) * quantity).toFixed(0);
   };
-  const handleAddToCart = () => {
-    const cartItem = {
-      menuId: menu.id,
-      name: menu.name,
-      price: parseFloat(menu.price),
-      quantity: quantity,
+
+ const handleAddToCart = async () => {
+  if (selectMembers.length === 0) {
+    alert("Please select your member for this menu");
+    return;
+  }
+
+  try {
+    // สร้าง items array ตามที่ backend ต้องการ
+    const items = selectMembers.map(memberId => ({
+      menuId: menu.id,           // ใช้ menuId ตาม backend
+      qty: quantity,             // ใช้ qty ตาม backend
       note: note,
-      selectedMembers: selectMembers,
-      totalPrice: parseFloat(menu.price) * quantity,
-      imageUrl: menu.imageUrl,
-    };
-    console.log("Adding to cart:", cartItem);
-    alert(`Added ${quantity} ${menu.name} to cart!`);
+      memberId: memberId,        // เพิ่ม memberId สำหรับแบ่งคน
+    }));
+
+    console.log("Creating order with items:", {
+      diningSessionId: sessionId,
+      items: items
+    });
+
+    // ส่งครั้งเดียวเพื่อสร้าง order พร้อม items
+    const orderResponse = await axios.post('/api/orders', {
+      diningSessionId: sessionId,  // camelCase ตาม backend
+      items: items
+    });
+
+    console.log("Order created successfully:", orderResponse.data);
+    alert(`Add ${menu.name} success for ${selectMembers.length} members!`);
+
+    // รีเซ็ต state
     setQuantity(1);
     setNote("");
     setSelectMembers([]);
-  };
+    
+  } catch (error:any) {
+    console.error("Error creating order:", error.response?.data);
+    alert("Error: " + (error.response?.data?.error || error.message));
+  }
+};
+
   return (
     <div className="relative min-h-screen overflow-hidden flex flex-col">
       <Link to={`/homepage/${sessionId}`}>

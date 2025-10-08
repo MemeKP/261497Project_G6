@@ -1,5 +1,5 @@
 import { dbClient as db } from "db/client.js";
-import { bills, billSplits, orderItems, menuItems, members, orders, diningSessions } from "db/schema.js";
+import { bills, billSplits, order_items, menuItems, members, orders, diningSessions } from "db/schema.js";
 import { eq, and , inArray } from "drizzle-orm";
 
 export async function generateBill(orderId: number) {
@@ -15,17 +15,19 @@ export async function generateBill(orderId: number) {
     return { ...existingBill[0], splits };
   }
 
-  const diningSessionId = order.diningSessionId;
+  // ✅ ตรวจให้แน่ใจว่ามีค่าเสมอ
+      const diningSessionId = Number(order.dining_session_id);
+
 
   // คำนวณ subtotal
   const items = await db
     .select({
       price: menuItems.price,
-      quantity: orderItems.quantity,
+      quantity: order_items.quantity,
     })
-    .from(orderItems)
-    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
-    .where(eq(orderItems.orderId, orderId));
+    .from(order_items)
+    .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
+    .where(eq(order_items.order_id, orderId));
 
   const subtotal = items.reduce(
     (sum, item) => sum + item.price * (item.quantity ?? 0),
@@ -67,7 +69,7 @@ export async function generateBill(orderId: number) {
  */
 export async function generateBillForSession(sessionId: number) {
   // ดึง orders ทั้งหมดของ session
-  const ordersData = await db.select().from(orders).where(eq(orders.diningSessionId, sessionId));
+  const ordersData = await db.select().from(orders).where(eq(orders.dining_session_id, sessionId));
   if (ordersData.length === 0) throw new Error("No orders found for this session");
 
   const orderIds = ordersData.map(o => o.id);
@@ -75,14 +77,14 @@ export async function generateBillForSession(sessionId: number) {
   // ดึง orderItems + menuItems ทั้งหมด
   const items = await db
     .select({
-      memberId: orderItems.memberId,
+      memberId: order_items.member_id,
       price: menuItems.price,
-      quantity: orderItems.quantity,
+      quantity: order_items.quantity,
       menuName: menuItems.name,
     })
-    .from(orderItems)
-    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
-    .where(inArray(orderItems.orderId, orderIds));
+    .from(order_items)
+    .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
+    .where(inArray(order_items.order_id, orderIds));
 
   // คำนวณ subtotal
   const subtotal = items.reduce((sum, i) => sum + i.price * (i.quantity ?? 0), 0);
@@ -127,13 +129,13 @@ export async function calculateSplit(orderId: number, billId: number, serviceCha
   // ดึง orderItems + menuItems
   const items = await db
     .select({
-      memberId: orderItems.memberId,
+      memberId: order_items.member_id,
       price: menuItems.price,
-      quantity: orderItems.quantity,
+      quantity: order_items.quantity,
     })
-    .from(orderItems)
-    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
-    .where(eq(orderItems.orderId, orderId));
+    .from(order_items)
+    .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
+    .where(eq(order_items.order_id, orderId));
 
   // รวมยอดแต่ละ member
   const memberTotals: Record<number, number> = {};

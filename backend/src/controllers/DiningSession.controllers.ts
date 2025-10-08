@@ -12,7 +12,6 @@ import {
   group_members,
   menuItems,
   orders,
-  orderItems,
 } from "@db/schema.js";
 
 export const startSession = async (
@@ -50,7 +49,7 @@ export const startSession = async (
         tableId: tableId,
         startedAt: startedAt,
         status: "ACTIVE",
-        qrCode: "http://example.com/qr/1",
+        qrCode: "", // QR Code URL will be generated later
         total_customers: 0,
         createdAt: new Date(),
         openedByAdminId: 1,
@@ -64,14 +63,16 @@ export const startSession = async (
         created_at: diningSessions.createdAt,
       });
 
+    // QR Data setup with dynamic URL based on frontend environment
     const qrData = {
       sessionId: newSession[0].id,
       tableId: tableId,
-      url: `${process.env.VITE_FRONTEND_URL || "http://localhost:3000"}/tables/${
-        newSession[0].id
-      }`,
+      url: `${
+        process.env.PRODUCTION_FRONTEND_URL || "http://10.0.0.51:5173"
+      }/tables/${newSession[0].id}`, // Dynamic URL ไม่รุ้อ่ะ
     };
 
+    // Generate QR Code
     const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrData), {
       errorCorrectionLevel: "M",
       margin: 1,
@@ -82,6 +83,12 @@ export const startSession = async (
       width: 256,
     });
 
+    // Update session with generated QR Code
+    await dbClient
+      .update(diningSessions)
+      .set({ qrCode: qrCodeDataURL })
+      .where(eq(diningSessions.id, newSession[0].id));
+
     res.status(201).json({
       message: `Dining session started successfully for table ${tableId}`,
       session: {
@@ -91,12 +98,54 @@ export const startSession = async (
         status: newSession[0].status,
         totalCustomers: newSession[0].total_customers,
         createdAt: newSession[0].created_at,
-        qrCode: qrCodeDataURL,
+        qrCode: qrCodeDataURL, // Send back QR Code URL
         qrData: qrData,
       },
     });
   } catch (err) {
     next(err);
+  }
+};
+
+export const getQrForTable = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { tableId } = req.params;
+    if (!tableId || isNaN(Number(tableId))) {
+      return res.status(400).json({ error: "Invalid table ID" });
+    }
+
+    const tableIdNum = Number(tableId);
+
+    const [session] = await dbClient
+      .select()
+      .from(diningSessions)
+      .where(
+        and(
+          eq(diningSessions.tableId, tableIdNum),
+          eq(diningSessions.status, "ACTIVE")
+        )
+      )
+      .limit(1);
+
+    if (!session) {
+      return res
+        .status(404)
+        .json({ error: "No active session found for this table" });
+    }
+
+    if (session.qrCode) {
+      return res.json({ qrCode: session.qrCode });
+    } else {
+      return res
+        .status(404)
+        .json({ error: "QR Code not found for this table" });
+    }
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -250,7 +299,11 @@ export const getActiveSession = async (
   }
 };
 
-export const getSession = async (req: Request, res: Response, next: NextFunction) => {
+export const getSession = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const sessionId = parseInt(req.params.sessionId);
     if (isNaN(sessionId)) {
@@ -264,7 +317,6 @@ export const getSession = async (req: Request, res: Response, next: NextFunction
         endedAt: diningSessions.endedAt,
         status: diningSessions.status,
         totalCustomers: diningSessions.total_customers,
-        total: diningSessions.total, // ✅ เพิ่มบรรทัดนี้
         createdAt: diningSessions.createdAt,
         qrCode: diningSessions.qrCode,
       })
@@ -278,16 +330,20 @@ export const getSession = async (req: Request, res: Response, next: NextFunction
     }
 
     if (!sessionData.qrCode) {
-      return res.status(500).json({ error: "Session QR Code data is missing in the database." });
+      return res
+        .status(500)
+        .json({ error: "Session QR Code data is missing in the database." });
     }
     const group = await dbClient.query.groups.findFirst({
       where: eq(groups.table_id, sessionData.tableId),
     });
 
     const members = group
-      ? (await dbClient.query.group_members.findMany({
-          where: eq(group_members.group_id, group.id),
-        })).map((member) => ({
+      ? (
+          await dbClient.query.group_members.findMany({
+            where: eq(group_members.group_id, group.id),
+          })
+        ).map((member) => ({
           id: member.id,
           name: member.name,
           note: member.note,
@@ -295,7 +351,10 @@ export const getSession = async (req: Request, res: Response, next: NextFunction
       : [];
     const duration =
       sessionData.endedAt && sessionData.startedAt
-        ? Math.round((sessionData.endedAt.getTime() - sessionData.startedAt.getTime()) / 60000)
+        ? Math.round(
+            (sessionData.endedAt.getTime() - sessionData.startedAt.getTime()) /
+              60000
+          )
         : null;
     res.json({
       session: {
@@ -306,7 +365,6 @@ export const getSession = async (req: Request, res: Response, next: NextFunction
         qrCode: sessionData.qrCode,
         status: sessionData.status,
         totalCustomers: members.length,
-        total: Number(sessionData.total) ?? 0,
         createdAt: sessionData.createdAt,
         durationMinutes: duration,
       },
