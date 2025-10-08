@@ -58,7 +58,7 @@ export const orders = pgTable('orders', {
 //   status: varchar("status", { length: 20 }).default("PREPARING"),
 // });
 
-export const order_items = pgTable('order_items', {
+export const orderItems = pgTable('order_items', {
   id: serial('id').primaryKey(),
   order_id: integer('order_id').notNull().references(() => orders.id),
   menu_item_id: integer('menu_item_id').notNull().references(() => menuItems.id),
@@ -107,8 +107,9 @@ export const tables = pgTable("tables", {
  */
 export const diningSessions = pgTable("dining_sessions", {
   id: serial("id").primaryKey(),
-  tableId: integer("table_id").notNull(),
-  openedByAdminId: integer("opened_by_admin_id").notNull(),
+  tableId: integer("table_id").notNull().references(() => tables.id),
+  openedByAdminId: integer("opened_by_admin_id").notNull().references(() => admins.id),
+  total: decimal("total", { precision: 10, scale: 2 }).$type<number>().default(0), 
   total_customers: integer("total_customers"),
   qrCode: text("qr_code").notNull(),
   startedAt: timestamp("started_at").defaultNow(),
@@ -166,9 +167,9 @@ export const menuItems = pgTable("menu_items", {
  */
 export const bills = pgTable("bills", {
   id: serial("id").primaryKey(),
-  orderId: integer("order_id").notNull(),
-  diningSessionId: integer("dining_session_id").notNull(),
-  subtotal: money("subtotal").default(0), 
+  orderId: integer("order_id").references(() => orders.id),
+  diningSessionId: integer("dining_session_id").notNull().references(() => diningSessions.id),
+  subtotal: money("subtotal").default(0),
   serviceCharge: money("service_charge").default(0),
   vat: money("vat").default(0),
   total: money("total").default(0),
@@ -181,9 +182,9 @@ export const bills = pgTable("bills", {
  */
 export const billSplits = pgTable("bill_splits", {
   id: serial("id").primaryKey(),
-  billId: integer("bill_id").notNull(),
-  memberId: integer("member_id").notNull(),
-  amount: money("amount").notNull(), 
+  billId: integer("bill_id").notNull().references(() => bills.id),
+  memberId: integer("member_id").notNull().references(() => members.id),
+  amount: money("amount").notNull(),
   paid: boolean("paid").default(false),
 });
 
@@ -192,11 +193,12 @@ export const billSplits = pgTable("bill_splits", {
  */
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
-  billId: integer("bill_id").notNull(),
-  billSplitId: integer("bill_split_id"), // null = full bill
-  memberId: integer("member_id"),        // null = full bill
-  method: varchar("method", { length: 20 }).notNull(), // เช่น QR / cash / card
-  amount: money("amount").notNull(), 
+  billId: integer("bill_id").notNull().references(() => bills.id),
+  billSplitId: integer("bill_split_id").references(() => billSplits.id), // null = full bill
+  memberId: integer("member_id").references(() => members.id),        // null = full bill
+  method: varchar("method", { length: 20 }).notNull(), // เช่น QR
+  amount: money("amount").notNull(),
   status: varchar("status", { length: 20 }).default("PENDING"), // PENDING, PAID, FAILED
   paidAt: timestamp("paid_at"),
+  ref1: varchar("ref1", { length: 100 }),
 });

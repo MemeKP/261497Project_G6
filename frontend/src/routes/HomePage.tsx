@@ -1,4 +1,3 @@
-import { LuSearch } from "react-icons/lu";
 import homepage from "../assets/imgs/homepage.png";
 import sg1 from "../assets/imgs/signature.png";
 import { FaArrowRightLong } from "react-icons/fa6";

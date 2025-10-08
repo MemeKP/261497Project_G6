@@ -32,4 +32,3 @@ const BestSellerList = () => {
 
 export default BestSellerList;
 
-

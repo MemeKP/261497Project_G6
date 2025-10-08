@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import backIcon from "../assets/imgs/back.png"
+import backIcon from "../assets/imgs/back.png";
 import logo from "../assets/imgs/logo.png";
 
 interface PaymentData {

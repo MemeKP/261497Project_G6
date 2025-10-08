@@ -12,7 +12,7 @@ import {
   group_members,
   menuItems,
   orders,
-  order_items,
+  orderItems,
 } from "@db/schema.js";
 
 export const startSession = async (
@@ -318,6 +318,7 @@ export const getSession = async (
         endedAt: diningSessions.endedAt,
         status: diningSessions.status,
         totalCustomers: diningSessions.total_customers,
+        total: diningSessions.total, // ✅ เพิ่มบรรทัดนี้
         createdAt: diningSessions.createdAt,
         qrCode: diningSessions.qrCode,
       })
@@ -366,6 +367,7 @@ export const getSession = async (
         qrCode: sessionData.qrCode,
         status: sessionData.status,
         totalCustomers: members.length,
+        total: Number(sessionData.total) ?? 0,
         createdAt: sessionData.createdAt,
         durationMinutes: duration,
       },

@@ -53,14 +53,8 @@ export async function deleteOrderItem(id: number) {
     .where(eq(orderItems.id, id))
     .returning();
 
-  return deleted || null;
-}
+  if (!deleted) return null;
 
-export async function getOrderItemCount(orderId: number) {
-  const result = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(order_items)
-    .where(eq(order_items.order_id, orderId));
-  
-  return result[0]?.count || 0;
+  // ลบแล้วไม่จำเป็นต้อง join menu 
+  return { ...deleted, message: "Deleted successfully" };
 }

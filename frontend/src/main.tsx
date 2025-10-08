@@ -18,11 +18,17 @@ import LoginPage from "./routes/LoginPage.tsx";
 import AdminDashBoard from "./routes/AdminDashBoard.tsx";
 import AdminOrderList from "./routes/AdminOrderList.tsx";
 import AdminPayment from "./routes/AdminPayment.tsx";
+<<<<<<< HEAD
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./context/AuthProvider.tsx";
 import PaymentPage from "./routes/PaymentPage.tsx";
 import SplitBillPage from "./routes/SplitBillPage.tsx";
 import { CartProvider } from "./context/CartContext.tsx";
+=======
+import PaymentPage from "./routes/PaymentPage.tsx";
+import SplitBillPage from "./routes/SplitBillPage.tsx";
+import SessionPage from "./routes/SessionPage.tsx";
+>>>>>>> origin/frontend-backend-admin/login
 
 const queryClient = new QueryClient();
 
@@ -39,7 +45,11 @@ const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
+<<<<<<< HEAD
         path: "/menu/:sessionId",
+=======
+        path: "/menu/:groupId",
+>>>>>>> origin/frontend-backend-admin/login
         element: <MenuPage />,
       },
       {

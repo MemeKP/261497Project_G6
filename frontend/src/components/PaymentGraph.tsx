@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Chart, registerables, ChartConfiguration } from 'chart.js';
+import { Chart, registerables } from 'chart.js';
+import type { ChartConfiguration } from 'chart.js';
 import { TrendingUp } from 'lucide-react';
 import type { PaymentGraphProps } from '../types';
 import { defaultData } from '../config/dummy_data';
@@ -127,7 +128,7 @@ const PaymentGraph = ({
             beginAtZero: true,
             grid: {
               color: 'rgba(0, 0, 0, 0.05)',
-              drawBorder: false,
+              display: false,
             },
             ticks: {
               callback: function(value) {

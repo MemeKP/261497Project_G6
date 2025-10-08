@@ -10,7 +10,7 @@ import {
   group_members,
   menuItems as menu_items,
   orders,
-  order_items,
+  orderItems,
   diningSessions,
 } from "@db/schema.js";
 

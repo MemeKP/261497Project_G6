@@ -76,16 +76,54 @@ export async function updateOrderStatus(orderId: number, status: string) {
 
   return updated;
 }
-
 export async function getOrderById(orderId: number) {
-  const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
-  return order || null;
+  const [order] = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.id, orderId));
+
+  if (!order) return null;
+
+  const items = await db
+    .select({
+      id: orderItems.id,
+      orderId: orderItems.orderId,
+      quantity: orderItems.quantity,
+      note: orderItems.note,
+      menuItemId: orderItems.menuItemId,
+      menuName: menuItems.name,
+      menuPrice: menuItems.price,
+      memberName: members.name,
+    })
+    .from(orderItems)
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+    .where(eq(orderItems.orderId, orderId));
+
+  return { ...order, items };
 }
 
+/**
+ * ดึง Orders ทั้งหมด 
+ */
 export async function getAllOrders() {
-  return await db.select().from(orders);
+  const ordersData = await db.select().from(orders);
+  if (ordersData.length === 0) return [];
+
+  const orderIds = ordersData.map((o) => o.id);
+  const itemsData = await db
+    .select()
+    .from(orderItems)
+    .where(inArray(orderItems.orderId, orderIds));
+
+  return ordersData.map((order) => ({
+    ...order,
+    items: itemsData.filter((i) => i.orderId === order.id),
+  }));
 }
 
+/**
+ * ลบ Order
+ */
 export async function deleteOrder(orderId: number) {
   const [deleted] = await db.delete(orders).where(eq(orders.id, orderId)).returning();
   return deleted || null;

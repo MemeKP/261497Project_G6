@@ -15,7 +15,7 @@ interface SessionData {
 
 const SessionPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
-//   const navigate = useNavigate();
+  const navigate = useNavigate();
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
 

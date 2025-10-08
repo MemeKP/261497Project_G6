@@ -1,4 +1,4 @@
-import type { Table } from "../types";
+import type { Table ,PaymentData } from "../types";
 
 export const menus = [
   {
