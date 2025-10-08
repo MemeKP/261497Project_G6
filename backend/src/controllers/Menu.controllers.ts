@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import express from "express";
 import "dotenv/config";
 import ImageKit from "imagekit";
-import { eq, and, isNotNull, ilike, sql, like, or, desc } from "drizzle-orm";
+import { eq, and, isNotNull, ilike, sql, like, or, desc, asc } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
   users,

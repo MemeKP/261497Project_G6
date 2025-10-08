@@ -8,7 +8,7 @@ import {
   members,
   menuItems,
   orders,
-  orderItems,
+  order_items as orderItems,
   groups,
 } from "@db/schema.js";
 import bcrypt from "bcrypt";
@@ -481,7 +481,7 @@ async function queryOrders() {
 }
 
 async function queryOrderItems() {
-  const results = await dbClient.query.orderItems.findMany();
+  const results = await dbClient.query.order_items.findMany();
   console.log("Order Items:", results);
   dbConn.end();
 }

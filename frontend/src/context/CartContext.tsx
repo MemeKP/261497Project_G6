@@ -70,11 +70,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!orderId) return;
     
     try {
-      console.log('Fetching cart count for order:', orderId); // debug
+      console.log('Fetching cart count for order:', orderId); 
       const response = await axios.get(`/api/order-items/count?orderId=${orderId}`);
-       console.log('Cart count response:', response.data); // debug
+       console.log('Cart count response:', response.data); 
+       const count = Number(response.data.count);
     
-      setCartCount(response.data.count);
+      setCartCount(count);
     } catch (error) {
       console.error('Error fetching cart count:', error);
     }

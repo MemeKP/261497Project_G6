@@ -82,7 +82,7 @@ export async function getCartItemCount(req: Request, res: Response) {
     }
 
     const count = await orderItemService.getOrderItemCount(Number(orderId));
-    res.json({ count });
+   res.json({ count: Number(count) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
