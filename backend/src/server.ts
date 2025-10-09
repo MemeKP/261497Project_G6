@@ -22,15 +22,32 @@ app.use(
 );
 app.use(express.json());
 
+app.set("trust proxy", 1);
+
+// app.use(
+//   session({
+//     secret:
+//       process.env.SESSION_SECRET || "your-secret-key-change-this-in-production",
+//     resave: false,
+//     saveUninitialized: false,
+//     cookie: {
+//       secure: process.env.NODE_ENV === "production",
+//       httpOnly: true,
+//       sameSite: "lax", 
+//       maxAge: 24 * 60 * 60 * 1000,
+//     },
+//   })
+// );
+
 app.use(
   session({
-    secret:
-      process.env.SESSION_SECRET || "your-secret-key-change-this-in-production",
+    secret: process.env.SESSION_SECRET || "dev-secret",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
       httpOnly: true,
+      secure: false,      // ✅ ต้อง false ใน localhost
+      sameSite: "lax",    // ✅ ถ้าใช้ HTTPS ให้เปลี่ยนเป็น "none"
       maxAge: 24 * 60 * 60 * 1000,
     },
   })

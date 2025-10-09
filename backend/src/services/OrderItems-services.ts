@@ -1,5 +1,5 @@
 import { dbClient as db } from "db/client.js";
-import { order_items, orders, menuItems, members } from "db/schema.js";
+import { order_items, orders, menuItems,group_members } from "db/schema.js";
 import { eq } from "drizzle-orm";
 
 /**
@@ -10,14 +10,15 @@ export async function addOrderItem(
   menu_item_id: number,
   member_id: number,
   quantity: number,
-  note?: string
+  note?: string,
+  status: string = "PREPARING"
 ) {
   // checkว่า orderId มีอยู่จริง
   const [order] = await db.select().from(orders).where(eq(orders.id,order_id));
   if (!order) throw new Error("Order not found");
 
   // checkว่า memberId มีอยู่จริง
-  const [member] = await db.select().from(members).where(eq(members.id, member_id));
+  const [member] = await db.select().from(group_members).where(eq(group_members.id, member_id));
   if (!member) throw new Error("Member not found");
 
   //  checkว่า member กับ order อยู่ใน session เดียวกัน
@@ -64,19 +65,23 @@ export async function getOrderItemsByOrderId(orderId: number) {
     .select({
       id: order_items.id,
       orderId: order_items.order_id,
+      menuItemId: order_items.menu_item_id,
       memberId: order_items.member_id,
+      memberName: group_members.name,
       quantity: order_items.quantity,
       note: order_items.note,
-      menuItemId: order_items.menu_item_id,
       menuName: menuItems.name,
       menuPrice: menuItems.price,
+      status: order_items.status,
     })
     .from(order_items)
     .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
+    .leftJoin(group_members, eq(order_items.member_id, group_members.id)) // ✅ join ตาราง members
     .where(eq(order_items.order_id, orderId));
 
   return items;
 }
+
 
 /**
  * ดึง OrderItems ทั้งหมดของ Session (ใช้ในหน้า Order Status)
@@ -86,14 +91,19 @@ export async function getOrderItemsBySession(sessionId: number) {
     .select({
       id: order_items.id,
       menuName: menuItems.name,
-      quantity:order_items.quantity,
+      menuPrice: menuItems.price,
+      quantity: order_items.quantity,
+      note: order_items.note,
+      memberName: group_members.name,
       status: order_items.status,
     })
     .from(order_items)
     .innerJoin(orders, eq(order_items.order_id, orders.id))
     .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
+    .leftJoin( group_members, eq(order_items.member_id, group_members.id)) // ✅ เพิ่ม join member
     .where(eq(orders.dining_session_id, sessionId));
 }
+
 
 /**
  * อัปเดทสถานะของ OrderItem

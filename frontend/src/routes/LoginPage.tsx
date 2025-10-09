@@ -1,5 +1,5 @@
 import bg1 from "../assets/imgs/bg-1.png";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUser, FaLock } from "react-icons/fa";
 
@@ -9,6 +9,26 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const checkIfAlreadyLogin = async () => {
+      try {
+        const res = await fetch("/api/auth/me", {
+          credentials: "include",
+        });
+
+        if (res.ok) {
+      
+          navigate("/admin/dashboard");
+        }
+      } catch (err) {
+        console.log("Not logged in");
+      }
+    };
+
+    checkIfAlreadyLogin();
+  }, [navigate]);
+
+  /* Login */
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -58,9 +78,7 @@ const LoginPage = () => {
         >
           {/* Username or Email */}
           <div className="flex flex-col gap-1 w-full">
-            <label className="text-xs text-white font-[Gantari]">
-              email
-            </label>
+            <label className="text-xs text-white font-[Gantari]">email</label>
             <div className="flex items-center gap-3 border-2 border-black bg-white/90 rounded-md px-4 h-12 w-full">
               <FaUser className="text-gray-400" />
               <input

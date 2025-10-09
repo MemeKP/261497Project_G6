@@ -21,6 +21,10 @@ import AdminPayment from "./routes/AdminPayment.tsx";
 import PaymentPage from "./routes/PaymentPage.tsx";
 import SplitBillPage from "./routes/SplitBillPage.tsx";
 import SessionPage from "./routes/SessionPage.tsx";
+import { AuthProvider } from "./context/AuthProvider.tsx";
+import ProtectedRoute from "./components/ProtectedRoute.tsx";
+
+import { CartProvider } from "./context/CartContext.tsx";
 
 const queryClient = new QueryClient();
 
@@ -61,7 +65,7 @@ const router = createBrowserRouter([
         element: <RegisterPage />,
       },
       {
-        path: "/cart/:sessionId",
+        path: "/cart/:sessionId/:orderId",
         element: <CartPage />,
       },
       {
@@ -100,6 +104,14 @@ const router = createBrowserRouter([
         path: "/admin/payment",
         element: <AdminPayment/>
       },
+      {
+        path: "/admin/payment",
+        element: (
+          <ProtectedRoute>
+            <AdminPayment />
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
 ]);
@@ -108,7 +120,9 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     {/* <App /> */}
     <QueryClientProvider client={queryClient}>
+        <CartProvider>
       <RouterProvider router={router} />
+      </CartProvider>
     </QueryClientProvider>
   </StrictMode>
 );

@@ -12,14 +12,24 @@ const AdminNav = () => {
 
   const handleLogout = async () => {
     try {
-      //
-      setCurrentUser(null)
-      setUserLogin(false)
-      navigate('/login')
+      const res = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include", // ✅ สำคัญมาก ต้องมี!
+      });
+
+      if (!res.ok) {
+        console.error("Logout failed:", await res.text());
+        return;
+      }
+
+      setCurrentUser(null);
+      setUserLogin(false);
+      navigate("/login");
     } catch (error) {
-      console.log("Cannot logout: ", error)
+      console.error("Cannot logout:", error);
     }
-  }
+  };
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

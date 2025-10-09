@@ -134,8 +134,6 @@
 
 import type { NextFunction, Request, Response } from "express";
 import * as orderService from "src/services/Orders-services.js";
-import QRCode from "qrcode";
-import express from "express";
 import "dotenv/config";
 import { eq, and, isNotNull } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
@@ -151,7 +149,7 @@ import {
 } from "@db/schema.js";
 
 // Allowed status values
-const allowedStatus = ["PENDING", "PREPARING", "READY_TO_SERVE", "CANCELLED", "COMPLETE"] as const;
+const allowedStatus = ["PENDING", "CLOSED"] as const;
 
 export async function createOrder(req: Request, res: Response) {
   try {
@@ -177,6 +175,7 @@ export async function createOrder(req: Request, res: Response) {
     // ส่งไปให้ service จัดการสร้าง order + orderItems
     const order = await orderService.createOrderWithItems(
       Number(diningSessionId),
+      Number(req.body.tableId),
       items
     );
 
@@ -185,6 +184,29 @@ export async function createOrder(req: Request, res: Response) {
     res.status(500).json({ error: err.message });
   }
 }
+
+// ✅ สำหรับปุ่ม New Order (ไม่มีเมนู)
+export async function createNewOrder(req: Request, res: Response) {
+  try {
+    const { diningSessionId, tableId } = req.body;
+
+    if (!diningSessionId || isNaN(Number(diningSessionId))) {
+      return res.status(400).json({ error: "Valid diningSessionId is required" });
+    }
+
+    // เรียก service ตัวที่มีอยู่แล้ว (createOrder)
+    const order = await orderService.createOrder(
+      Number(diningSessionId),
+      Number(tableId) || 1 // ป้องกัน null
+    );
+
+    res.status(201).json(order);
+  } catch (err: any) {
+    console.error("Error creating empty order:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
 
 export async function getOrders(req: Request, res: Response) {
   try {
@@ -521,18 +543,17 @@ export const getOrderByIdAdmin = async (req:Request, res:Response, next:NextFunc
   }
 }
 
-export const updateOrderStatusByAdmin = async (req:Request, res:Response, next:NextFunction) => {
+export const updateOrderStatusByAdmin = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orderId = parseInt(req.params.orderId);
     const { status } = req.body;
 
     if (isNaN(orderId)) {
-      return res.status(400).json({
-        error: "Invalid Order ID",
-      });
+      return res.status(400).json({ error: "Invalid Order ID" });
     }
 
-    const validStatuses = ["PENDING", "PREPARING", "SERVED", "COMPLETED"];
+    // ✅ เปลี่ยน validStatuses เหลือแค่ 2 สถานะหลัก
+    const validStatuses = ["PENDING", "CLOSED"];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({
         error: "Invalid status. Must be one of: " + validStatuses.join(", "),
@@ -544,12 +565,10 @@ export const updateOrderStatusByAdmin = async (req:Request, res:Response, next:N
     });
 
     if (!existingOrder) {
-      return res.status(404).json({
-        error: "Order not found",
-      });
+      return res.status(404).json({ error: "Order not found" });
     }
 
-    const updatedOrder = await dbClient
+    const [updatedOrder] = await dbClient
       .update(orders)
       .set({ status })
       .where(eq(orders.id, orderId))
@@ -566,18 +585,42 @@ export const updateOrderStatusByAdmin = async (req:Request, res:Response, next:N
     res.json({
       message: `Order ${orderId} status updated to ${status}`,
       order: {
-        id: updatedOrder[0].id,
-        tableId: updatedOrder[0].table_id,
-        groupId: updatedOrder[0].group_id,
-        userId: updatedOrder[0].user_id,
-        diningSessionId: updatedOrder[0].dining_session_id,
-        status: updatedOrder[0].status,
-        createdAt: updatedOrder[0].created_at,
+        id: updatedOrder.id,
+        tableId: updatedOrder.table_id,
+        groupId: updatedOrder.group_id,
+        userId: updatedOrder.user_id,
+        diningSessionId: updatedOrder.dining_session_id,
+        status: updatedOrder.status,
+        createdAt: updatedOrder.created_at,
       },
     });
   } catch (err) {
     console.error("Error in /orders/:orderId/status:", err);
     next(err);
   }
-}
+};
 
+export async function closeOrdersBySession(req: Request, res: Response) {
+  try {
+    const { sessionId } = req.params;
+    const numericSessionId = Number(sessionId);
+
+    if (isNaN(numericSessionId)) {
+      return res.status(400).json({ error: "Invalid sessionId" });
+    }
+
+    const updated = await dbClient
+      .update(orders)
+      .set({ status: "CLOSED" })
+      .where(eq(orders.dining_session_id, numericSessionId))
+      .returning();
+
+    if (updated.length === 0) {
+      return res.status(404).json({ error: "No orders found for this session" });
+    }
+
+    res.json({ message: "All orders in this session have been closed.", updated });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+}
