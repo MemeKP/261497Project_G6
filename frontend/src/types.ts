@@ -13,6 +13,7 @@ export interface Group {
 
 export interface SessionResponse {
   session: Session;
+  tableId: number;
   group: Group | null;
 }
 

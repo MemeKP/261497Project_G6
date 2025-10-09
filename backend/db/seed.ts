@@ -292,6 +292,7 @@ import {
   orders,
   order_items,
   groups,
+  group_members,
 } from "@db/schema.js";
 
 /** 🧹 Clear all data before seeding */
@@ -380,6 +381,38 @@ async function insertGroups(session: any, table: any) {
   return group;
 }
 
+
+/** 6. Insert Group Members */
+async function insertGroupMembers(group: any, sessionId: number) {
+  const inserted = await dbClient
+    .insert(group_members)
+    .values([
+      {
+        name: "Alice",
+        group_id: group.id,
+        diningSessionId: sessionId,
+        isTableAdmin: true,
+        note: "Table host",
+      },
+      {
+        name: "Bob",
+        group_id: group.id,
+        diningSessionId: sessionId,
+        isTableAdmin: false,
+      },
+      {
+        name: "Charlie",
+        group_id: group.id,
+        diningSessionId: sessionId,
+        isTableAdmin: false,
+      },
+    ])
+    .returning();
+
+  console.log("Inserted group members:", inserted);
+  return inserted;
+}
+
 /** 5. Insert Menu Items */
 async function insertMenuItems() {
   const inserted = await dbClient
@@ -414,16 +447,31 @@ async function insertMenuItems() {
 }
 
 /** 🧩 Main Seeder */
+/** 🧩 Main Seeder */
 async function main() {
   await clearDatabase();
+
+  // 1. Admin
   const admin = await insertAdmins();
+
+  // 2. Table
   const [table] = await insertTables();
+
+  // 3. Dining Session
   const session = await insertDiningSessions(admin, table);
-  await insertGroups(session, table);
+
+  // 4. Group
+  const group = await insertGroups(session, table);
+
+  // 5. Menu
   await insertMenuItems();
+
+  // 6. Group Members
+  await insertGroupMembers(group, session.id);
 
   console.log("🎉 Done! QR code generated for session:", session.id);
 }
+
 
 main()
   .then(() => {

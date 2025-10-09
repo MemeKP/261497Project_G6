@@ -10,8 +10,7 @@ interface OrderItem {
 }
 
 interface BillData {
-  id?: number; 
-  billId: number;
+  id: number;          // ✅ bill id จริง
   orderId: number;
   subtotal: number;
   serviceCharge: number;
@@ -39,7 +38,6 @@ const BillPage = () => {
           return;
         }
 
-        // ✅ แปลง price เป็น number เพื่อกัน .toFixed error
         const fixedData = {
           ...data,
           items: data.items.map((i: any) => ({
@@ -84,7 +82,6 @@ const BillPage = () => {
 
       {/* Bill Card */}
       <div className="bg-white text-black rounded-2xl p-6 w-[90%] mx-auto shadow-lg">
-        {/* Table info */}
         <div className="flex items-center gap-4 mb-4">
           <img src={logo} alt="ENSO" className="w-10 h-10 rounded-full" />
           <div>
@@ -93,7 +90,6 @@ const BillPage = () => {
           </div>
         </div>
 
-        {/* Items list */}
         <div className="text-sm mb-4">
           <div className="grid grid-cols-[1fr_64px_100px] font-semibold border-b border-dashed border-gray-400 pb-1">
             <span>Item</span>
@@ -115,7 +111,6 @@ const BillPage = () => {
           ))}
         </div>
 
-        {/* Summary */}
         <div className="text-sm border-t border-dashed border-gray-400 pt-2">
           <div className="flex justify-between">
             <span>Sub Total</span>
@@ -127,7 +122,6 @@ const BillPage = () => {
           </div>
         </div>
 
-        {/* Total */}
         <div className="flex justify-between font-bold text-lg mt-2">
           <span>Total</span>
           <span>{Number(bill.total).toFixed(2)}</span>
@@ -148,29 +142,18 @@ const BillPage = () => {
         <button
           onClick={async () => {
             try {
-              // ✅ ดึง order ล่าสุดใน session (เพื่อให้ได้ orderId)
-              const orderRes = await fetch(`/api/orders/session/${sessionId}`, {
-                credentials: "include",
-              });
-              const orders = await orderRes.json();
-              if (!orders || orders.length === 0) {
-                alert("No orders found for this session.");
-                return;
-              }
-
-              const latestOrder = orders[orders.length - 1];
-              const orderId = latestOrder.id;
-
-              // ✅ สร้าง Split Bill จาก orderId
-              const res = await fetch(`/api/bill-splits/orders/${orderId}/bill`, {
+              // ✅ เรียกให้ backend สร้าง Split Bill จาก billId (ไม่ใช่ session)
+              const res = await fetch(`/api/bill-splits/sessions/${sessionId}/bill?force=true`, {
                 method: "POST",
                 credentials: "include",
               });
 
               if (!res.ok) throw new Error("Failed to split bill");
-              const billData = await res.json();
 
+              const billData = await res.json();
               console.log("✅ Split Bill created:", billData);
+
+              // ✅ ไปหน้า split bill ของบิลนี้โดยใช้ billId จริง
               navigate(`/splitbill/${billData.id}`);
             } catch (err) {
               console.error("Error splitting bill:", err);
@@ -183,8 +166,6 @@ const BillPage = () => {
         >
           Split Bill
         </button>
-
-    
       </div>
     </div>
   );

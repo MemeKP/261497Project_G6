@@ -22,6 +22,7 @@ export async function createOrderItem(req: Request, res: Response) {
       Number(memberId),
       Number(quantity),
       note
+      
     );
 
     res.status(201).json(item);

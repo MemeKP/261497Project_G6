@@ -87,7 +87,7 @@ export const orders = pgTable('orders', {
   group_id: integer('group_id').references(() => groups.id), 
   user_id: integer('user_id').references(() => users.id), 
   dining_session_id: integer('dining_session_id').references(() => diningSessions.id),
-  status: varchar('status', { length: 20 }).default("PENDING"), 
+  status: varchar('status', { length: 20 }).default("PENDING").notNull(), // ✅ แค่สองค่านี้พอ
   created_at: timestamp('created_at').defaultNow()
 });
 
@@ -102,7 +102,8 @@ export const order_items = pgTable('order_items', {
   member_id: integer('member_id').notNull().references(() => group_members.id),
   quantity: integer('quantity').default(1),
   note: text('note'),
-  status: varchar("status", { length: 20 }).default("PREPARING"),
+  status: varchar("status", { length: 20 }).default("PREPARING").notNull(), // ✅ เพิ่มตรงนี้
+
 });
 
 /**
@@ -125,8 +126,8 @@ export const bills = pgTable("bills", {
  */
 export const billSplits = pgTable("bill_splits", {
   id: serial("id").primaryKey(),
-  billId: integer("bill_id").notNull().references(() => bills.id),
-  memberId: integer("member_id").notNull().references(() => members.id),
+  billId: integer("bill_id").notNull().references(() => bills.id , { onDelete: "cascade" }),
+  memberId: integer("member_id").notNull().references(() => group_members.id),
   amount: money("amount").notNull(),
   paid: boolean("paid").default(false),
 });
@@ -138,7 +139,7 @@ export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
   billId: integer("bill_id").notNull().references(() => bills.id),
   billSplitId: integer("bill_split_id").references(() => billSplits.id), // null = full bill
-  memberId: integer("member_id").references(() => members.id),        // null = full bill
+  memberId: integer("member_id").references(() => group_members.id),        // null = full bill
   method: varchar("method", { length: 20 }).notNull(), // เช่น QR
   amount: money("amount").notNull(),
   status: varchar("status", { length: 20 }).default("PENDING"), // PENDING, PAID, FAILED
@@ -172,18 +173,18 @@ export const group_members = pgTable('group_members', {
 });
 
 
-/**
- * Members (ลูกค้าที่โต๊ะ)
- * 1 คนในโต๊ะจะเป็น table admin (isTableAdmin = true)
- */
-export const members = pgTable("members", {
-  id: serial("id").primaryKey(),
-  diningSessionId: integer("dining_session_id").notNull(),
-  name: varchar("name", { length: 100 }).notNull(),
-  isTableAdmin: boolean("is_table_admin").default(false),
-  joinedAt: timestamp("joined_at").defaultNow(),
-  note: text('note'),
-});
+// /**
+//  * Members (ลูกค้าที่โต๊ะ)
+//  * 1 คนในโต๊ะจะเป็น table admin (isTableAdmin = true)
+//  */
+// export const members = pgTable("members", {
+//   id: serial("id").primaryKey(),
+//   diningSessionId: integer("dining_session_id").notNull(),
+//   name: varchar("name", { length: 100 }).notNull(),
+//   isTableAdmin: boolean("is_table_admin").default(false),
+//   joinedAt: timestamp("joined_at").defaultNow(),
+//   note: text('note'),
+// });
 
 //------------------------------------
 // export const orderItems = pgTable("order_items", {
