@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState ,useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUser, FaLock } from "react-icons/fa";
 import { FaPhoneAlt, FaHome } from "react-icons/fa";
@@ -16,6 +16,22 @@ const RegisterPage = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const checkIfAlreadyLogin = async () => {
+      try {
+        const res = await fetch("/api/auth/me", {
+          credentials: "include",
+        });
+        if (res.ok) {
+          navigate("/admin/dashboard"); // ถ้ายัง login อยู่ให้ไปหน้า dashboard เลย
+        }
+      } catch (err) {
+        console.log("Not logged in");
+      }
+    };
+    checkIfAlreadyLogin();
+  }, [navigate]);
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -24,6 +40,7 @@ const RegisterPage = () => {
       const res = await fetch(`/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // ✅ เพิ่มเพื่อเก็บ session ทันทีหลัง register
         body: JSON.stringify({
           username,
           email,
