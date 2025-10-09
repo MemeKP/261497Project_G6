@@ -22,32 +22,23 @@ const CartPage = () => {
   const [loading, setLoading] = useState(true);
   const [confirmItem, setConfirmItem] = useState<CartItem | null>(null);
 
-  // ✅ โหลดออเดอร์ล่าสุดของ session (PENDING เท่านั้น)
   useEffect(() => {
     const fetchCart = async () => {
       try {
-        console.log("🧾 Fetching latest order for session:", sessionId);
+        console.log("🧾 Fetching draft order for session:", sessionId);
 
-        // 1️⃣ ดึงออเดอร์ทั้งหมดของ session
-        const orderRes = await fetch(`/api/orders/session/${sessionId}`, {
+        // ✅ เรียก endpoint ใหม่สำหรับ DRAFT
+        const orderRes = await fetch(`/api/orders/session/${sessionId}/cart`, {
           credentials: "include",
         });
 
-        if (!orderRes.ok) throw new Error(`Failed to fetch order: ${orderRes.status}`);
-        const orders = await orderRes.json();
+        if (!orderRes.ok) throw new Error("No draft order found");
 
-        // 2️⃣ หาออเดอร์ล่าสุดที่ยังไม่ปิด (PENDING)
-        const latestOrder = orders.find((o: any) => o.status === "PENDING");
-        if (!latestOrder) {
-          console.warn("⚠️ No active order found for this session");
-          setCart([]);
-          setLoading(false);
-          return;
-        }
+        const latestOrder = await orderRes.json();
 
-        console.log("🧾 Latest active order:", latestOrder.id);
+        console.log("🧾 Draft order:", latestOrder.id);
 
-        // 3️⃣ ดึง order_items ของออเดอร์นี้
+        // ดึง order_items ของออเดอร์นี้
         const res = await fetch(`/api/order-items/orders/${latestOrder.id}/items`, {
           credentials: "include",
         });
@@ -70,6 +61,7 @@ const CartPage = () => {
         setCart(mapped);
       } catch (err) {
         console.error("Error fetching cart:", err);
+        setCart([]);
       } finally {
         setLoading(false);
       }
@@ -77,6 +69,7 @@ const CartPage = () => {
 
     if (sessionId) fetchCart();
   }, [sessionId]);
+
 
   // ✅ ปรับจำนวนสินค้า
   const updateQty = async (id: number, delta: number) => {
@@ -104,7 +97,7 @@ const CartPage = () => {
 
       if (!res.ok) throw new Error("Failed to update quantity in database");
 
-      console.log(`✅ Updated item ${id} → qty = ${newQty}`);
+      console.log(`Updated item ${id} → qty = ${newQty}`);
     } catch (err) {
       console.error("Error updating quantity:", err);
       alert("Failed to update item. Please try again.");

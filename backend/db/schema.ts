@@ -87,7 +87,7 @@ export const orders = pgTable('orders', {
   group_id: integer('group_id').references(() => groups.id), 
   user_id: integer('user_id').references(() => users.id), 
   dining_session_id: integer('dining_session_id').references(() => diningSessions.id),
-  status: varchar('status', { length: 20 }).default("PENDING").notNull(), // ✅ แค่สองค่านี้พอ
+  status: varchar('status', { length: 20 }).default("DRAFT").notNull(),
   created_at: timestamp('created_at').defaultNow()
 });
 
@@ -171,39 +171,3 @@ export const group_members = pgTable('group_members', {
   joinedAt: timestamp('joined_at').defaultNow(),
   note: text('note')
 });
-
-
-// /**
-//  * Members (ลูกค้าที่โต๊ะ)
-//  * 1 คนในโต๊ะจะเป็น table admin (isTableAdmin = true)
-//  */
-// export const members = pgTable("members", {
-//   id: serial("id").primaryKey(),
-//   diningSessionId: integer("dining_session_id").notNull(),
-//   name: varchar("name", { length: 100 }).notNull(),
-//   isTableAdmin: boolean("is_table_admin").default(false),
-//   joinedAt: timestamp("joined_at").defaultNow(),
-//   note: text('note'),
-// });
-
-//------------------------------------
-// export const orderItems = pgTable("order_items", {
-//   id: serial("id").primaryKey(),
-//   orderId: integer("order_id").notNull().references(() => orders.id),
-//   menuItemId: integer("menu_item_id").notNull().references(() => menuItems.id),
-//   memberId: integer("member_id").notNull().references(() => members.id),
-//   quantity: integer("quantity").default(1),
-//   note: text("note"),
-//   status: varchar("status", { length: 20 }).default("PREPARING"), // PREPARING, READY TO SERVE, CANCELLED , COMPLETE
-// });
-
-// /**
-//  * Orders
-//  */
-// export const orders = pgTable("orders", {
-//   id: serial("id").primaryKey(),
-//   tableId: integer("table_id").notNull().references(() => tables.id),
-//   diningSessionId: integer("dining_session_id").notNull().references(() => diningSessions.id),
-//   status: varchar("status", { length: 20 }).default("PENDING"), // PENDING, PREPARING, SERVED, PAID
-//   createdAt: timestamp("created_at").defaultNow(),
-// });

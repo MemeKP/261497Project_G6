@@ -65,7 +65,7 @@ const router = createBrowserRouter([
         element: <RegisterPage />,
       },
       {
-        path: "/cart/:sessionId/:orderId",
+        path: "/cart/:sessionId",
         element: <CartPage />,
       },
       {

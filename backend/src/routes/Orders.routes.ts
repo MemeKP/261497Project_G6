@@ -8,6 +8,9 @@ router.post("/", ordersController.createOrder);                     // POST /ord
 
 // ✅ สำหรับสร้าง order เปล่า (หน้า OrderStatus)
 router.post("/new", ordersController.createNewOrder);
+router.get("/session/:sessionId/cart", ordersController.getDraftOrder);
+
+router.patch("/:id/checkout", ordersController.checkoutOrder);
 
 // Get all orders (admin/debug)
 router.get("/", ordersController.getAllOrders);                     // GET /orders
