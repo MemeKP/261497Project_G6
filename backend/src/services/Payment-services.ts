@@ -27,7 +27,7 @@ export async function createQrPayment({
   billId: number;
   memberId?: number;
 }) {
-  const promptPayId = process.env.PROMPTPAY_ID!;
+  const promptPayId = process.env.PROMPTPAY_Id!;
   if (!promptPayId) throw new Error("PROMPTPAY_ID not configured in .env");
 
   let amount: number;

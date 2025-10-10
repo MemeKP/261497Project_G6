@@ -9,6 +9,7 @@ router.post("/", paymentController.createPayment);
 router.patch("/:paymentId/confirm", paymentController.confirmPayment);
 // mock callback (แทน SCB callback)
 router.post("/mock-callback", paymentController.mockCallback);
+router.get('/status/:billId', paymentController.getPaymentStatus);
 // GET payment history by table/session
 // router.get("/sessions/:sessionId/payments", paymentController.getPaymentHistory);
 

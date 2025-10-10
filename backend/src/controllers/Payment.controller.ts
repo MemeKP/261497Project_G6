@@ -1,4 +1,7 @@
-import type { Request, Response } from "express";
+import { dbClient } from "@db/client.js";
+import { payments } from "@db/schema.js";
+import { and, desc, eq } from "drizzle-orm";
+import type { Request, Response, NextFunction} from "express";
 import * as paymentService from "src/services/Payment-services.js";
 
 // Create payment (PromptPay)
@@ -55,5 +58,70 @@ export async function mockCallback(req: Request, res: Response) {
   } catch (err: any) {
     console.error("mockCallback error:", err.message);
     res.status(500).json({ error: "Callback handling failed" });
+  }
+}
+
+export async function getPaymentStatus(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { billId } = req.params;
+    const { memberId } = req.query;
+
+    if (!billId) {
+      return res.status(400).json({
+        error: "Bill ID is required"
+      });
+    }
+
+    // แปลง billId เป็น number
+    const billIdNum = parseInt(billId as string);
+    const memberIdNum = memberId ? parseInt(memberId as string) : null;
+
+    let payment;
+
+    if (memberIdNum) {
+      // กรณีจ่ายแบบ split - ใช้ Drizzle query
+      const result = await dbClient
+        .select()
+        .from(payments)
+        .where(
+          and(
+            eq(payments.billId, billIdNum),
+            eq(payments.memberId, memberIdNum)
+          )
+        )
+        .orderBy(desc(payments.paidAt))
+        .limit(1);
+
+      payment = result[0];
+    } else {
+      // กรณีจ่ายทั้งบิล
+      const result = await dbClient
+        .select()
+        .from(payments)
+        .where(eq(payments.billId, billIdNum))
+        .orderBy(desc(payments.paidAt))
+        .limit(1);
+
+      payment = result[0];
+    }
+
+    if (!payment) {
+      return res.status(404).json({
+        error: "Payment not found"
+      });
+    }
+
+    res.json({
+      status: payment.status,
+      paymentId: payment.id,
+      amount: payment.amount,
+      billId: payment.billId,
+      memberId: payment.memberId,
+      billSplitId: payment.billSplitId,
+    });
+
+  } catch (error) {
+    console.error("Error fetching payment status:", error);
+    next(error);
   }
 }
