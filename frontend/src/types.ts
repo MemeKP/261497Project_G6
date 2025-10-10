@@ -133,3 +133,13 @@ export interface Order {
   key: string;
 }
 
+export interface CartItem {
+  id: number;
+  menuId: number;
+  name: string;
+  price: number;
+  qty: number;
+  note?: string;
+  image?: string;
+  memberName?: string;
+}

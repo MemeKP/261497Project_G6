@@ -3,17 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { FaMinus, FaPlus } from "react-icons/fa";
 import { IoIosArrowBack } from "react-icons/io";
 import basketIcon from "../assets/imgs/basket.png";
+import type { CartItem } from "../types";
 
-interface CartItem {
-  id: number;
-  menuId: number;
-  name: string;
-  price: number;
-  qty: number;
-  note?: string;
-  image?: string;
-  memberName?: string;
-}
 
 const CartPage = () => {
   const navigate = useNavigate();
@@ -27,7 +18,6 @@ const CartPage = () => {
       try {
         console.log("🧾 Fetching draft order for session:", sessionId);
 
-        // ✅ เรียก endpoint ใหม่สำหรับ DRAFT
         const orderRes = await fetch(`/api/orders/session/${sessionId}/cart`, {
           credentials: "include",
         });
@@ -70,8 +60,6 @@ const CartPage = () => {
     if (sessionId) fetchCart();
   }, [sessionId]);
 
-
-  // ✅ ปรับจำนวนสินค้า
   const updateQty = async (id: number, delta: number) => {
     const target = cart.find((item) => item.id === id);
     if (!target) return;
@@ -212,16 +200,16 @@ const CartPage = () => {
 
                 if (!res.ok) {
                   const errData = await res.json();
-                  alert(`❌ Checkout failed: ${errData.error || res.statusText}`);
+                  alert(`Checkout failed: ${errData.error || res.statusText}`);
                   return;
                 }
 
-                alert("✅ Checkout successful!");
-                setCart([]); // ✅ เคลียร์ตะกร้าทันที
+                alert("Checkout successful!");
+                setCart([]);
                 navigate(`/orderstatus/${sessionId}`);
               } catch (err) {
                 console.error(err);
-                alert("❌ Error during checkout");
+                alert("error during checkout");
               }
             }}
             className="w-[200px] h-12 mt-4 mx-auto block rounded-full text-lg font-semibold text-black 

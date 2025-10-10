@@ -65,7 +65,6 @@ const DetailsPage = () => {
     }
   }, [sessionId]);
 
-  // console.log("menuId:", menuId);
   const {
     data: menu,
     isLoading,
@@ -103,7 +102,7 @@ const DetailsPage = () => {
   }
 
   try {
-    // ✅ สร้างรายการ items ที่จะเพิ่ม
+    // สร้างรายการ items ที่จะเพิ่ม
     const items = selectMembers.map(memberId => ({
       menuId: menu.id,
       qty: quantity,
@@ -111,7 +110,7 @@ const DetailsPage = () => {
       memberId,
     }));
 
-    // ✅ 1. ตรวจสอบว่ามี order เดิมไหม
+    // ตรวจสอบว่ามี order เดิมไหม
     let existingOrder = null;
     try {
       const res = await axios.get(`/api/orders/session/${sessionId}`);
@@ -120,7 +119,7 @@ const DetailsPage = () => {
       console.warn("No existing order found, will create new one");
     }
 
-    // ✅ 2. ถ้ามี order เดิม → เพิ่มเข้า order_items เดิม
+    //  ถ้ามี order เดิม → เพิ่มเข้า order_items เดิม
     if (existingOrder && existingOrder.id) {
       for (const item of items) {
         await axios.post("/api/order-items", {
@@ -131,20 +130,20 @@ const DetailsPage = () => {
           note: item.note,
         });
       }
-      alert(`✅ Added ${menu.name} to existing order.`);
+      alert(` Added ${menu.name} to existing order.`);
       return;
     }
 
-    // ✅ 3. ถ้ายังไม่มี order → ค่อยสร้าง order ใหม่
+    //  3. ถ้ายังไม่มี order → ค่อยสร้าง order ใหม่
     const createOrderRes = await axios.post("/api/orders", {
       diningSessionId: sessionId,
       items,
     });
 
-    alert(`✅ New order created with ${menu.name}!`);
+    alert(`Added ${menu.name} to cart!`);
   } catch (error: any) {
     console.error("Error adding to cart:", error.response?.data || error);
-    alert("❌ Failed to add to cart. Please try again.");
+    alert("Failed to add to cart. Please try again.");
   }
 };
 
