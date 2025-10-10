@@ -9,8 +9,6 @@ interface Table {
   status: "OCCUPIED" | "FREE";
 }
 
-const TOTAL_TABLES = 9; // fix ให้ร้านมี 9 โต๊ะ
-
 const TableAndSession: React.FC = () => {
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const queryClient = useQueryClient();

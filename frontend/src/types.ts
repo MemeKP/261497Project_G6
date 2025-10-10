@@ -84,11 +84,11 @@ export interface IKImageWrapperProps {
   onError?: () => void;
 }
 
-export interface Table {
-  id: number;
-  number: number;
-  status: string;
-}
+// export interface Table {
+//   id: number;
+//   number: number;
+//   status: string;
+// }
 
 export interface PaymentData {
   date: string;
@@ -133,3 +133,36 @@ export interface Order {
   key: string;
 }
 
+
+export interface Payment {
+  billId: number;
+  splitId: number;  // เพิ่ม splitId
+  memberId: number;
+  name: string;
+  role: string;
+  amount: number;
+  status: 'PAID' | 'PENDING';
+  date: string;
+  method: string;
+  paymentId?: number;
+}
+
+export type DiningSession = {
+  id: number;
+  tableId: number;
+  openedByAdminId: number;
+  total: number; 
+  totalCustomers: number; 
+  qrCode: string; 
+  startedAt: string; 
+  endedAt: string | null; 
+  status: 'ACTIVE' | 'CLOSED';
+  createdAt: string; 
+};
+
+export type Table = {
+  id: number;
+  number: number; 
+  status: 'AVAILABLE' | 'OCCUPIED' | 'CLOSED'; 
+  createdAt: string; 
+};
