@@ -7,7 +7,7 @@ interface OrderItem {
   menuName: string;
   quantity: number;
   status: string;
-  memberName?: string; // ✅ เพิ่มบรรทัดนี้
+  memberName?: string;
   note?: string; 
 }
 
@@ -35,22 +35,20 @@ const OrderStatusPage = () => {
       const res = await fetch(`/api/orders/session/${sessionId}`);
       const rawData = await res.json();
 
-      // ✅ ปรับโครงสร้างข้อมูลให้รองรับทั้ง menuItem และ menuName/menuPrice
       const data = (rawData || []).map((order: any) => ({
         id: order.id,
         status: order.status || "PREPARING",
-        tableId: order.table_id,
+        tableId: order.tableId,
         items: (order.items || []).map((item: any) => ({
           id: item.id,
-          // 🔹 ใช้ชื่อจาก menuName ก่อน ถ้าไม่มีค่อย fallback ไป menuItem.name
           menuName:
             item.menuName ||
-            item.menu_item_name ||
+            item.menuItemName ||
             item.menuItem?.name ||
             "Unnamed Item",
           quantity: item.quantity ?? 0,
           status: item.status || order.status || "PREPARING",
-          memberName: item.memberName || "Unknown", // ✅ เพิ่มบรรทัดนี้
+          memberName: item.memberName || "Unknown", 
         })),
       }));
 
@@ -67,7 +65,6 @@ const OrderStatusPage = () => {
 
   if (loading) return <div className="text-white p-4">Loading...</div>;
 
-  // รวมเมนูทั้งหมดจากทุกออเดอร์
   const allItems = orders.flatMap((order) =>
     order.items.map((item) => ({
       ...item,
@@ -75,12 +72,10 @@ const OrderStatusPage = () => {
     }))
   );
 
-  // แยกตามสถานะ
   const preparing = allItems.filter((i) => i.status === "PREPARING" || i.status === "PENDING");
   const ready = allItems.filter((i) => i.status === "READY");
   const completed = allItems.filter((i) => i.status === "COMPLETED");
   
-  // ✅ เพิ่มตรงก่อน return ใน OrderStatusPage
   const groupedItems = preparing.reduce((acc: any, item) => {
     const key = item.menuName;
     if (!acc[key]) {
@@ -105,7 +100,12 @@ const groupedList = Object.values(groupedItems);
       <h2 className="text-xl text-center mb-2">Order Status</h2>
       <p className="text-sm text-center mb-6">
         Orders in progress:{" "}
-        <span className="font-semibold">{preparing.length + ready.length} items</span>
+        <span className="font-semibold">
+          {preparing.reduce((sum, item) => sum + item.quantity, 0) +
+          ready.reduce((sum, item) => sum + item.quantity, 0)}{" "}
+          items
+        </span>
+
       </p>
 
       {/* Preparing Section */}
@@ -212,21 +212,19 @@ const groupedList = Object.values(groupedItems);
         <button
           onClick={async () => {
             try {
-              // ✅ ดึง tableId จาก order ล่าสุด (เพราะทุก order ของ session ใช้โต๊ะเดียวกัน)
               const tableId = orders[0]?.tableId || orders[orders.length - 1]?.tableId;
               if (!tableId) {
                 alert("Cannot find tableId for this session.");
                 return;
               }
 
-              // ✅ ส่งทั้ง diningSessionId และ tableId ไป backend
-              const res = await fetch(`/api/orders`, {
+              const res = await fetch(`/api/orders/new`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   diningSessionId: Number(sessionId),
                   tableId: tableId,
-                  items: [], // ตอน new order ยังไม่มีเมนู
+                  items: [], 
                 }),
                 credentials: "include",
               });
@@ -251,21 +249,24 @@ const groupedList = Object.values(groupedItems);
         <button
           onClick={async () => {
             try {
-              // ✅ โหลด order ล่าสุดใน session
               const orderRes = await fetch(`/api/orders/session/${sessionId}`, {
                 credentials: "include",
               });
               const orders = await orderRes.json();
 
-              if (!orders || orders.length === 0) {
+              if (!orderRes.ok || !orders || !Array.isArray(orders) || orders.length === 0) {
                 alert("No orders found for this session.");
                 return;
               }
 
+              // ✅ ป้องกัน undefined
               const latestOrder = orders[orders.length - 1];
-              const orderId = latestOrder.id;
+              if (!latestOrder || !latestOrder.id) {
+                alert("No valid latest order found.");
+                return;
+              }
 
-              // ✅ สร้างบิลใหม่จาก order ล่าสุด
+              // ✅ force recalculation
               const res = await fetch(`/api/bill-splits/sessions/${sessionId}/bill`, {
                 method: "POST",
                 credentials: "include",
@@ -276,7 +277,6 @@ const groupedList = Object.values(groupedItems);
               const billData = await res.json();
               console.log("✅ Bill created:", billData);
 
-              // ✅ ไปหน้าแสดงบิล โดยส่ง orderId แทน sessionId
               navigate(`/billpage/${sessionId}`);
             } catch (err) {
               console.error("Error generating bill:", err);
@@ -288,7 +288,8 @@ const groupedList = Object.values(groupedItems);
                     bg-gradient-to-r from-white to-black hover:opacity-90 transition"
         >
           Generate Bill
-        </button>
+      </button>
+
 
       </div>
     </div>

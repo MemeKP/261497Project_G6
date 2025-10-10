@@ -13,7 +13,7 @@ import {
   group_members,
   menuItems,
   orders,
- order_items,
+ orderItems,
 } from "@db/schema.js";
 
 // Allowed status values
@@ -162,14 +162,14 @@ export const getOrderAdmin = async (req:Request, res:Response, next:NextFunction
       }
   
       if (tableId && !isNaN(Number(tableId))) {
-        orderWhereConditions.push(eq(orders.table_id, Number(tableId)));
+        orderWhereConditions.push(eq(orders.tableId, Number(tableId)));
       }
   
       if (diningSessionId && !isNaN(Number(diningSessionId))) {
         orderWhereConditions.push(
-          eq(orders.dining_session_id, Number(diningSessionId))
+          eq(orders.diningSessionId, Number(diningSessionId))
         );
-        orderWhereConditions.push(isNotNull(orders.dining_session_id));
+        orderWhereConditions.push(isNotNull(orders.diningSessionId));
       }
   
       const allOrders = await dbClient.query.orders.findMany({
@@ -177,53 +177,53 @@ export const getOrderAdmin = async (req:Request, res:Response, next:NextFunction
           orderWhereConditions.length > 0
             ? and(...orderWhereConditions)
             : undefined,
-        orderBy: [orders.created_at],
+        orderBy: [orders.createdAt],
         limit: Number(limit),
         offset: Number(offset),
       });
   
       const ordersWithItems = await Promise.all(
         allOrders.map(async (order) => {
-          const items = await dbClient.query.order_items.findMany({
-            where: eq(order_items.order_id, order.id),
+          const items = await dbClient.query.orderItems.findMany({
+            where: eq(orderItems.orderId, order.id),
           });
   
           let groupInfo = null;
-          if (order.group_id) {
+          if (order.groupId) {
             const group = await dbClient.query.groups.findFirst({
-              where: eq(groups.id, order.group_id),
+              where: eq(groups.id, order.groupId),
             });
             if (group) {
               const members = await dbClient.query.group_members.findMany({
-                where: eq(group_members.group_id, group.id),
+                where: eq(group_members.groupId, group.id),
               });
               groupInfo = {
                 id: group.id,
-                tableId: group.table_id,
+                tableId: group.tableId,
                 memberCount: members?.length || 0,
               };
             }
           }
   
           let diningSession = null;
-          if (order.dining_session_id) {
+          if (order.diningSessionId) {
             diningSession = await dbClient.query.diningSessions.findFirst({
-              where: eq(diningSessions.id, order.dining_session_id),
+              where: eq(diningSessions.id, order.diningSessionId),
             });
           }
   
           return {
             id: order.id,
-            tableId: order.table_id,
-            groupId: order.group_id,
-            userId: order.user_id,
-            diningSessionId: order.dining_session_id,
+            tableId: order.tableId,
+            groupId: order.groupId,
+            userId: order.userId,
+            diningSessionId: order.diningSessionId,
             status: order.status,
-            createdAt: order.created_at,
+            createdAt: order.createdAt,
             items:
               items?.map((item) => ({
                 id: item.id,
-                menuItemId: item.menu_item_id,
+                menuItemId: item.menuItemId,
                 quantity: item.quantity,
                 note: item.note,
               })) || [],
@@ -303,29 +303,29 @@ export const getOrderByIdAdmin = async (req:Request, res:Response, next:NextFunc
       });
     }
 
-    const items = await dbClient.query.order_items.findMany({
-      where: eq(order_items.order_id, orderId),
+    const items = await dbClient.query.orderItems.findMany({
+      where: eq(orderItems.orderId, orderId),
     });
 
     let groupInfo = null;
-    if (order.group_id) {
+    if (order.groupId) {
       const group = await dbClient.query.groups.findFirst({
-        where: eq(groups.id, order.group_id),
+        where: eq(groups.id, order.groupId),
       });
       if (group) {
         const members = await dbClient.query.group_members.findMany({
-          where: eq(group_members.group_id, group.id),
+          where: eq(group_members.groupId, group.id),
         });
         groupInfo = {
           id: group.id,
-          tableId: group.table_id,
-          creatorUserId: group.creator_user_id,
-          createdAt: group.created_at,
+          tableId: group.tableId,
+          creatorUserId: group.creatorUserId,
+          createdAt: group.createdAt,
           members:
             members?.map((member) => ({
               id: member.id,
               name: member.name,
-              userId: member.user_id,
+              userId: member.userId,
               note: member.note,
             })) || [],
         };
@@ -333,16 +333,16 @@ export const getOrderByIdAdmin = async (req:Request, res:Response, next:NextFunc
     }
 
     let diningSession = null;
-    if (order.dining_session_id) {
+    if (order.diningSessionId) {
       diningSession = await dbClient.query.diningSessions.findFirst({
-        where: eq(diningSessions.id, order.dining_session_id),
+        where: eq(diningSessions.id, order.diningSessionId),
       });
     }
 
     let userInfo = null;
-    if (order.user_id) {
+    if (order.userId) {
       const user = await dbClient.query.users.findFirst({
-        where: eq(users.id, order.user_id),
+        where: eq(users.id, order.userId),
         columns: {
           id: true,
           name: true,
@@ -355,16 +355,16 @@ export const getOrderByIdAdmin = async (req:Request, res:Response, next:NextFunc
     res.json({
       order: {
         id: order.id,
-        tableId: order.table_id,
-        groupId: order.group_id,
-        userId: order.user_id,
-        diningSessionId: order.dining_session_id,
+        tableId: order.tableId,
+        groupId: order.groupId,
+        userId: order.userId,
+        diningSessionId: order.diningSessionId,
         status: order.status,
-        createdAt: order.created_at,
+        createdAt: order.createdAt,
         items:
           items?.map((item) => ({
             id: item.id,
-            menuItemId: item.menu_item_id,
+            menuItemId: item.menuItemId,
             quantity: item.quantity,
             note: item.note,
           })) || [],
@@ -377,7 +377,7 @@ export const getOrderByIdAdmin = async (req:Request, res:Response, next:NextFunc
               status: diningSession.status,
               startedAt: diningSession.startedAt,
               endedAt: diningSession.endedAt,
-              totalCustomers: diningSession.total_customers,
+              totalCustomers: diningSession.totalCustomers,
             }
           : null,
       },
@@ -422,12 +422,12 @@ export const updateOrderStatusByAdmin = async (req:Request, res:Response, next:N
       .where(eq(orders.id, orderId))
       .returning({
         id: orders.id,
-        table_id: orders.table_id,
-        group_id: orders.group_id,
-        user_id: orders.user_id,
-        dining_session_id: orders.dining_session_id,
+        table_id: orders.tableId,
+        groupId: orders.groupId,
+        userId: orders.userId,
+        diningSessionId: orders.diningSessionId,
         status: orders.status,
-        created_at: orders.created_at,
+        createdAt: orders.createdAt,
       });
 
     res.json({
@@ -435,15 +435,40 @@ export const updateOrderStatusByAdmin = async (req:Request, res:Response, next:N
       order: {
         id: updatedOrder[0].id,
         tableId: updatedOrder[0].table_id,
-        groupId: updatedOrder[0].group_id,
-        userId: updatedOrder[0].user_id,
-        diningSessionId: updatedOrder[0].dining_session_id,
+        groupId: updatedOrder[0].groupId,
+        userId: updatedOrder[0].userId,
+        diningSessionId: updatedOrder[0].diningSessionId,
         status: updatedOrder[0].status,
-        createdAt: updatedOrder[0].created_at,
+        createdAt: updatedOrder[0].createdAt,
       },
     });
   } catch (err) {
     console.error("Error in /orders/:orderId/status:", err);
     next(err);
+  }
+}
+
+export async function closeOrdersBySession(req: Request, res: Response) {
+  try {
+    const { sessionId } = req.params;
+    const numericSessionId = Number(sessionId);
+
+    if (isNaN(numericSessionId)) {
+      return res.status(400).json({ error: "Invalid sessionId" });
+    }
+
+    const updated = await dbClient
+      .update(orders)
+      .set({ status: "CLOSED" })
+      .where(eq(orders.diningSessionId, numericSessionId))
+      .returning();
+
+    if (updated.length === 0) {
+      return res.status(404).json({ error: "No orders found for this session" });
+    }
+
+    res.json({ message: "All orders in this session have been closed.", updated });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 }

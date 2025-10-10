@@ -19,7 +19,7 @@ async function calculateSplitTotal(billSplitId: number): Promise<number> {
   return Number(split.amount); // เป็นยอดสุทธิของ member นั้นแล้ว
 }
 
-/** สร้าง PromptPay QR จาก bill ทั้งบิลหรือจากบิลสปลิต */
+/** สร้าง PromptPay QR จาก bill ทั้งบิลหรือจากบิลสปลิต */ 
 export async function createQrPayment({
   billId,
   memberId,

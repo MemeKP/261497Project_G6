@@ -22,10 +22,10 @@ const statusColor = (status: string) => {
 };
 
 const OrderProgress: React.FC<OrderProgressProps> = ({ activeSessions }) => {
-   const [selectedTable, setSelectedTable] = useState<"all" | number>("all");
+  const [selectedTable, setSelectedTable] = useState<"all" | number>("all");
   const allSessionIds = activeSessions?.map((s) => s.id) || [];
 
-  // Fetch orders สำหรับทุก active session
+   // Fetch orders สำหรับทุก active session
   const { data: orders = [] } = useQuery<Order[]>({
     queryKey: ["ordersForAllSessions", allSessionIds],
     queryFn: async () => {
@@ -49,19 +49,20 @@ const OrderProgress: React.FC<OrderProgressProps> = ({ activeSessions }) => {
     refetchInterval: 5000, // 5 sec
   });
 
-  // ดึงเฉพาะ table ที่มีอยู่จริง
-const uniqueTables =
-  orders && orders.length > 0
-    ? Array.from(new Set(orders.map((o) => o.table_id))).sort((a, b) => a - b)
+  // ✅ ใช้ activeSessions แทน orders ในการดึง tables
+  const uniqueTables = activeSessions
+    ? Array.from(new Set(activeSessions.map((s) => s.tableId))).sort((a, b) => a - b)
     : [];
-    console.log("Orders in OrderProgress:", orders);
 
+  console.log("Active Sessions:", activeSessions);
+  console.log("Unique Tables from active sessions:", uniqueTables);
+  console.log("Orders in OrderProgress:", orders);
 
   // กรอง order ตาม table
   const filteredOrders =
     selectedTable === "all"
       ? orders
-      : orders.filter((o) => o.table_id === selectedTable);
+      : orders.filter((o) => o.tableId === selectedTable);
 
   return (
     <div className="mt-6">
@@ -77,7 +78,7 @@ const uniqueTables =
               e.target.value === "all" ? "all" : Number(e.target.value)
             )
           }
-            className="border border-gray-300 rounded-lg text-sm px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="border border-gray-300 rounded-lg text-sm px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
           <option value="all">All Tables</option>
           {uniqueTables.map((table) => (
@@ -102,11 +103,11 @@ const uniqueTables =
           <tbody>
             {filteredOrders.map((order) => (
               <tr
-                key={order.id}
+                key={`${order.id}-${order.tableId}`} // Combine order.id and table_id to create a unique key
                 className="text-neutral-500 font-medium border-b last:border-0"
               >
                 <td className="py-2">{order.id}</td>
-                <td>{order.table_id}</td>
+                <td>{order.tableId}</td>
                 <td>
                   <span
                     className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor(
@@ -116,8 +117,17 @@ const uniqueTables =
                     {order.status}
                   </span>
                 </td>
-                <td>{new Date(order.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</td>
-        
+                <td>
+                  {order.createdAt
+                    ? new Date(order.createdAt.replace(" ", "T")).toLocaleString([], {
+                      month: 'short',  // Oct, Nov, etc.
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                    : 'N/A' // Or any fallback value, like 'No Date'
+                  }
+                </td>
               </tr>
             ))}
 
@@ -132,6 +142,7 @@ const uniqueTables =
               </tr>
             )}
           </tbody>
+
         </table>
       </div>
     </div>

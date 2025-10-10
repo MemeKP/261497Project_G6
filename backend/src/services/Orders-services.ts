@@ -1,15 +1,15 @@
 // import { db } from "src/db/client2.js";
 import { dbClient as db } from "@db/client.js";
-import { order_items, orders } from "db/schema.js";
-import { eq } from "drizzle-orm";
+import { group_members, menuItems, orderItems, orders } from "db/schema.js";
+import { and, eq, inArray, ne } from "drizzle-orm";
 
 // const allowedStatus = ["PENDING", "PREPARING", "COMPLETED", "CANCELLED"] as const;
 const allowedStatus = ["PENDING", "PREPARING", "COMPLETED", "CANCELLED", "PAID"] as const;
 
-export async function createOrder(dining_session_id: number, table_id: number) {
+export async function createOrder(diningSessionId: number, tableId: number) {
   const [newOrder] = await db
     .insert(orders)
-    .values({ dining_session_id, table_id })
+    .values({ diningSessionId, tableId })
     .returning();
   return newOrder;
 }
@@ -27,24 +27,24 @@ export async function createOrderWithItems(
   const [newOrder] = await db
     .insert(orders)
     .values({ 
-      dining_session_id: diningSessionId,
-      table_id: diningSessionId, // ตอนนี้ดึงจาก dining session ไปก่อน
+      diningSessionId: diningSessionId,
+      tableId: diningSessionId, // ตอนนี้ดึงจาก dining session ไปก่อน
       status: 'PENDING'
     })
     .returning();
 
   // 2. สร้าง order items
   const orderItemsData = items.map(item => ({
-    order_id: newOrder.id,
-    menu_item_id: item.menuId,
-    member_id: item.memberId,
+    orderId: newOrder.id,
+    menuItemId: item.menuId,
+    memberId: item.memberId,
     quantity: item.qty,
     note: item.note,
     status: 'PREPARING'
   }));
 
   const createdItems = await db
-    .insert(order_items)
+    .insert(orderItems)
     .values(orderItemsData)
     .returning();
 
@@ -55,11 +55,41 @@ export async function createOrderWithItems(
 }
 
 
+/**
+ * ✅ ดึง orders ทั้งหมดของ session พร้อม items
+ */
 export async function getOrdersBySession(sessionId: number) {
-  return await db
+  const ordersData = await db
     .select()
     .from(orders)
-    .where(eq(orders.dining_session_id, sessionId));
+    .where(and(eq(orders.diningSessionId, sessionId), ne(orders.status, "DRAFT")));
+
+
+  if (ordersData.length === 0) return [];
+
+  const orderIds = ordersData.map((o) => o.id);
+
+  const itemsData = await db
+    .select({
+      id: orderItems.id,
+      orderId: orderItems.orderId,
+      quantity: orderItems.quantity,
+      note: orderItems.note,
+      status: orderItems.status,
+      menuItemId: orderItems.menuItemId,
+      menuName: menuItems.name,
+      menuPrice: menuItems.price,
+      memberName: group_members.name,
+    })
+    .from(orderItems)
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+    .leftJoin(group_members, eq(orderItems.memberId, group_members.id))
+    .where(inArray(orderItems.orderId, orderIds));
+
+  return ordersData.map((order) => ({
+    ...order,
+    items: itemsData.filter((i) => i.orderId === order.id),
+  }));
 }
 
 

@@ -1,5 +1,4 @@
 import AdminNav from "../components/AdminNav";
-import Search from "../components/Search";
 import AdminMenuList from "../components/AdminMenuList";
 
 const AdminOrderList = () => {

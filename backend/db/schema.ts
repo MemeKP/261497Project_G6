@@ -19,16 +19,16 @@ export const users = pgTable("user", {
 
 export const groups = pgTable('groups', {
   id: serial('id').primaryKey(),
-  table_id: integer('table_id').notNull(),
-  creator_user_id: integer('creator_user_id'),
-  created_at: timestamp('created_at').defaultNow()
+  tableId: integer('table_id').notNull(),
+  creatorUserId: integer('creator_user_id'),
+  createdAt: timestamp('created_at').defaultNow()
 });
 
 export const group_members = pgTable('group_members', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
-  group_id: integer('group_id').notNull().references(() => groups.id),
-  user_id: integer('user_id').references(() => users.id),// null = guest
+  groupId: integer('group_id').notNull().references(() => groups.id),
+  userId: integer('user_id').references(() => users.id),// null = guest
   diningSessionId: integer('dining_session_id').notNull(),
   isTableAdmin: boolean('is_table_admin').default(false),
   joinedAt: timestamp('joined_at').defaultNow(),
@@ -40,34 +40,23 @@ export const group_members = pgTable('group_members', {
  */
 export const orders = pgTable('orders', {
   id: serial('id').primaryKey(),
-  table_id: integer('table_id').notNull(),
-  group_id: integer('group_id').references(() => groups.id), 
-  user_id: integer('user_id').references(() => users.id), 
-  dining_session_id: integer('dining_session_id').references(() => diningSessions.id),
+  tableId: integer('table_id').notNull(),
+  groupId: integer('group_id').references(() => groups.id), 
+  userId: integer('user_id').references(() => users.id), 
+  diningSessionId: integer('dining_session_id').references(() => diningSessions.id),
   status: varchar('status', { length: 20 }).default("PENDING"), 
-  created_at: timestamp('created_at').defaultNow()
+  createdAt: timestamp('created_at').defaultNow()
 });
-
-// export const orderItems = pgTable('order_items', {
-//   id: serial('id').primaryKey(),
-//   order_id: integer('order_id').notNull().references(() => orders.id),
-//   menu_item_id: integer('menu_item_id').notNull().references(() => menuItems.id),
-//   member_id: integer('member_id').references(() => members.id), 
-//   quantity: integer("quantity").default(1),
-//   note: text('note'),
-//   status: varchar("status", { length: 20 }).default("PREPARING"),
-// });
 
 export const orderItems = pgTable('order_items', {
   id: serial('id').primaryKey(),
-  order_id: integer('order_id').notNull().references(() => orders.id),
-  menu_item_id: integer('menu_item_id').notNull().references(() => menuItems.id),
-  member_id: integer('member_id').notNull().references(() => group_members.id),
+  orderId: integer('order_id').notNull().references(() => orders.id),
+  menuItemId: integer('menu_item_id').notNull().references(() => menuItems.id),
+  memberId: integer('member_id').notNull().references(() => group_members.id),
   quantity: integer('quantity').default(1),
   note: text('note'),
   status: varchar("status", { length: 20 }).default("PREPARING"),
 });
-
 
 /**
  * Helper: ใช้กับฟิลด์ที่เป็นเงิน
@@ -110,25 +99,12 @@ export const diningSessions = pgTable("dining_sessions", {
   tableId: integer("table_id").notNull().references(() => tables.id),
   openedByAdminId: integer("opened_by_admin_id").notNull().references(() => admins.id),
   total: decimal("total", { precision: 10, scale: 2 }).$type<number>().default(0), 
-  total_customers: integer("total_customers"),
+  totalCustomers: integer("total_customers"),
   qrCode: text("qr_code").notNull(),
   startedAt: timestamp("started_at").defaultNow(),
   endedAt: timestamp("ended_at"),
   status: varchar("status", { length: 20 }).default("ACTIVE"), // ACTIVE, CLOSED
   createdAt: timestamp("created_at").defaultNow(),
-});
-
-/**
- * Members (ลูกค้าที่โต๊ะ)
- * 1 คนในโต๊ะจะเป็น table admin (isTableAdmin = true)
- */
-export const members = pgTable("members", {
-  id: serial("id").primaryKey(),
-  diningSessionId: integer("dining_session_id").notNull(),
-  name: varchar("name", { length: 100 }).notNull(),
-  isTableAdmin: boolean("is_table_admin").default(false),
-  joinedAt: timestamp("joined_at").defaultNow(),
-  note: text('note'),
 });
 
 /**
@@ -150,19 +126,6 @@ export const menuItems = pgTable("menu_items", {
 });
 
 /**
- * Order items (ผูกกับ member → ใครสั่ง)
- */
-// export const orderItems = pgTable("order_items", {
-//   id: serial("id").primaryKey(),
-//   orderId: integer("order_id").notNull(),
-//   menuItemId: integer("menu_item_id").notNull(),
-//   memberId: integer("member_id").notNull(),
-//   quantity: integer("quantity").default(1),
-//   note: text("note"),
-// });
-
-
-/**
  * Bills (1 order → 1 bill)
  */
 export const bills = pgTable("bills", {
@@ -182,11 +145,12 @@ export const bills = pgTable("bills", {
  */
 export const billSplits = pgTable("bill_splits", {
   id: serial("id").primaryKey(),
-  billId: integer("bill_id").notNull().references(() => bills.id),
-  memberId: integer("member_id").notNull().references(() => members.id),
+  billId: integer("bill_id").notNull().references(() => bills.id , { onDelete: "cascade" }),
+  memberId: integer("member_id").notNull().references(() => group_members.id),
   amount: money("amount").notNull(),
   paid: boolean("paid").default(false),
 });
+
 
 /**
  * Payments (รองรับทั้ง full bill และ per member)
@@ -195,7 +159,7 @@ export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
   billId: integer("bill_id").notNull().references(() => bills.id),
   billSplitId: integer("bill_split_id").references(() => billSplits.id), // null = full bill
-  memberId: integer("member_id").references(() => members.id),        // null = full bill
+  memberId: integer("member_id").references(() => group_members.id),        // null = full bill
   method: varchar("method", { length: 20 }).notNull(), // เช่น QR
   amount: money("amount").notNull(),
   status: varchar("status", { length: 20 }).default("PENDING"), // PENDING, PAID, FAILED

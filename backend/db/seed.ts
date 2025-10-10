@@ -5,10 +5,10 @@ import {
   admins,
   tables,
   diningSessions,
-  members,
+  
   menuItems,
   orders,
-  order_items as orderItems,
+  orderItems,
   groups,
 } from "@db/schema.js";
 import bcrypt from "bcrypt";
@@ -325,8 +325,8 @@ async function insertOrder() {
   const [order] = await dbClient
     .insert(orders)
     .values({
-      table_id: 4,
-      dining_session_id: sessions[1].id,
+      tableId: 4,
+      diningSessionId: sessions[1].id,
       status: "PENDING",
     })
     .returning();
@@ -426,20 +426,50 @@ export const insertGroup = async () => {
     const newGroup = await dbClient
       .insert(groups)
       .values({
-        table_id: tableId,
-        creator_user_id: 3,
-        created_at: new Date(),
+        tableId: tableId,
+        creatorUserId: 3,
+        createdAt: new Date(),
       })
       .returning({
         id: groups.id,
-        table_id: groups.table_id,
-        creator_user_id: groups.creator_user_id,
+        tableId: groups.tableId,
+        creatorUserId: groups.creatorUserId,
       });
 
     console.log("Group created:", newGroup[0]);
     console.log("Seeding completed successfully!");
   } catch (err) {
     console.error("Seeding failed:", err);
+  }
+};
+
+export const seedTables = async () => {
+  try {
+    const tablesToCreate = [
+      { number: 1, status: "AVAILABLE" },
+      { number: 2, status: "AVAILABLE" },
+      { number: 3, status: "AVAILABLE" },
+      { number: 4, status: "AVAILABLE" },
+      { number: 5, status: "AVAILABLE" },
+      { number: 6, status: "AVAILABLE" },
+      { number: 7, status: "AVAILABLE" },
+      { number: 8, status: "AVAILABLE" },
+      { number: 9, status: "AVAILABLE" },
+    ];
+
+    for (const table of tablesToCreate) {
+      await dbClient
+        .insert(tables)
+        .values(table)
+        .onConflictDoUpdate({
+          target: tables.number,
+          set: { status: "AVAILABLE" },
+        });
+    }
+
+    console.log("✅ Tables 1-9 seeded successfully");
+  } catch (error) {
+    console.error("❌ Error seeding tables:", error);
   }
 };
 
@@ -463,7 +493,7 @@ async function queryDiningSessions() {
 }
 
 async function queryMembers() {
-  const results = await dbClient.query.members.findMany();
+  const results = await dbClient.query.group_members.findMany();
   console.log("Members:", results);
   dbConn.end();
 }
@@ -481,11 +511,12 @@ async function queryOrders() {
 }
 
 async function queryOrderItems() {
-  const results = await dbClient.query.order_items.findMany();
+  const results = await dbClient.query.orderItems.findMany();
   console.log("Order Items:", results);
   dbConn.end();
 }
 
+seedTables()
 // insertAdmin();
 // insertTable();
 // insertGroup()
@@ -495,7 +526,7 @@ async function queryOrderItems() {
 // insertMembers();
 // insertMenuItems();
 // insertOrder();
-insertOrderItems();
+// insertOrderItems();
 
 // queryAdmins();
 // queryTables();

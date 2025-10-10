@@ -9,7 +9,7 @@ router.post("/", orderItemController.createOrderItem);     // POST /order-items
 router.patch("/:id", orderItemController.updateOrderItem); // PATCH /order-items/:id
 // Delete order item
 router.delete("/:id", orderItemController.deleteOrderItem); // DELETE /order-items/:id
-router.get('/count', orderItemController.getCartItemCount)
+// router.get('/count', orderItemController.getCartItemCount)
 
 // Get order items by orderId (cart)
 router.get("/orders/:orderId/items", orderItemController.getOrderItems);

@@ -104,64 +104,66 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     res.json({
       message: "Login successful",
-      admin: formatAdmin(admin),
+      admin: formatAdmin(admin), // ใช้ฟังก์ชันนี้เพื่อกรองข้อมูล
     });
   } catch (err) {
     next(err);
   }
 };
 
-/**
+/** 
  * Logout
  */
+// ใน logout
 export const logout = async (req: Request, res: Response, next: NextFunction) => {
   try {
     req.session.destroy((err) => {
-      if (err) return res.status(500).json({ error: "Could not log out" });
-      res.clearCookie("connect.sid");
+      if (err) {
+        console.error("Session destruction error:", err);
+        return res.status(500).json({ error: "Could not log out" });
+      }
+       // res.clearCookie("connect.sid");
+       res.clearCookie("sessionId", {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
       res.json({ message: "Logout successful" });
     });
   } catch (error) {
     next(error);
   }
 };
-
-/**
- * Get current logged-in admin
- */
-export const getCurrentUser = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+// controllers/auth.controller.ts
+export const getCurrentUser = async (req: Request, res: Response) => {
   try {
-    const { userId, userType } = req.session;
-    res.set('Cache-Control', 'no-store');
-    console.log("Session Data:", req.session);
-
-    if (!userId || userType !== "admin") {
+    if (!req.session.userId) {
       return res.status(401).json({ error: "Not authenticated" });
     }
 
+    // ดึงข้อมูล admin จาก database
     const admin = await dbClient.query.admins.findFirst({
-      where: eq(admins.id, userId), 
+      where: eq(admins.id, req.session.userId),
       columns: {
         id: true,
-        name: true,
         email: true,
-        createdAt: true,
-      },
+        name: true,
+        // ไม่ส่ง password
+      }
     });
 
     if (!admin) {
       return res.status(404).json({ error: "Admin not found" });
     }
 
-    const formattedAdmin = formatAdmin(admin);
-    return res.status(200).json({ admin: formattedAdmin });
-  } catch (err) {
-    console.error("Error in getCurrentUser:", err); 
-    next(err); 
+    res.json({ 
+      admin,
+      authenticated: true 
+    });
+  } catch (error) {
+    console.error("Get current user error:", error);
+    res.status(500).json({ error: "Failed to get user info" });
   }
 };
 

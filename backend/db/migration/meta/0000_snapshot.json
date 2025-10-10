@@ -1,5 +1,5 @@
 {
-  "id": "5461bfd2-c88a-454b-9419-256e39e99cd4",
+  "id": "abba303d-35ed-45ef-9170-40d7e8d044ca",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -125,7 +125,34 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "bill_splits_bill_id_bills_id_fk": {
+          "name": "bill_splits_bill_id_bills_id_fk",
+          "tableFrom": "bill_splits",
+          "tableTo": "bills",
+          "columnsFrom": [
+            "bill_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "bill_splits_member_id_members_id_fk": {
+          "name": "bill_splits_member_id_members_id_fk",
+          "tableFrom": "bill_splits",
+          "tableTo": "members",
+          "columnsFrom": [
+            "member_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -146,7 +173,7 @@
           "name": "order_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "dining_session_id": {
           "name": "dining_session_id",
@@ -198,7 +225,34 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "bills_order_id_orders_id_fk": {
+          "name": "bills_order_id_orders_id_fk",
+          "tableFrom": "bills",
+          "tableTo": "orders",
+          "columnsFrom": [
+            "order_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "bills_dining_session_id_dining_sessions_id_fk": {
+          "name": "bills_dining_session_id_dining_sessions_id_fk",
+          "tableFrom": "bills",
+          "tableTo": "dining_sessions",
+          "columnsFrom": [
+            "dining_session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -226,6 +280,19 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true
+        },
+        "total": {
+          "name": "total",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "total_customers": {
+          "name": "total_customers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "qr_code": {
           "name": "qr_code",
@@ -262,7 +329,34 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "dining_sessions_table_id_tables_id_fk": {
+          "name": "dining_sessions_table_id_tables_id_fk",
+          "tableFrom": "dining_sessions",
+          "tableTo": "tables",
+          "columnsFrom": [
+            "table_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "dining_sessions_opened_by_admin_id_admins_id_fk": {
+          "name": "dining_sessions_opened_by_admin_id_admins_id_fk",
+          "tableFrom": "dining_sessions",
+          "tableTo": "admins",
+          "columnsFrom": [
+            "opened_by_admin_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -296,6 +390,26 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": false
+        },
+        "dining_session_id": {
+          "name": "dining_session_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_table_admin": {
+          "name": "is_table_admin",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "joined_at": {
+          "name": "joined_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
         },
         "note": {
           "name": "note",
@@ -412,6 +526,12 @@
           "primaryKey": false,
           "notNull": false,
           "default": "now()"
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -449,6 +569,25 @@
           "type": "numeric(10, 2)",
           "primaryKey": false,
           "notNull": true
+        },
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category": {
+          "name": "category",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_signature": {
+          "name": "is_signature",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
         },
         "is_available": {
           "name": "is_available",
@@ -514,17 +653,31 @@
           "primaryKey": false,
           "notNull": true
         },
+        "member_id": {
+          "name": "member_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
         "quantity": {
           "name": "quantity",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "default": 1
         },
         "note": {
           "name": "note",
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'PREPARING'"
         }
       },
       "indexes": {},
@@ -548,6 +701,19 @@
           "tableTo": "menu_items",
           "columnsFrom": [
             "menu_item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "order_items_member_id_group_members_id_fk": {
+          "name": "order_items_member_id_group_members_id_fk",
+          "tableFrom": "order_items",
+          "tableTo": "group_members",
+          "columnsFrom": [
+            "member_id"
           ],
           "columnsTo": [
             "id"
@@ -711,10 +877,56 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
+        },
+        "ref1": {
+          "name": "ref1",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "payments_bill_id_bills_id_fk": {
+          "name": "payments_bill_id_bills_id_fk",
+          "tableFrom": "payments",
+          "tableTo": "bills",
+          "columnsFrom": [
+            "bill_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "payments_bill_split_id_bill_splits_id_fk": {
+          "name": "payments_bill_split_id_bill_splits_id_fk",
+          "tableFrom": "payments",
+          "tableTo": "bill_splits",
+          "columnsFrom": [
+            "bill_split_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "payments_member_id_members_id_fk": {
+          "name": "payments_member_id_members_id_fk",
+          "tableFrom": "payments",
+          "tableTo": "members",
+          "columnsFrom": [
+            "member_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

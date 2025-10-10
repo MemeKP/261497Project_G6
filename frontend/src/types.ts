@@ -105,6 +105,7 @@ export interface PaymentGraphProps {
 export interface ActiveSession {
   id: number;
   tableId: number;
+  tableNumber?: number;
   startedAt: string;
   status: string;
   totalCustomers: number;
@@ -122,12 +123,12 @@ export interface ActiveSessionGroup {
 
 export interface Order {
   id: number;
-  table_id: number;
+  tableId: number;
   group_id: number | null;
   user_id: number | null;
   dining_session_id: number;
   status: "PENDING" | "PREPARING" | "COMPLETED" | "SERVED" | string;
-  created_at: string;
+  createdAt: string;
   totalPrice?: number;
   key: string;
 }

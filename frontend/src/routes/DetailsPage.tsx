@@ -36,14 +36,14 @@ const DetailsPage = () => {
   const [selectMembers, setSelectMembers] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState("");
-  const [currentOrder, setCurrentOrder] = useState(null);
+  const [latestOrder, setLatestOrder] = useState(null);
+  // const [currentOrder, setCurrentOrder] = useState(null);
 
   useEffect(() => {
-    if (sessionId) {
-      axios
-        .get<SessionResponse>(`/api/dining_session/${sessionId}`)
-        .then((res) => {
-          // console.log("Session data:", res.data);
+  if (sessionId) {
+    axios
+      .get<SessionResponse>(`/api/dining_session/${sessionId}`)
+      .then((res) => {
           const group = res.data.group;
           // console.log(group);
           if (group && Array.isArray(group.members)) {
@@ -96,45 +96,58 @@ const DetailsPage = () => {
     return (parseFloat(menu.price) * quantity).toFixed(0);
   };
 
- const handleAddToCart = async () => {
-  if (selectMembers.length === 0) {
-    alert("Please select your member for this menu");
-    return;
-  }
+  const handleAddToCart = async () => {
+    if (selectMembers.length === 0) {
+      alert("Please select your member for this menu");
+      return;
+    }
 
-  try {
-    // สร้าง items array ตามที่ backend ต้องการ
-    const items = selectMembers.map(memberId => ({
-      menuId: menu.id,           // ใช้ menuId ตาม backend
-      qty: quantity,             // ใช้ qty ตาม backend
-      note: note,
-      memberId: memberId,        // เพิ่ม memberId สำหรับแบ่งคน
-    }));
+    try {
+      // ✅ สร้างรายการ items ที่จะเพิ่ม
+      const items = selectMembers.map(memberId => ({
+        menuId: menu.id,
+        qty: quantity,
+        note,
+        memberId,
+      }));
 
-    console.log("Creating order with items:", {
-      diningSessionId: sessionId,
-      items: items
-    });
+      // ✅ 1. ตรวจสอบว่ามี order เดิมไหม
+      let existingOrder = null;
+      try {
+        const res = await axios.get(`/api/orders/session/${sessionId}`);
+        existingOrder = res.data;
+      } catch (err) {
+        console.warn("No existing order found, will create new one");
+      }
 
-    // ส่งครั้งเดียวเพื่อสร้าง order พร้อม items
-    const orderResponse = await axios.post('/api/orders', {
-      diningSessionId: sessionId,  // camelCase ตาม backend
-      items: items
-    });
+      // ✅ 2. ถ้ามี order เดิม → เพิ่มเข้า order_items เดิม
+      if (existingOrder && existingOrder.id) {
+        for (const item of items) {
+          await axios.post("/api/order-items", {
+            orderId: existingOrder.id,
+            menu_item_id: item.menuId,
+            member_id: item.memberId,
+            quantity: item.qty,
+            note: item.note,
+          });
+        }
+        alert(`✅ Added ${menu.name} to existing order.`);
+        return;
+      }
 
-    console.log("Order created successfully:", orderResponse.data);
-    alert(`Add ${menu.name} success for ${selectMembers.length} members!`);
+      // 3. ถ้ายังไม่มี order → ค่อยสร้าง order ใหม่
+      const createOrderRes = await axios.post("/api/orders", {
+        diningSessionId: sessionId,
+        items,
+      });
 
-    // รีเซ็ต state
-    setQuantity(1);
-    setNote("");
-    setSelectMembers([]);
-    
-  } catch (error:any) {
-    console.error("Error creating order:", error.response?.data);
-    alert("Error: " + (error.response?.data?.error || error.message));
-  }
-};
+      alert(`✅ New order created with ${menu.name}!`);
+    } catch (error: any) {
+      console.error("Error adding to cart:", error.response?.data || error);
+      alert("❌ Failed to add to cart. Please try again.");
+    }
+  };
+
 
   return (
     <div className="relative min-h-screen overflow-hidden flex flex-col">

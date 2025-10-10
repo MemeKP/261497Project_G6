@@ -9,6 +9,7 @@ import dinningSessionRoutes from "./routes/DiningSession.routes.ts";
 import groupRoutes from "./routes/Group.routes.ts";
 import groupMemRoutes from "./routes/GroupMembers.routes.ts";
 import menuRoutes from './routes/Menu.routes.ts'
+import tebleRoutes from './routes/Table.routes.ts'
 import session from "express-session";
 
 const app = express();
@@ -22,20 +23,19 @@ app.use(
 );
 app.use(express.json());
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your-secret-key-change-this-in-production",
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-      secure: process.env.NODE_ENV === "production", 
-      httpOnly: true, 
-      maxAge: 24 * 60 * 60 * 1000, 
-      // sameSite: process.env.NODE_ENV === "production" ? "none" : "Strict", 
-    },
-  })
-);
-
+app.use(session({
+  name: 'sessionId',
+  secret: process.env.SESSION_SECRET || 'dev-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // ตั้งเป็น false ใน development
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    path: '/'
+  }
+}));
 
 // allow cross-origin requests
 app.use(function(req, res, next) {
@@ -55,6 +55,8 @@ app.use("/dining_session", dinningSessionRoutes);
 app.use("/group", groupRoutes);
 app.use("/group_members", groupMemRoutes);
 app.use('/menu_items', menuRoutes)
+app.use('/tables', tebleRoutes)
+
 
 declare module "express-session" {
   interface SessionData {

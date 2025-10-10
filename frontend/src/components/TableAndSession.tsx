@@ -31,15 +31,17 @@ const TableAndSession: React.FC = () => {
     refetchInterval: 5000,
   });
 
-  // แปลงเป็น tables
-  const tables: Table[] = Array.from({ length: TOTAL_TABLES }, (_, i) => {
-    const tableId = i + 1;
-    const occupied = activeSessions.some((s) => s.tableId === tableId);
-    return {
-      id: tableId,
-      number: tableId,
-      status: occupied ? "OCCUPIED" : "FREE",
-    };
+  const { data: tables = [] } = useQuery<Table[]>({
+    queryKey: ["tablesWithStatus"],
+    queryFn: async () => {
+      const res = await fetch("/api/tables/session-status", {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch tables");
+      const data = await res.json();
+      return data.tables;
+    },
+    refetchInterval: 5000,
   });
 
   // Mutation: Set Table (สร้าง sessionเปิดโต๊ะ)
@@ -50,28 +52,36 @@ const TableAndSession: React.FC = () => {
       const res = await fetch(`/api/dining_session/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ tableId: Number(tableId) }),
       });
-      if (!res.ok) throw new Error("Failed to set table");
+
+      if (!res.ok) {
+        // ✅ อ่าน error message จาก backend
+        const errorData = await res.json();
+        console.error("Backend error:", errorData);
+        throw new Error(errorData.error || "Failed to set table");
+      }
+
       const data = await res.json();
       console.log("Session started response:", data);
       return data;
-      // return res.json();
     },
     onSuccess: (data) => {
-      console.log("Session created successfully:", data); 
-      // queryClient.invalidateQueries(["activeSessions"]);
+      console.log("Session created successfully:", data);
       queryClient.invalidateQueries({ queryKey: ["activeSession"] });
       queryClient.invalidateQueries({ queryKey: ["sessionGroups"] });
+
       if (data.session) {
         alert(
-          `Session started successfully!\nTable: ${data.session.tableId}\nSession ID: ${data.session.id}`
+          `Session started successfully!\nTable: ${data.session.tableNumber}\nSession ID: ${data.session.id}`
         );
+
+        createGroupMutation.mutate({
+          tableId: data.session.tableNumber,
+          sessionId: data.session.id,
+        });
       }
-      createGroupMutation.mutate({
-      tableId: data.session.tableId,
-      sessionId: data.session.id,
-    });
 
       setSelectedTable(null);
     },
@@ -80,6 +90,7 @@ const TableAndSession: React.FC = () => {
       alert(`Error: ${error.message}`);
     },
   });
+
 
   // Mutation: Create Group (สร้างกลุ่มลูกค้าในโต๊ะ)
   const createGroupMutation = useMutation({
@@ -177,10 +188,9 @@ const TableAndSession: React.FC = () => {
               key={table.id}
               onClick={() => setSelectedTable(table)}
               className={`py-4 rounded-lg cursor-pointer font-semibold text-center 
-                ${
-                  table.status === "OCCUPIED"
-                    ? "bg-emerald-500 text-white"
-                    : "bg-zinc-300 text-black"
+                ${table.status === "OCCUPIED"
+                  ? "bg-emerald-500 text-white"
+                  : "bg-zinc-300 text-black"
                 }
                 ${selectedTable?.id === table.id ? "ring-4 ring-black" : ""}
               `}
@@ -225,11 +235,10 @@ const TableAndSession: React.FC = () => {
               <div className="mb-4">
                 <h3 className="text-stone-400 text-sm mb-1">Status</h3>
                 <p
-                  className={`text-xl font-bold ${
-                    selectedTable.status === "OCCUPIED"
+                  className={`text-xl font-bold ${selectedTable.status === "OCCUPIED"
                       ? "text-emerald-500"
                       : "text-gray-400"
-                  }`}
+                    }`}
                 >
                   {selectedTable.status === "OCCUPIED" ? "Occupied" : "Free"}
                 </p>

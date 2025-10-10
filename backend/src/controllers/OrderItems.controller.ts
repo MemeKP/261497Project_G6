@@ -33,8 +33,6 @@ export async function createOrderItem(req: Request, res: Response) {
   }
 }
 
-<<<<<<< HEAD
-=======
 export async function getOrderItems(req: Request, res: Response) {
   try {
     const { orderId } = req.params;
@@ -52,7 +50,6 @@ export async function getOrderItems(req: Request, res: Response) {
 }
 
 
->>>>>>> origin/frontend-backend-admin/login
 export async function updateOrderItem(req: Request, res: Response) {
   try {
     const { id } = req.params;
@@ -133,6 +130,7 @@ export async function deleteOrderItem(req: Request, res: Response) {
   }
 }
 
+/*
 export async function getCartItemCount(req: Request, res: Response) {
   try {
     const { orderId } = req.query;
@@ -146,4 +144,4 @@ export async function getCartItemCount(req: Request, res: Response) {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
-}
+}*/
