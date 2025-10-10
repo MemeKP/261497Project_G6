@@ -259,14 +259,12 @@ const groupedList = Object.values(groupedItems);
                 return;
               }
 
-              // ✅ ป้องกัน undefined
               const latestOrder = orders[orders.length - 1];
               if (!latestOrder || !latestOrder.id) {
                 alert("No valid latest order found.");
                 return;
               }
 
-              // ✅ force recalculation
               const res = await fetch(`/api/bill-splits/sessions/${sessionId}/bill`, {
                 method: "POST",
                 credentials: "include",
@@ -275,7 +273,7 @@ const groupedList = Object.values(groupedItems);
               if (!res.ok) throw new Error("Failed to generate bill");
 
               const billData = await res.json();
-              console.log("✅ Bill created:", billData);
+              console.log("Bill created:", billData);
 
               navigate(`/billpage/${sessionId}`);
             } catch (err) {

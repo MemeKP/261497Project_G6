@@ -131,3 +131,28 @@ export async function deleteOrderItem(req: Request, res: Response) {
   }
 }
 
+/**
+ * ✅ ดึง order item เดี่ยวตาม id (ใช้ตอนแก้ไข)
+ */
+export async function getOrderItemById(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const itemId = Number(id);
+
+    if (isNaN(itemId)) {
+      return res.status(400).json({ error: "Invalid item id" });
+    }
+
+    const item = await orderItemService.getOrderItemById(itemId);
+
+    if (!item) {
+      return res.status(404).json({ error: "Order item not found" });
+    }
+
+    res.json(item);
+  } catch (err: any) {
+    console.error("getOrderItemById error:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
+

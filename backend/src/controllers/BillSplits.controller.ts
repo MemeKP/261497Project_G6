@@ -147,7 +147,7 @@ export async function createBill(req: Request, res: Response) {
 }
 
 /**
- * ✅ สร้างบิลของทั้ง Session (จะ recalculated ใหม่ทุกครั้ง)
+ * Bill all Session (recalculated ใหม่ทุกครั้ง)
  */
 export async function createSessionBill(req: Request, res: Response) {
   try {
@@ -157,13 +157,12 @@ export async function createSessionBill(req: Request, res: Response) {
       return res.status(400).json({ error: "Invalid session id" });
     }
 
-    // 🔁 force ให้คำนวณใหม่เสมอ (ไม่ต้องใช้ query จาก frontend แล้ว)
     const force = true;
 
     const bill = await billSplitService.generateBillForSession(sessionId, force);
     res.status(201).json(bill);
   } catch (err: any) {
-    console.error("❌ Error in createSessionBill:", err);
+    console.error("Error in createSessionBill:", err);
     res.status(500).json({ error: err.message || "Failed to generate session bill" });
   }
 }

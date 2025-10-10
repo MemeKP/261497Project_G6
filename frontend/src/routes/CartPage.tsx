@@ -14,51 +14,69 @@ const CartPage = () => {
   const [confirmItem, setConfirmItem] = useState<CartItem | null>(null);
 
   useEffect(() => {
-    const fetchCart = async () => {
-      try {
-        console.log("🧾 Fetching draft order for session:", sessionId);
+  const fetchCart = async () => {
+    try {
+      console.log("🧾 Fetching draft order for session:", sessionId);
 
-        const orderRes = await fetch(`/api/orders/session/${sessionId}/cart`, {
-          credentials: "include",
-        });
+      const orderRes = await fetch(`/api/orders/session/${sessionId}/cart`, {
+        credentials: "include",
+      });
 
-        if (!orderRes.ok) throw new Error("No draft order found");
-
-        const latestOrder = await orderRes.json();
-
-        console.log("🧾 Draft order:", latestOrder.id);
-
-        // ดึง order_items ของออเดอร์นี้
-        const res = await fetch(`/api/order-items/orders/${latestOrder.id}/items`, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error(`Failed to fetch order items: ${res.status}`);
-
-        const data = await res.json();
-        console.log("📦 Raw order items from backend:", data);
-
-        const mapped: CartItem[] = data.map((item: any) => ({
-          id: item.id,
-          menuId: item.menuItemId ?? item.menu_item_id ?? 0,
-          name: item.menuName ?? item.menu_name ?? "Unknown Menu",
-          price: parseFloat(item.menuPrice ?? item.menu_price ?? 0),
-          qty: item.quantity ?? item.qty ?? 1,
-          note: item.note ?? "",
-          image: item.imageUrl ?? item.menuItem?.imageUrl ?? "/fallback.png",
-          memberName: item.memberName ?? item.member_name ?? "",
-        }));
-
-        setCart(mapped);
-      } catch (err) {
-        console.error("Error fetching cart:", err);
+      if (!orderRes.ok) {
+        console.warn("⚠️ No draft order found or invalid response");
         setCart([]);
-      } finally {
         setLoading(false);
+        return;
       }
-    };
 
-    if (sessionId) fetchCart();
-  }, [sessionId]);
+      const latestOrder = await orderRes.json();
+      const orderId = latestOrder?.order?.id || latestOrder?.id;
+
+      if (!orderId) {
+        console.log("📭 No draft order yet — empty cart.");
+        setCart([]);
+        setLoading(false);
+        return;
+      }
+
+      console.log("🧾 Draft order ID:", orderId);
+      const res = await fetch(`/api/order-items/orders/${orderId}/items`, {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        console.warn(`⚠️ Failed to fetch order items: ${res.status}`);
+        setCart([]);
+        setLoading(false);
+        return;
+      }
+
+      const data = await res.json();
+      console.log("📦 Raw order items from backend:", data);
+
+      const mapped: CartItem[] = data.map((item: any) => ({
+        id: item.id,
+        menuId: item.menuItemId ?? item.menu_item_id ?? 0,
+        name: item.menuName ?? item.menu_name ?? "Unknown Menu",
+        price: parseFloat(item.menuPrice ?? item.menu_price ?? 0),
+        qty: item.quantity ?? item.qty ?? 1,
+        note: item.note ?? "",
+        imageUrl: item.menuItem?.imageUrl || "/fallback.png",
+        memberName: item.memberName ?? item.member_name ?? "",
+      }));
+
+      setCart(mapped);
+    } catch (err) {
+      console.error(" Error fetching cart:", err);
+      setCart([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (sessionId) fetchCart();
+}, [sessionId]);
+
 
   const updateQty = async (id: number, delta: number) => {
     const target = cart.find((item) => item.id === id);
@@ -110,7 +128,7 @@ const CartPage = () => {
         <button onClick={() => navigate(`/homepage/${sessionId}`)} className="text-2xl">
           <IoIosArrowBack />
         </button>
-        <h1 className="title1 text-2xl">ENSO</h1>
+        <h1 className="title1 text-2xl"> ENSO </h1>
         <button className="text-2xl">
           <img src={basketIcon} alt="Basket" className="w-7 h-7 inline-block" />
         </button>
@@ -130,21 +148,23 @@ const CartPage = () => {
               <div
                 key={item.id}
                 className="relative flex items-center justify-between 
-                           bg-black rounded-[25px] px-6 py-4.5
+                           bg-black rounded-[25px] px-7 py-3.5
                            shadow-[0_4px_20px_rgba(255,255,255,0.25)] max-w-md ml-6"
               >
                 <div className="absolute -left-4">
                   <img
-                    src={item.image}
+                    src={item.imageUrl}
                     alt={item.name}
-                    className="w-20 h-20 rounded-full object-cover 
+                    className="w-24 h-24 rounded-full object-cover 
                                shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
                   />
                 </div>
 
                 <div
                   className="ml-16 cursor-pointer"
-                  onClick={() => navigate(`/details/${sessionId}/${item.menuId}`)}
+                  onClick={() =>
+                      navigate(`/details/${sessionId}/${item.menuId}?editId=${item.id}`)
+                    }
                 >
                   <p className="font-bold text-lg text-white">{item.name}</p>
                   <p className="text-sm text-gray-300">{item.price}.-</p>
@@ -193,20 +213,33 @@ const CartPage = () => {
           <button
             onClick={async () => {
               try {
-                const res = await fetch(`/api/orders/session/${sessionId}/close`, {
-                  method: "POST",
+                const orderRes = await fetch(`/api/orders/session/${sessionId}/cart`, {
+                  credentials: "include",
+                });
+                const data = await orderRes.json();
+                const orderId = data?.order?.id;
+
+                if (!orderId) {
+                  alert("No active draft order found");
+                  return;
+                }
+
+                const res = await fetch(`/api/orders/${orderId}/checkout`, {
+                  method: "PATCH",
                   headers: { "Content-Type": "application/json" },
+                  credentials: "include",
                 });
 
                 if (!res.ok) {
-                  const errData = await res.json();
-                  alert(`Checkout failed: ${errData.error || res.statusText}`);
+                  const err = await res.json();
+                  alert(`Checkout failed: ${err.error || res.statusText}`);
                   return;
                 }
 
                 alert("Checkout successful!");
                 setCart([]);
                 navigate(`/orderstatus/${sessionId}`);
+
               } catch (err) {
                 console.error(err);
                 alert("error during checkout");

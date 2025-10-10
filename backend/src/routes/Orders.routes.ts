@@ -4,18 +4,24 @@ import * as ordersController from "src/controllers/Orders.controller.js";
 const router = Router();
 
 // Create order (checkout พร้อม items)
-router.post("/", ordersController.createOrder);                     // POST /orders
+router.post("/", ordersController.createOrder);    
 
-// ✅ สำหรับสร้าง order เปล่า (หน้า OrderStatus)
+/* 
+    OrderStatuspage
+*/
 router.post("/new", ordersController.createNewOrder);
+
 router.get("/session/:sessionId/cart", ordersController.getDraftOrder);
 
 router.patch("/:id/checkout", ordersController.checkoutOrder);
 
 // Get all orders (admin/debug)
-router.get("/", ordersController.getAllOrders);                     // GET /orders
 
-// Get orders by session → ต้องมาก่อน /:id
+router.get("/", ordersController.getAllOrders);  // GET /orders
+
+/* GET /orders/session/:sessionId
+   Get orders by session
+*/
 router.get("/session/:sessionId", ordersController.getOrders);      // GET /orders/session/:sessionId
 
 router.post("/session/:sessionId/close", ordersController.closeOrdersBySession);

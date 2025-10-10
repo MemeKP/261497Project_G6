@@ -6,6 +6,8 @@ const router = Router();
 // สร้าง QR สำหรับจ่าย
 router.post("/", paymentController.createPayment);
 
+router.get("/status/:billId", paymentController.getPaymentStatus);
+
 // ยืนยันการจ่าย (manual confirm โดย admin)
 router.patch("/:paymentId/confirm", paymentController.confirmPayment);
 

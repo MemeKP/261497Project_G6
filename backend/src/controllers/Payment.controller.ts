@@ -41,7 +41,6 @@ export async function confirmPayment(req: Request, res: Response) {
   }
 }
 
-// Mock callback
 export async function mockCallback(req: Request, res: Response) {
   try {
     const { paymentId } = req.body;
@@ -55,5 +54,26 @@ export async function mockCallback(req: Request, res: Response) {
   } catch (err: any) {
     console.error("mockCallback error:", err.message);
     res.status(500).json({ error: "Callback handling failed" });
+  }
+}
+
+export async function getPaymentStatus(req: Request, res: Response) {
+  try {
+    const { billId } = req.params;
+    const { memberId } = req.query;
+
+    if (!billId || isNaN(Number(billId))) {
+      return res.status(400).json({ error: "Invalid billId" });
+    }
+
+    const status = await paymentService.getPaymentStatus(
+      Number(billId),
+      memberId ? Number(memberId) : undefined
+    );
+
+    res.json(status);
+  } catch (err: any) {
+    console.error("getPaymentStatus error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 }

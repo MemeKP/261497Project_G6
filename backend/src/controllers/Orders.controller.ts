@@ -527,7 +527,7 @@ import {
 } from "@db/schema.js";
 
 /**
- * ✅ Allowed order status (ครบทุกสถานะในระบบ)
+ * Allowed order status (ครบทุกสถานะในระบบ)
  * - DRAFT: ยังไม่ checkout
  * - PENDING: สั่งแล้ว รอร้านรับ
  * - PREPARING: ร้านกำลังทำ
@@ -582,7 +582,7 @@ export async function createOrder(req: Request, res: Response) {
 }
 
 /**
- * ✅ สำหรับสร้าง Order เปล่า (New Order)
+ * สำหรับสร้าง Order เปล่า (New Order)
  * ใช้ในหน้าลูกค้าหลัง Checkout order เก่าไปแล้ว
  * → จะไม่กระทบ order เดิมแม้ admin เปลี่ยนสถานะภายหลัง
  */
@@ -599,7 +599,7 @@ export async function createNewOrder(req: Request, res: Response) {
       await orderService.updateOrderStatus(Number(closePreviousOrderId), "CLOSED");
     }
 
-    // ✅ สร้าง order ใหม่สถานะ DRAFT
+    // สร้าง order ใหม่สถานะ DRAFT
     const order = await orderService.createOrder(
       Number(diningSessionId),
       Number(tableId) || 1
@@ -613,7 +613,7 @@ export async function createNewOrder(req: Request, res: Response) {
 }
 
 /**
- * ✅ ดึง orders ทั้งหมดของ session (ใช้ในหน้า Order Status)
+ *  ดึง orders ทั้งหมดของ session (ใช้ในหน้า Order Status)
  */
 export async function getOrders(req: Request, res: Response) {
   try {
@@ -632,7 +632,7 @@ export async function getOrders(req: Request, res: Response) {
 }
 
 /**
- * ✅ Checkout: เปลี่ยนจาก DRAFT → PENDING
+ * Checkout: เปลี่ยนจาก DRAFT → PENDING
  */
 export async function checkoutOrder(req: Request, res: Response) {
   try {
@@ -655,7 +655,7 @@ export async function checkoutOrder(req: Request, res: Response) {
 }
 
 /**
- * ✅ เปลี่ยนสถานะ order (ใช้ตอน admin ปรับสถานะ)
+ *  เปลี่ยนสถานะ order (ใช้ตอน admin ปรับสถานะ)
  */
 export async function updateOrderStatus(req: Request, res: Response) {
   try {
@@ -687,7 +687,7 @@ export async function updateOrderStatus(req: Request, res: Response) {
 }
 
 /**
- * ✅ ดึง order เดี่ยวตาม id
+ *  ดึง order เดี่ยวตาม id
  */
 export async function getOrderById(req: Request, res: Response) {
   try {
@@ -709,7 +709,7 @@ export async function getOrderById(req: Request, res: Response) {
 }
 
 /**
- * ✅ ดึงทุก order ทั้งระบบ (สำหรับ admin/debug)
+ *  ดึงทุก order ทั้งระบบ (สำหรับ admin/debug)
  */
 export async function getAllOrders(req: Request, res: Response) {
   try {
@@ -721,7 +721,7 @@ export async function getAllOrders(req: Request, res: Response) {
 }
 
 /**
- * ✅ ลบ order
+ * Delete Order
  */
 export async function deleteOrder(req: Request, res: Response) {
   try {
@@ -743,7 +743,7 @@ export async function deleteOrder(req: Request, res: Response) {
 }
 
 /**
- * ✅ ปิด orders ทั้ง session (ใช้ตอน session จบ)
+ * ปิด orders ทั้ง session (ใช้ตอน session จบ)
  */
 export async function closeOrdersBySession(req: Request, res: Response) {
   try {
@@ -774,17 +774,50 @@ export async function getDraftOrder(req: Request, res: Response) {
   try {
     const { sessionId } = req.params;
     const numericSessionId = Number(sessionId);
+
     if (isNaN(numericSessionId)) {
       return res.status(400).json({ error: "Invalid sessionId" });
     }
 
     const order = await orderService.getDraftOrderBySession(numericSessionId);
+
     if (!order) {
-      return res.status(404).json({ message: "No draft order found" });
+      return res.json({
+        success: true,
+        message: "No draft order yet",
+        order: null,
+        items: [],
+      });
     }
 
-    res.json(order);
+    return res.json({
+      success: true,
+      order,
+    });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error("Error fetching draft order:", err);
+    return res.status(500).json({ error: err.message });
   }
 }
+
+
+
+
+// export async function getDraftOrder(req: Request, res: Response) {
+//   try {
+//     const { sessionId } = req.params;
+//     const numericSessionId = Number(sessionId);
+//     if (isNaN(numericSessionId)) {
+//       return res.status(400).json({ error: "Invalid sessionId" });
+//     }
+
+//     const order = await orderService.getDraftOrderBySession(numericSessionId);
+//     if (!order) {
+//       return res.status(404).json({ message: "No draft order found" });
+//     }
+
+//     res.json(order);
+//   } catch (err: any) {
+//     res.status(500).json({ error: err.message });
+//   }
+// }

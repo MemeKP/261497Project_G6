@@ -140,6 +140,7 @@ export interface CartItem {
   price: number;
   qty: number;
   note?: string;
-  image?: string;
+  imageUrl?: string;
   memberName?: string;
 }
+

@@ -172,7 +172,7 @@ const allowedStatus = [
 ] as const;
 
 /**
- * ✅ สร้าง order ใหม่ (ไม่มีเมนู)
+ * create order (button new ordr)
  */
 export async function createOrder(dining_session_id: number, table_id: number) {
   const [newOrder] = await db
@@ -180,14 +180,14 @@ export async function createOrder(dining_session_id: number, table_id: number) {
     .values({
       dining_session_id,
       table_id,
-      status: "DRAFT", // ❗ ยังไม่ checkout
+      status: "DRAFT", // no checkout
     })
     .returning();
   return newOrder;
 }
 
 /**
- * ✅ สร้าง order + items (ตอนเพิ่มเมนูลงตะกร้า)
+ * create order + items (add to cart)
  */
 export async function createOrderWithItems(
   diningSessionId: number,
@@ -199,7 +199,7 @@ export async function createOrderWithItems(
     memberId: number;
   }>
 ) {
-  // 1️⃣ หา order เดิมที่ยัง DRAFT อยู่
+  // check existing DRAFT order
   let [existingOrder] = await db
     .select()
     .from(orders)
@@ -212,7 +212,7 @@ export async function createOrderWithItems(
     .orderBy(desc(orders.created_at))
     .limit(1);
 
-  // 2️⃣ ถ้าไม่มี → สร้างใหม่
+  // newOrder
   if (!existingOrder) {
     const [newOrder] = await db
       .insert(orders)
@@ -225,8 +225,7 @@ export async function createOrderWithItems(
 
     existingOrder = newOrder;
   }
-
-  // 3️⃣ เพิ่ม order items
+  //add order items
   const orderItemsData = items.map((item) => ({
     order_id: existingOrder.id,
     menu_item_id: item.menuId,
@@ -241,7 +240,6 @@ export async function createOrderWithItems(
     .values(orderItemsData)
     .returning();
 
-  // 4️⃣ ส่งคืนข้อมูลรวม
   return {
     ...existingOrder,
     newItems: createdItems,
@@ -249,7 +247,7 @@ export async function createOrderWithItems(
 }
 
 /**
- * ✅ ดึง orders ทั้งหมดของ session พร้อม items
+ * order all session
  */
 export async function getOrdersBySession(sessionId: number) {
   const ordersData = await db
@@ -272,6 +270,7 @@ export async function getOrdersBySession(sessionId: number) {
       menuItemId: order_items.menu_item_id,
       menuName: menuItems.name,
       menuPrice: menuItems.price,
+      menuImage: menuItems.imageUrl,
       memberName: group_members.name,
     })
     .from(order_items)
@@ -286,7 +285,7 @@ export async function getOrdersBySession(sessionId: number) {
 }
 
 /**
- * ✅ เปลี่ยนสถานะ order (ใช้ตอน checkout หรือ admin)
+ * order 
  */
 export async function updateOrderStatus(orderId: number, status: string) {
   if (!allowedStatus.includes(status as any)) {
@@ -303,7 +302,7 @@ export async function updateOrderStatus(orderId: number, status: string) {
 }
 
 /**
- * ✅ Checkout order → เปลี่ยนจาก DRAFT → PENDING
+ * Checkout order: DRAFT → PENDING
  */
 export async function checkoutOrder(orderId: number) {
   const [updated] = await db
@@ -316,7 +315,7 @@ export async function checkoutOrder(orderId: number) {
 }
 
 /**
- * ✅ ใช้สำหรับหน้าแอดมินหรือ debug
+ * for admin
  */
 export async function getOrderById(orderId: number) {
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
@@ -335,8 +334,7 @@ export async function deleteOrder(orderId: number) {
   return deleted || null;
 }
 
-
-// ✅  CartPage — ดึงเฉพาะ DRAFT orders
+// CartPage — DRAFT orders
 export async function getDraftOrderBySession(sessionId: number) {
   const [draftOrder] = await db
     .select()

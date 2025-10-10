@@ -3,7 +3,7 @@ import { order_items, orders, menuItems,group_members } from "db/schema.js";
 import { eq } from "drizzle-orm";
 
 /**
- * เพิ่ม OrderItem เข้าไปใน Order (Add to cart)
+ * add OrderItem  Order (Add to cart)
  */
 export async function addOrderItem(
   order_id: number,
@@ -13,30 +13,24 @@ export async function addOrderItem(
   note?: string,
   status: string = "PREPARING"
 ) {
-  // checkว่า orderId มีอยู่จริง
   const [order] = await db.select().from(orders).where(eq(orders.id,order_id));
   if (!order) throw new Error("Order not found");
 
-  // checkว่า memberId มีอยู่จริง
   const [member] = await db.select().from(group_members).where(eq(group_members.id, member_id));
   if (!member) throw new Error("Member not found");
 
-  //  checkว่า member กับ order อยู่ใน session เดียวกัน
   if (member.diningSessionId !== order.dining_session_id) {
     throw new Error("Member and Order do not belong to the same session");
   }
 
-  //  checkว่าเมนูยัง available อยู่
   const [menu] = await db.select().from(menuItems).where(eq(menuItems.id, menu_item_id));
   if (!menu) throw new Error("Menu item not found");
   if (!menu.isAvailable) {
     throw new Error("This menu item is not available");
   }
 
-  // check qty
   if (quantity <= 0) throw new Error("Quantity must be at least 1");
 
-  //  insert order item
   const [newItem] = await db
     .insert(order_items)
     .values({
@@ -48,7 +42,6 @@ export async function addOrderItem(
     })
     .returning();
 
-  // return item พร้อมข้อมูลเมนู
   return {
     ...newItem,
     menuName: menu.name,
@@ -56,10 +49,6 @@ export async function addOrderItem(
   };
 }
 
-/**
- * ดึง OrderItems ทั้งหมดของ Order (Cart list)
- * → ใช้ใน Cart Page
- */
 export async function getOrderItemsByOrderId(orderId: number) {
   const items = await db
     .select({
@@ -72,19 +61,45 @@ export async function getOrderItemsByOrderId(orderId: number) {
       note: order_items.note,
       menuName: menuItems.name,
       menuPrice: menuItems.price,
+      menuImage: menuItems.imageUrl,
       status: order_items.status,
     })
     .from(order_items)
     .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
-    .leftJoin(group_members, eq(order_items.member_id, group_members.id)) // ✅ join ตาราง members
+    .leftJoin(group_members, eq(order_items.member_id, group_members.id))
     .where(eq(order_items.order_id, orderId));
 
-  return items;
+  return items.map((item) => ({
+    ...item,
+    menuItem: { imageUrl: item.menuImage },
+  }));
 }
 
+export async function getOrderItemById(itemId: number) {
+  const [item] = await db
+    .select({
+      id: order_items.id,
+      orderId: order_items.order_id,
+      menuItemId: order_items.menu_item_id,
+      memberId: order_items.member_id,
+      memberName: group_members.name,
+      quantity: order_items.quantity,
+      note: order_items.note,
+      status: order_items.status,
+      menuName: menuItems.name,
+      menuPrice: menuItems.price,
+    })
+    .from(order_items)
+    .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
+    .leftJoin(group_members, eq(order_items.member_id, group_members.id))
+    .where(eq(order_items.id, itemId))
+    .limit(1);
+
+  return item || null;
+}
 
 /**
- * ดึง OrderItems ทั้งหมดของ Session (ใช้ในหน้า Order Status)
+ * ดึง OrderItems Session (Order Status)
  */
 export async function getOrderItemsBySession(sessionId: number) {
   return await db
@@ -100,13 +115,12 @@ export async function getOrderItemsBySession(sessionId: number) {
     .from(order_items)
     .innerJoin(orders, eq(order_items.order_id, orders.id))
     .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
-    .leftJoin( group_members, eq(order_items.member_id, group_members.id)) // ✅ เพิ่ม join member
+    .leftJoin( group_members, eq(order_items.member_id, group_members.id)) // join member
     .where(eq(orders.dining_session_id, sessionId));
 }
 
-
 /**
- * อัปเดทสถานะของ OrderItem
+ * update OrderItem
  */
 export async function updateStatus(itemId: number, status: string) {
   const allowed = ["PENDING", "PREPARING", "READY_TO_SERVE", "CANCELLED", "COMPLETE"];
@@ -123,9 +137,8 @@ export async function updateStatus(itemId: number, status: string) {
   return updated || null;
 }
 
-
 /**
- * อัปเดต OrderItem (แก้ qty/note)
+ * Update OrderItem (edit qty/note)
  */
 export async function updateOrderItem(id: number, quantity?: number, note?: string) {
   const updates: Partial<{ quantity: number; note: string }> = {};
@@ -146,7 +159,6 @@ export async function updateOrderItem(id: number, quantity?: number, note?: stri
 
   if (!updated) return null;
 
-  // ดึงข้อมูลเมนู
   const [menu] = await db
     .select()
     .from(menuItems)
@@ -160,7 +172,7 @@ export async function updateOrderItem(id: number, quantity?: number, note?: stri
 }
 
 /**
- * ลบ OrderItem (remove from cart)
+ *  OrderItem (remove from cart)
  */
 export async function deleteOrderItem(id: number) {
   const [deleted] = await db
@@ -170,6 +182,5 @@ export async function deleteOrderItem(id: number) {
 
   if (!deleted) return null;
 
-  // ลบแล้วไม่จำเป็นต้อง join menu 
   return { ...deleted, message: "Deleted successfully" };
 }

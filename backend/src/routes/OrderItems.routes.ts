@@ -14,7 +14,7 @@ router.get("/sessions/:sessionId/items", orderItemController.getOrderItemsBySess
 
 // Update order item (qty/note)
 router.patch("/:id", orderItemController.updateOrderItem);
-
+router.get("/:id", orderItemController.getOrderItemById);
 // Update status ของ order item (pending → preparing → served)
 router.patch("/:id/status", orderItemController.updateOrderItemStatus);
 

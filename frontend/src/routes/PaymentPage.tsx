@@ -20,11 +20,10 @@ const PaymentPage = () => {
   const [loading, setLoading] = useState(true);
   const [confirmed, setConfirmed] = useState(false);
 
-  // 🧠 ป้องกันยิง POST ซ้ำ
   const hasCreated = useRef(false);
 
   useEffect(() => {
-    if (hasCreated.current) return; // ✅ กันยิงซ้ำเด็ดขาด
+    if (hasCreated.current) return; 
     hasCreated.current = true;
 
     const createPayment = async () => {
