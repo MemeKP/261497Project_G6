@@ -24,35 +24,31 @@
   },
   "contributors": [],
   "scripts": {
-    "db:generate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit generate",
-    "db:push": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit push",
-    "db:migrate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit migrate",
-    "db:prototype": "tsx ./db/prototype.ts",
-    "eol": "eolConverter _entrypoint/*.sh"
+    "dev": "tsx src/index.ts",
+    "test": "cypress open"
   },
   "dependencies": {
+    "@tsconfig/node-lts": "^22.0.2",
+    "@tsconfig/node-ts": "^23.6.1",
     "bcrypt": "^6.0.0",
-    "connect-pg-simple": "^10.0.0",
-    "dotenv": "^17.2.2",
-    "drizzle-orm": "^0.44.5",
+    "cypress": "^15.4.0",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.44.6",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
-    "pg": "^8.16.3",
     "postgres": "^3.4.7",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
-    "@tsconfig/node-lts": "^22.0.2",
-    "@tsconfig/node-ts": "^23.6.1",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.3",
     "@types/express-session": "^1.18.2",
-    "@types/node": "^24.5.2",
-    "@types/pg": "^8.15.5",
+    "@types/node": "^24.7.1",
     "@types/qrcode": "^1.5.5",
-    "cross-env": "^10.0.0",
-    "drizzle-kit": "^0.31.4",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "drizzle-kit": "^0.31.5",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
   }
 }

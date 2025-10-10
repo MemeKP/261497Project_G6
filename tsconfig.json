@@ -1,13 +1,12 @@
 {
-  "extends": [
-    "@tsconfig/node-lts/tsconfig.json",
-    "@tsconfig/node-ts/tsconfig.json"
-  ],
+  "extends": "@tsconfig/node-lts/tsconfig.json",
   "compilerOptions": {
+    "types": ["cypress", "node"],
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
       "@db/*": ["./db/*"]
     }
-  }
+  },
+  "include": ["**/*.ts"]
 }
