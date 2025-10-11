@@ -15,7 +15,7 @@ const BestSeller: React.FC<MenuItemsProps> = ({menu}) => {
           className="w-45 absolute sm:w-44 md:w-48 -top-22 left-1/2 -translate-x-1/2"
           alt="best seller menu"
         />
-        <div className="text-white mt-18 text-start px-2">
+        <div className="text-white mt-23 text-start px-2">
           <div className="text-base sm:text-lg font-semibold">{menu.name}</div>
           <div className="text-[10px] sm:text-sm font-normal leading-snug">
            {menu.description}

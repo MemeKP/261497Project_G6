@@ -36,8 +36,6 @@ const DetailsPage = () => {
   const [selectMembers, setSelectMembers] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState("");
-  const [latestOrder, setLatestOrder] = useState(null);
-  // const [currentOrder, setCurrentOrder] = useState(null);
 
   useEffect(() => {
   if (sessionId) {
@@ -65,6 +63,7 @@ const DetailsPage = () => {
     }
   }, [sessionId]);
 
+  
   // console.log("menuId:", menuId);
   const {
     data: menu,
@@ -103,7 +102,7 @@ const DetailsPage = () => {
     }
 
     try {
-      // ✅ สร้างรายการ items ที่จะเพิ่ม
+      // สร้างรายการ items ที่จะเพิ่ม
       const items = selectMembers.map(memberId => ({
         menuId: menu.id,
         qty: quantity,
@@ -111,7 +110,7 @@ const DetailsPage = () => {
         memberId,
       }));
 
-      // ✅ 1. ตรวจสอบว่ามี order เดิมไหม
+      // 1. ตรวจสอบว่ามี order เดิมไหม
       let existingOrder = null;
       try {
         const res = await axios.get(`/api/orders/session/${sessionId}`);
@@ -120,7 +119,7 @@ const DetailsPage = () => {
         console.warn("No existing order found, will create new one");
       }
 
-      // ✅ 2. ถ้ามี order เดิม → เพิ่มเข้า order_items เดิม
+      // 2. ถ้ามี order เดิม → เพิ่มเข้า order_items เดิม
       if (existingOrder && existingOrder.id) {
         for (const item of items) {
           await axios.post("/api/order-items", {

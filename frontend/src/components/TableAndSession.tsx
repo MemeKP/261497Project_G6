@@ -44,50 +44,50 @@ const TableAndSession: React.FC = () => {
 
   // Mutation: Set Table (สร้าง sessionเปิดโต๊ะ)
   const startSessionMutation = useMutation({
-    mutationFn: async (tableId: number) => {
-      console.log("Starting session for table:", tableId);
+  mutationFn: async (tableId: number) => {
+    console.log("Starting session for table:", tableId);
 
-      const res = await fetch(`/api/dining_session/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ tableId: Number(tableId) }),
+    const res = await fetch(`/api/dining_session/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", 
+      body: JSON.stringify({ tableId: Number(tableId) }),
+    });
+    
+    if (!res.ok) {
+      // อ่าน error message จาก backend
+      const errorData = await res.json();
+      console.error("Backend error:", errorData);
+      throw new Error(errorData.error || "Failed to set table");
+    }
+    
+    const data = await res.json();
+    console.log("Session started response:", data);
+    return data;
+  },
+  onSuccess: (data) => {
+    console.log("Session created successfully:", data); 
+    queryClient.invalidateQueries({ queryKey: ["activeSession"] });
+    queryClient.invalidateQueries({ queryKey: ["sessionGroups"] });
+    
+    if (data.session) {
+      alert(
+        `Session started successfully!\nTable: ${data.session.tableId}\nSession ID: ${data.session.id}`
+      );
+      
+      createGroupMutation.mutate({
+        tableId: data.session.tableId,
+        sessionId: data.session.id,
       });
+    }
 
-      if (!res.ok) {
-        // ✅ อ่าน error message จาก backend
-        const errorData = await res.json();
-        console.error("Backend error:", errorData);
-        throw new Error(errorData.error || "Failed to set table");
-      }
-
-      const data = await res.json();
-      console.log("Session started response:", data);
-      return data;
-    },
-    onSuccess: (data) => {
-      console.log("Session created successfully:", data);
-      queryClient.invalidateQueries({ queryKey: ["activeSession"] });
-      queryClient.invalidateQueries({ queryKey: ["sessionGroups"] });
-
-      if (data.session) {
-        alert(
-          `Session started successfully!\nTable: ${data.session.tableNumber}\nSession ID: ${data.session.id}`
-        );
-
-        createGroupMutation.mutate({
-          tableId: data.session.tableNumber,
-          sessionId: data.session.id,
-        });
-      }
-
-      setSelectedTable(null);
-    },
-    onError: (error: Error) => {
-      console.error("Error starting session:", error);
-      alert(`Error: ${error.message}`);
-    },
-  });
+    setSelectedTable(null);
+  },
+  onError: (error: Error) => {
+    console.error("Error starting session:", error);
+    alert(`Error: ${error.message}`);
+  },
+});
 
 
   // Mutation: Create Group (สร้างกลุ่มลูกค้าในโต๊ะ)

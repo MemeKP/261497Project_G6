@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import QRCode from "qrcode";
 import express from "express";
 import "dotenv/config";
-import { eq, and, isNotNull } from "drizzle-orm";
+import { eq, and, isNotNull, asc } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
   users,
@@ -16,57 +16,48 @@ import {
   tables,
 } from "@db/schema.js";
 
-export const startSession = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const startSession = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { tableId } = req.body; // นี่คือ table number (1-9)
+    const { tableId } = req.body; // นี่คือ table record id (เช่น 14)
     const adminId = req.session.userId;
 
-    console.log('Starting session for table number:', tableId);
+    console.log('Starting session for table RECORD ID:', tableId);
 
     if (!tableId || typeof tableId !== "number") {
       return res.status(400).json({
-        error: "Table number is required and must be a number",
+        error: "Table ID is required and must be a number",
       });
     }
 
-    if (!adminId) {
-      return res.status(401).json({
-        error: "Authentication required. Please log in.",
-      });
-    }
-
-    // ✅ หา table โดยใช้ number
+    // ✅ แก้ไข: หา table โดยใช้ id (ไม่ใช่ number)
     const tableRecord = await dbClient.query.tables.findFirst({
-      where: eq(tables.number, tableId),
+      where: eq(tables.id, tableId), // ใช้ id แทน number
     });
+
+    console.log('🔍 Table record found:', tableRecord);
 
     if (!tableRecord) {
       return res.status(400).json({
-        error: `Table ${tableId} not found. Please contact administrator to seed tables.`,
+        error: `Table ID ${tableId} not found.`,
       });
     }
 
-    // ✅ ตรวจสอบว่ามี session active อยู่แล้วหรือไม่
+    // ✅ ตรวจสอบว่ามี session active อยู่แล้วหรือไม่ (ใช้ tableRecord.id)
     const existingSession = await dbClient.query.diningSessions?.findFirst({
       where: and(
-        eq(diningSessions.tableId, tableRecord.id), // ใช้ tableRecord.id
+        eq(diningSessions.tableId, tableRecord.id),
         eq(diningSessions.status, "ACTIVE")
       ),
     });
 
     if (existingSession) {
       return res.status(400).json({
-        error: `Table ${tableId} already has an active dining session`,
+        error: `Table ${tableRecord.number} already has an active dining session`,
       });
     }
 
     const startedAt = new Date();
 
-    // ✅ สร้าง dining session
     const newSession = await dbClient
       .insert(diningSessions)
       .values({
@@ -89,7 +80,6 @@ export const startSession = async (
 
     console.log('✅ Dining session created:', newSession[0]);
 
-    // ✅ อัพเดท table status เป็น OCCUPIED
     await dbClient
       .update(tables)
       .set({ status: "OCCUPIED" })
@@ -98,14 +88,15 @@ export const startSession = async (
     // QR Data setup
     const qrData = {
       sessionId: newSession[0].id,
-      tableNumber: tableId, // ใช้ table number ที่ user รู้จัก
-      url: `${
-        process.env.PRODUCTION_FRONTEND_URL || "http://10.0.0.51:5173"
-      }/tables/${newSession[0].id}`,
+      tableNumber: tableRecord.number, // ใช้ table number จาก record
+      path: `/tables/${tableRecord.number}`, // ใช้ table number ใน URL
     };
 
+    const fullUrlForQR = `https://0a885cac0563b52cffe9b7f2b8d43d25.serveo.net/tables/${newSession[0].id}`;
+    console.log('🔍 QR Code URL:', fullUrlForQR);
+
     // Generate QR Code
-    const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrData), {
+    const qrCodeDataURL = await QRCode.toDataURL(fullUrlForQR, {
       errorCorrectionLevel: "M",
       margin: 1,
       color: {
@@ -122,11 +113,11 @@ export const startSession = async (
       .where(eq(diningSessions.id, newSession[0].id));
 
     res.status(201).json({
-      message: `Dining session started successfully for table ${tableId}`,
+      message: `Dining session started successfully for table ${tableRecord.number}`,
       session: {
         id: newSession[0].id,
         tableId: tableRecord.id, // table record id
-        tableNumber: tableId, // table number ที่ user รู้จัก
+        tableNumber: tableRecord.number, // table number
         startedAt: newSession[0].startedAt,
         status: newSession[0].status,
         totalCustomers: newSession[0].totalCustomers,
@@ -141,7 +132,6 @@ export const startSession = async (
     next(err);
   }
 };
-
 
 export const getQrForTable = async (
   req: Request,
@@ -318,9 +308,9 @@ export const getActiveSession = async (
           createdAt: session.createdAt,
           group: group
             ? {
-                id: group.id,
-                members: members,
-              }
+              id: group.id,
+              members: members,
+            }
             : null,
         };
       })
@@ -353,7 +343,7 @@ export const getSession = async (
         endedAt: diningSessions.endedAt,
         status: diningSessions.status,
         totalCustomers: diningSessions.totalCustomers,
-        total: diningSessions.total, //  เพิ่มบรรทัดนี้
+        total: diningSessions.total,
         createdAt: diningSessions.createdAt,
         qrCode: diningSessions.qrCode,
       })
@@ -377,21 +367,21 @@ export const getSession = async (
 
     const members = group
       ? (
-          await dbClient.query.group_members.findMany({
-            where: eq(group_members.groupId, group.id),
-          })
-        ).map((member) => ({
-          id: member.id,
-          name: member.name,
-          note: member.note,
-        }))
+        await dbClient.query.group_members.findMany({
+          where: eq(group_members.groupId, group.id),
+        })
+      ).map((member) => ({
+        id: member.id,
+        name: member.name,
+        note: member.note,
+      }))
       : [];
     const duration =
       sessionData.endedAt && sessionData.startedAt
         ? Math.round(
-            (sessionData.endedAt.getTime() - sessionData.startedAt.getTime()) /
-              60000
-          )
+          (sessionData.endedAt.getTime() - sessionData.startedAt.getTime()) /
+          60000
+        )
         : null;
     res.json({
       session: {
@@ -408,12 +398,32 @@ export const getSession = async (
       },
       group: group
         ? {
-            id: group.id,
-            members,
-          }
+          id: group.id,
+          members,
+        }
         : null,
     });
   } catch (err) {
     next(err);
   }
+};
+
+// ใน getSessionByTableNumber
+export const getSessionIdByTableNumber = async (tableNumber: number) => {
+  const tableRecord = await dbClient.query.tables.findFirst({
+    where: eq(tables.number, tableNumber),
+  });
+
+  const session = await dbClient
+    .select({ id: diningSessions.id })
+    .from(diningSessions)
+    .where(
+      and(
+        eq(diningSessions.tableId, tableRecord!.id),
+        eq(diningSessions.status, "ACTIVE")
+      )
+    )
+    .limit(1);
+
+  return session[0]?.id;
 };

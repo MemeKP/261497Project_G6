@@ -16,8 +16,27 @@ import {
  orderItems,
 } from "@db/schema.js";
 
+/**
+ * Allowed order status (ครบทุกสถานะในระบบ)
+ * - DRAFT: ยังไม่ checkout
+ * - PENDING: สั่งแล้ว รอร้านรับ
+ * - PREPARING: ร้านกำลังทำ
+ * - COMPLETED: ทำเสร็จแล้ว
+ * - PAID: จ่ายเงินแล้ว
+ * - CLOSED: ปิด order / ปิด session
+ */
+const allowedStatus = [
+  "DRAFT",
+  "PENDING",
+  "PREPARING",
+  "COMPLETED",
+  "PAID",
+  "CLOSED",
+] as const;
+
+
 // Allowed status values
-const allowedStatus = ["PENDING", "PREPARING", "READY_TO_SERVE", "CANCELLED", "COMPLETE"] as const;
+// const allowedStatus = ["PENDING", "PREPARING", "READY_TO_SERVE", "CANCELLED", "COMPLETE"] as const;
 
 export async function createOrder(req: Request, res: Response) {
   try {
@@ -52,6 +71,30 @@ export async function createOrder(req: Request, res: Response) {
   }
 }
 
+export async function createNewOrder(req: Request, res: Response) {
+  try {
+    const { diningSessionId, tableId, closePreviousOrderId } = req.body;
+
+    if (!diningSessionId || isNaN(Number(diningSessionId))) {
+      return res.status(400).json({ error: "Valid diningSessionId is required" });
+    }
+
+    if (closePreviousOrderId) {
+      await orderService.updateOrderStatus(Number(closePreviousOrderId), "CLOSED");
+    }
+
+    const order = await orderService.createOrder(
+      Number(diningSessionId),
+      Number(tableId) || 1
+    );
+
+    res.status(201).json(order);
+  } catch (err: any) {
+    console.error("Error creating empty order:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
 export async function getOrders(req: Request, res: Response) {
   try {
     const { sessionId } = req.params;
@@ -65,6 +108,59 @@ export async function getOrders(req: Request, res: Response) {
     res.json(orders);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * Checkout: เปลี่ยนจาก DRAFT → PENDING
+ */
+export async function checkoutOrder(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const orderId = Number(id);
+
+    if (isNaN(orderId)) {
+      return res.status(400).json({ error: "Invalid order ID" });
+    }
+
+    const order = await orderService.checkoutOrder(orderId);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    res.json({ message: "Order checked out successfully", order });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function getDraftOrder(req: Request, res: Response) {
+  try {
+    const { sessionId } = req.params;
+    const numericSessionId = Number(sessionId);
+
+    if (isNaN(numericSessionId)) {
+      return res.status(400).json({ error: "Invalid sessionId" });
+    }
+
+    const order = await orderService.getDraftOrderBySession(numericSessionId);
+
+    if (!order) {
+      return res.json({
+        success: true,
+        message: "No draft order yet",
+        order: null,
+        items: [],
+      });
+    }
+
+    return res.json({
+      success: true,
+      order,
+    });
+  } catch (err: any) {
+    console.error("Error fetching draft order:", err);
+    return res.status(500).json({ error: err.message });
   }
 }
 

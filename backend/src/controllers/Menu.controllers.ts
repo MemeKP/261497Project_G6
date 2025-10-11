@@ -49,12 +49,8 @@ const uploadImageToImagekit = async (file: Express.Multer.File) => {
 };
 
 const deleteImageFromImageKit = async (imageUrl: string): Promise<void> => {
-  try {
-    console.log(`[DELETE IMAGE] Starting deletion for: ${imageUrl}`);
-    
-    const fileName = imageUrl.split('/').pop();
-    console.log(`[DELETE IMAGE] Searching for: ${fileName}`);
-    
+  try {    
+    const fileName = imageUrl.split('/').pop();    
     const items = await imagekit.listFiles({
       path: "/261497project",
       limit: 100
@@ -74,9 +70,8 @@ const deleteImageFromImageKit = async (imageUrl: string): Promise<void> => {
         url: targetFile.url
       });
       
-      console.log(`[DELETE IMAGE] Deleting with fileId: ${targetFile.fileId}`);
       await imagekit.deleteFile(targetFile.fileId);
-      console.log(`✅ [DELETE IMAGE] Successfully deleted!`);
+      console.log(`[DELETE IMAGE] Successfully deleted!`);
     } else {
       console.log(`[DELETE IMAGE] File not found: ${fileName}`);
     }

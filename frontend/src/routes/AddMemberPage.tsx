@@ -174,7 +174,7 @@ const AddMemberPage: React.FC = () => {
         {/* BUTTON */}
         <PageAnimation index={2}>
           <div className="flex bottom-4 justify-end mt-8">
-            <Link to={`/homepage/${groupId}`}>
+            <Link to={`/homepage/${sessionId}`}>
               <button
                 disabled={!isReadyToInteract}
                 className={`bg-gradient-to-r from-black to-gray-700 

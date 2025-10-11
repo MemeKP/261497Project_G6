@@ -21,7 +21,8 @@ export interface Session {
   tableId: number;
   startedAt: string;     
   endedAt: string | null;
-  qrCode: string;         
+  qrCode: string;     
+  // qrData: string,    
   status: string;
   totalCustomers: number;
   createdAt: string;

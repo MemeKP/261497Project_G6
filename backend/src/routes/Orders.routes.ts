@@ -14,6 +14,11 @@ router.patch("/:id/status", ordersController.updateOrderStatus);    // PATCH /or
 router.delete("/:id", ordersController.deleteOrder);                // DELETE /orders/:id
 router.post("/session/:sessionId/close", ordersController.closeOrdersBySession);
 
+router.post("/new", ordersController.createNewOrder);
+router.get("/session/:sessionId/cart", ordersController.getDraftOrder);
+router.patch("/:id/checkout", ordersController.checkoutOrder);
+
+
 // Admin part
 router.get('/', requireAdmin, ordersController.getOrderAdmin)
 router.get('/:orderId', requireAdmin, ordersController.getOrderByIdAdmin)

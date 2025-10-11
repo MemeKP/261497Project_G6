@@ -1,15 +1,32 @@
 // import { db } from "src/db/client2.js";
 import { dbClient as db } from "@db/client.js";
 import { group_members, menuItems, orderItems, orders } from "db/schema.js";
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 
 // const allowedStatus = ["PENDING", "PREPARING", "COMPLETED", "CANCELLED"] as const;
-const allowedStatus = ["PENDING", "PREPARING", "COMPLETED", "CANCELLED", "PAID"] as const;
-
+/**
+ * Allowed order statuses
+ * เพิ่มสถานะทั้งหมดที่ใช้ใน flow จริง
+ */
+const allowedStatus = [
+  "DRAFT", 
+  "PENDING",
+  "PREPARING",  
+  "COMPLETED",  
+  "PAID",       
+  "CLOSED"      
+] as const;
+/**
+ * create order (button new ordr)
+ */
 export async function createOrder(diningSessionId: number, tableId: number) {
   const [newOrder] = await db
     .insert(orders)
-    .values({ diningSessionId, tableId })
+    .values({
+      diningSessionId,
+      tableId,
+      status: "DRAFT", // no checkout
+    })
     .returning();
   return newOrder;
 }
@@ -92,7 +109,33 @@ export async function getOrdersBySession(sessionId: number) {
   }));
 }
 
+/**
+ * Checkout order: DRAFT → PENDING
+ */
+export async function checkoutOrder(orderId: number) {
+  const [updated] = await db
+    .update(orders)
+    .set({ status: "PENDING" })
+    .where(eq(orders.id, orderId))
+    .returning();
 
+  return updated;
+}
+
+// CartPage — DRAFT orders
+export async function getDraftOrderBySession(sessionId: number) {
+  const [draftOrder] = await db
+    .select()
+    .from(orders)
+    .where(and(eq(orders.diningSessionId, sessionId), eq(orders.status, "DRAFT")))
+    .orderBy(desc(orders.createdAt))
+    .limit(1);
+
+  return draftOrder || null;
+}
+/**
+ * order 
+ */
 export async function updateOrderStatus(orderId: number, status: string) {
   if (!allowedStatus.includes(status as any)) {
     throw new Error("Invalid order status");
@@ -106,6 +149,7 @@ export async function updateOrderStatus(orderId: number, status: string) {
 
   return updated;
 }
+
 export async function getOrderById(orderId: number) {
   const [order] = await db
     .select()
@@ -123,7 +167,7 @@ export async function getOrderById(orderId: number) {
       menuItemId: orderItems.menuItemId,
       menuName: menuItems.name,
       menuPrice: menuItems.price,
-      memberName: members.name,
+      memberName: group_members.name,
     })
     .from(orderItems)
     .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))

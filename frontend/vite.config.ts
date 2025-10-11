@@ -10,6 +10,12 @@ export default defineConfig({
   ],
   server: {
     host: '0.0.0.0',
+    port: 5173,
+    allowedHosts: [
+      '0a885cac0563b52cffe9b7f2b8d43d25.serveo.net',
+      'large-hornets-sin.loca.lt',
+      '.loca.lt' // อนุญาตทุก subdomain ของ loca.lt
+    ],
     //https://stackoverflow.com/a/74430384
     proxy: {
       "/api": {
