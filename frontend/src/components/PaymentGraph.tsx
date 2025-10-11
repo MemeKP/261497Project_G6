@@ -62,15 +62,14 @@ const PaymentGraph = ({
 
     const { chartData, statistics } = revenueData;
 
-    // ในส่วนของ chart config
+    // chart config
     const config: ChartConfiguration = {
       type: 'line',
       data: {
         labels: chartData.map(item => {
           // Format วันที่ตาม period ที่เลือก
           const date = new Date(item.date);
-
-          switch (selectedPeriod) {
+             switch (selectedPeriod) {
             case 'week':
               // สำหรับ week: แสดงวันในสัปดาห์ (Mon, Tue, etc.)
               return date.toLocaleDateString('en-US', {
@@ -78,8 +77,27 @@ const PaymentGraph = ({
               });
 
             case 'month':
-              // สำหรับ month: แสดงวันที่ (1, 2, 3, ...)
-              return date.getDate().toString();
+              return (() => {
+                const day = date.getDate();
+
+                const isMobile = window.innerWidth < 650;
+                const isTablet = window.innerWidth < 1024;
+
+                if (isMobile) {
+                  if ([1, 5, 10, 15, 20, 25, 30,].includes(day)) {
+                    return day.toString();
+                  }
+                  return '';
+                } else if (isTablet && chartData.length > 15) {
+                  if (day % 2 === 0 || [1, 15, 30].includes(day)) {
+                    return day.toString();
+                  }
+                  return '';
+                } else {
+                  // บน desktop หรือข้อมูลน้อย: แสดงทุกวัน
+                  return day.toString();
+                }
+              })();
 
             case 'year':
               // สำหรับ year: แสดงชื่อเดือน (Jan, Feb, etc.)
@@ -158,7 +176,7 @@ const PaymentGraph = ({
 
                   case 'month':
                     return date.toLocaleDateString('en-US', {
-                      month: 'long',
+                      month: 'short',
                       day: 'numeric',
                       year: 'numeric'
                     });
@@ -183,8 +201,11 @@ const PaymentGraph = ({
             },
             ticks: {
               font: {
-                size: 11,
+                size: chartData.length > 20 ? 10 : 11,
               },
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: chartData.length > 20 ? 10 : 15,
             },
             title: {
               display: true,
@@ -221,7 +242,7 @@ const PaymentGraph = ({
       },
     };
 
-    // Helper function สำหรับตั้งชื่อแกน X
+    // ชื่อแกน X
     function getXAxisTitle(period: string): string {
       switch (period) {
         case 'week':
@@ -310,8 +331,8 @@ const PaymentGraph = ({
               key={p}
               onClick={() => handlePeriodChange(p)}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${selectedPeriod === p
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
               {p.charAt(0).toUpperCase() + p.slice(1)}

@@ -461,45 +461,64 @@ function groupByDay(payments: any[], period: string) {
     grouped[key] += Number(payment.amount);
   });
 
-  // เติมข้อมูลวันที่ที่ขาดหายไป
   return fillMissingDates(grouped, period);
 }
 
 function fillMissingDates(data: { [key: string]: number }, period: string) {
   const result = [];
   const now = new Date();
-  let currentDate: Date;
-  let endDate: Date;
-  let step: number;
-
-  if (period === 'week') {
-    currentDate = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
-    endDate = now;
-    step = 24 * 60 * 60 * 1000; // 1 day
-  } else if (period === 'month') {
-    currentDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    endDate = now;
-    step = 24 * 60 * 60 * 1000; // 1 day
-  } else {
-    currentDate = new Date(now.getFullYear(), 0, 1);
-    endDate = now;
-    step = 30 * 24 * 60 * 60 * 1000; // 1 month (approx)
-  }
-
-  while (currentDate <= endDate) {
-    const key = period === 'year' 
-      ? `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
-      : currentDate.toISOString().split('T')[0];
-
-    result.push({
-      date: key,
-      amount: data[key] || 0
-    });
-
-    if (period === 'year') {
-      currentDate.setMonth(currentDate.getMonth() + 1);
-    } else {
+  
+  if (period === 'month') {
+    // สำหรับเดือน: แสดง 30 วันที่ผ่านมาจนถึงวันนี้
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - 29); // 30 วัน (29 + วันนี้)
+    
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= now) {
+      const key = currentDate.toISOString().split('T')[0];
+      
+      result.push({
+        date: key,
+        amount: data[key] || 0
+      });
+      
       currentDate.setDate(currentDate.getDate() + 1);
+    }
+  } else if (period === 'week') {
+    // สำหรับสัปดาห์: แสดง 7 วันที่ผ่านมา
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - 6);
+    
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= now) {
+      const key = currentDate.toISOString().split('T')[0];
+      
+      result.push({
+        date: key,
+        amount: data[key] || 0
+      });
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+  } else {
+    // สำหรับปี: แสดง 12 เดือนที่ผ่านมา
+    const startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      const key = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+      
+      result.push({
+        date: key,
+        amount: data[key] || 0
+      });
+      
+      currentDate.setMonth(currentDate.getMonth() + 1);
     }
   }
 

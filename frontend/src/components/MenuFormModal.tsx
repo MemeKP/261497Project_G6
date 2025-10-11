@@ -12,7 +12,7 @@ const MenuFormModal = ({ isOpen, onClose, menuItem, mode }: MenuFormModalProps) 
     name: '',
     description: '',
     price: '',
-    category: 'noodles',
+    category: 'noodle',
     isSignature: false,
     isAvailable: true,
   });
@@ -38,7 +38,7 @@ const MenuFormModal = ({ isOpen, onClose, menuItem, mode }: MenuFormModalProps) 
         name: '',
         description: '',
         price: '',
-        category: 'noodles',
+        category: 'noodle',
         isSignature: false,
         isAvailable: true,
       });
@@ -130,7 +130,7 @@ const MenuFormModal = ({ isOpen, onClose, menuItem, mode }: MenuFormModalProps) 
     submitData.append('price', formData.price);
     submitData.append('category', formData.category);
     submitData.append('isSignature', String(formData.isSignature));
-    submitData.append('isAvailable', String(formData.isAvailable));
+    submitData.append('isAvailable', formData.isAvailable ? 'true' : 'false');
 
     if (imageFile) {
       submitData.append('image', imageFile);
