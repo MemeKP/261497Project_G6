@@ -166,3 +166,22 @@ export type Table = {
   status: 'AVAILABLE' | 'OCCUPIED' | 'CLOSED'; 
   createdAt: string; 
 };
+
+export interface RevenueData {
+  chartData: {
+    date: string;
+    amount: number;
+  }[];
+  statistics: {
+    currentTotal: number;
+    previousTotal: number;
+    growthRate: number;
+    avgPerDay: number;
+    period: string;
+  };
+}
+
+export interface PaymentGraphProps {
+  period?: 'week' | 'month' | 'year';
+  onPeriodChange?: (period: 'week' | 'month' | 'year') => void;
+}

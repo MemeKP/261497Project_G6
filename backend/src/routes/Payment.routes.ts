@@ -14,5 +14,7 @@ router.post("/mock-callback", paymentController.mockCallback);
 router.get('/status/:billId', paymentController.getPaymentStatus);
 // PATCH /api/payments/bills/:billId/splits/:splitId/toggle-status
 router.patch('/bills/:billId/splits/:splitId/toggle-status', paymentController.togglePaymentStatus);
+// แสดงกราฟ
+router.get('/revenue', paymentController.getRevenue);
 
 export default router;

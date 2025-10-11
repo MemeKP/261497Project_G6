@@ -62,9 +62,8 @@ const PaymentHistory = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
-
+      
       if (data.success) {
         // อัพเดต state
         setPayments(prev =>
@@ -150,7 +149,6 @@ const PaymentHistory = () => {
 
   return (
     <>
-      
       <div className="min-h-screen p-2 mt-5">
 
            {/* Table Dropdown Selection */}
@@ -174,14 +172,8 @@ const PaymentHistory = () => {
         <div className="max-w-4xl mx-auto">
 {/* Header */}
       <h2 className="font-bold text-xl mb-4">Payment History</h2>
-
-
-       
-
           {/* Payment History */}
           <div className="bg-white rounded-xl p-4 shadow-sm">
-           
-
             {/* Loading State */}
             {loading && (
               <div className="text-center py-8">
