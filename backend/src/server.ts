@@ -10,6 +10,7 @@ import groupRoutes from "./routes/Group.routes.ts";
 import groupMemRoutes from "./routes/GroupMembers.routes.ts";
 import menuRoutes from './routes/Menu.routes.ts'
 import session from "express-session";
+import tebleRoutes from './routes/Table.routes.ts'
 
 const app = express();
 
@@ -46,8 +47,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false,      // ✅ ต้อง false ใน localhost
-      sameSite: "lax",    // ✅ ถ้าใช้ HTTPS ให้เปลี่ยนเป็น "none"
+      secure: false,
+      sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
@@ -63,6 +64,7 @@ app.use("/dining_session", dinningSessionRoutes);
 app.use("/group", groupRoutes);
 app.use("/group_members", groupMemRoutes);
 app.use('/menu_items', menuRoutes)
+app.use('/tables', tebleRoutes)
 
 declare module "express-session" {
   interface SessionData {

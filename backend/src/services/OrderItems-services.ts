@@ -1,29 +1,29 @@
 import { dbClient as db } from "db/client.js";
-import { order_items, orders, menuItems,group_members } from "db/schema.js";
+import { orderItems, orders, menuItems,group_members } from "db/schema.js";
 import { eq } from "drizzle-orm";
 
 /**
  * add OrderItem  Order (Add to cart)
  */
 export async function addOrderItem(
-  order_id: number,
-  menu_item_id: number,
-  member_id: number,
+  orderId: number,
+  menuItemId: number,
+  memberId: number,
   quantity: number,
   note?: string,
   status: string = "PREPARING"
 ) {
-  const [order] = await db.select().from(orders).where(eq(orders.id,order_id));
+  const [order] = await db.select().from(orders).where(eq(orders.id,orderId));
   if (!order) throw new Error("Order not found");
 
-  const [member] = await db.select().from(group_members).where(eq(group_members.id, member_id));
+  const [member] = await db.select().from(group_members).where(eq(group_members.id, memberId));
   if (!member) throw new Error("Member not found");
 
-  if (member.diningSessionId !== order.dining_session_id) {
+  if (member.diningSessionId !== order.diningSessionId) {
     throw new Error("Member and Order do not belong to the same session");
   }
 
-  const [menu] = await db.select().from(menuItems).where(eq(menuItems.id, menu_item_id));
+  const [menu] = await db.select().from(menuItems).where(eq(menuItems.id, menuItemId));
   if (!menu) throw new Error("Menu item not found");
   if (!menu.isAvailable) {
     throw new Error("This menu item is not available");
@@ -32,11 +32,11 @@ export async function addOrderItem(
   if (quantity <= 0) throw new Error("Quantity must be at least 1");
 
   const [newItem] = await db
-    .insert(order_items)
+    .insert(orderItems)
     .values({
-      order_id,
-      menu_item_id,
-      member_id,
+      orderId,
+      menuItemId,
+      memberId,
       quantity,
       note: note || null,
     })
@@ -52,22 +52,22 @@ export async function addOrderItem(
 export async function getOrderItemsByOrderId(orderId: number) {
   const items = await db
     .select({
-      id: order_items.id,
-      orderId: order_items.order_id,
-      menuItemId: order_items.menu_item_id,
-      memberId: order_items.member_id,
+      id: orderItems.id,
+      orderId: orderItems.orderId,
+      menuItemId: orderItems.menuItemId,
+      memberId: orderItems.memberId,
       memberName: group_members.name,
-      quantity: order_items.quantity,
-      note: order_items.note,
+      quantity: orderItems.quantity,
+      note: orderItems.note,
       menuName: menuItems.name,
       menuPrice: menuItems.price,
       menuImage: menuItems.imageUrl,
-      status: order_items.status,
+      status: orderItems.status,
     })
-    .from(order_items)
-    .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
-    .leftJoin(group_members, eq(order_items.member_id, group_members.id))
-    .where(eq(order_items.order_id, orderId));
+    .from(orderItems)
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+    .leftJoin(group_members, eq(orderItems.memberId, group_members.id))
+    .where(eq(orderItems.orderId, orderId));
 
   return items.map((item) => ({
     ...item,
@@ -78,21 +78,21 @@ export async function getOrderItemsByOrderId(orderId: number) {
 export async function getOrderItemById(itemId: number) {
   const [item] = await db
     .select({
-      id: order_items.id,
-      orderId: order_items.order_id,
-      menuItemId: order_items.menu_item_id,
-      memberId: order_items.member_id,
+      id: orderItems.id,
+      orderId: orderItems.orderId,
+      menuItemId: orderItems.menuItemId,
+      memberId: orderItems.memberId,
       memberName: group_members.name,
-      quantity: order_items.quantity,
-      note: order_items.note,
-      status: order_items.status,
+      quantity: orderItems.quantity,
+      note: orderItems.note,
+      status: orderItems.status,
       menuName: menuItems.name,
       menuPrice: menuItems.price,
     })
-    .from(order_items)
-    .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
-    .leftJoin(group_members, eq(order_items.member_id, group_members.id))
-    .where(eq(order_items.id, itemId))
+    .from(orderItems)
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+    .leftJoin(group_members, eq(orderItems.memberId, group_members.id))
+    .where(eq(orderItems.id, itemId))
     .limit(1);
 
   return item || null;
@@ -104,19 +104,19 @@ export async function getOrderItemById(itemId: number) {
 export async function getOrderItemsBySession(sessionId: number) {
   return await db
     .select({
-      id: order_items.id,
+      id: orderItems.id,
       menuName: menuItems.name,
       menuPrice: menuItems.price,
-      quantity: order_items.quantity,
-      note: order_items.note,
+      quantity: orderItems.quantity,
+      note: orderItems.note,
       memberName: group_members.name,
-      status: order_items.status,
+      status: orderItems.status,
     })
-    .from(order_items)
-    .innerJoin(orders, eq(order_items.order_id, orders.id))
-    .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
-    .leftJoin( group_members, eq(order_items.member_id, group_members.id)) // join member
-    .where(eq(orders.dining_session_id, sessionId));
+    .from(orderItems)
+    .innerJoin(orders, eq(orderItems.orderId, orders.id))
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+    .leftJoin( group_members, eq(orderItems.memberId, group_members.id)) // join member
+    .where(eq(orders.diningSessionId, sessionId));
 }
 
 /**
@@ -129,9 +129,9 @@ export async function updateStatus(itemId: number, status: string) {
   }
 
   const [updated] = await db
-    .update(order_items)
+    .update(orderItems)
     .set({ status })
-    .where(eq(order_items.id, itemId))
+    .where(eq(orderItems.id, itemId))
     .returning();
 
   return updated || null;
@@ -152,9 +152,9 @@ export async function updateOrderItem(id: number, quantity?: number, note?: stri
   }
 
   const [updated] = await db
-    .update(order_items)
+    .update(orderItems)
     .set(updates)
-    .where(eq(order_items.id, id))
+    .where(eq(orderItems.id, id))
     .returning();
 
   if (!updated) return null;
@@ -162,7 +162,7 @@ export async function updateOrderItem(id: number, quantity?: number, note?: stri
   const [menu] = await db
     .select()
     .from(menuItems)
-    .where(eq(menuItems.id, updated.menu_item_id));
+    .where(eq(menuItems.id, updated.menuItemId));
 
   return {
     ...updated,
@@ -176,8 +176,8 @@ export async function updateOrderItem(id: number, quantity?: number, note?: stri
  */
 export async function deleteOrderItem(id: number) {
   const [deleted] = await db
-    .delete(order_items)
-    .where(eq(order_items.id, id))
+    .delete(orderItems)
+    .where(eq(orderItems.id, id))
     .returning();
 
   if (!deleted) return null;

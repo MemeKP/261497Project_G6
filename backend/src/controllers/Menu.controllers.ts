@@ -7,14 +7,13 @@ import { eq, and, isNotNull, ilike, sql, like, or, desc } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
   users,
-  admins as admin,
-  diningSessions as dining_sessions,
+  admins ,
+  diningSessions ,
   groups,
   group_members,
-  menuItems as menu_items,
-  orders,
-  order_items,
-  menuItems,
+  menuItems ,
+  orderItems,
+
 } from "@db/schema.js";
 
 function getEnvVar(name: string): string {
@@ -332,7 +331,7 @@ export const updateMenu = async (
 export const getBestSeller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // ถ้ามี order_items ใช้จำนวนสั่งจริง
-    const countOrders = await dbClient.select().from(order_items).limit(1);
+    const countOrders = await dbClient.select().from(orderItems).limit(1);
 
     let bestSellers;
 
@@ -344,12 +343,12 @@ export const getBestSeller = async (req: Request, res: Response, next: NextFunct
           description: menuItems.description,
           price: menuItems.price,
           imageUrl: menuItems.imageUrl,
-          totalOrders: sql<number>`SUM(${order_items.quantity})`,
+          totalOrders: sql<number>`SUM(${orderItems.quantity})`,
         })
-        .from(order_items)
-        .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
+        .from(orderItems)
+        .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
         .groupBy(menuItems.id)
-        .orderBy(desc(sql`SUM(${order_items.quantity})`))
+        .orderBy(desc(sql`SUM(${orderItems.quantity})`))
         .limit(2);
     } else {
       // fallback: เลือก menu ใหม่ล่าสุด 2 เมนู

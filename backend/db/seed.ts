@@ -290,14 +290,14 @@ import {
   diningSessions,
   menuItems,
   orders,
-  order_items,
+  orderItems,
   groups,
   group_members,
 } from "@db/schema.js";
 
 /** 🧹 Clear all data before seeding */
 async function clearDatabase() {
-  await dbClient.delete(order_items);
+  await dbClient.delete(orderItems);
   await dbClient.delete(orders);
   await dbClient.delete(menuItems);
   await dbClient.delete(groups);
@@ -372,8 +372,8 @@ async function insertGroups(session: any, table: any) {
   const [group] = await dbClient
     .insert(groups)
     .values({
-      table_id: table.id,
-      creator_user_id: null, // ไม่มีสมาชิก
+      tableId: table.id,
+      creatorUserId: null, // ไม่มีสมาชิก
     })
     .returning();
 
@@ -389,20 +389,20 @@ async function insertGroupMembers(group: any, sessionId: number) {
     .values([
       {
         name: "Alice",
-        group_id: group.id,
+        groupId: group.id,
         diningSessionId: sessionId,
         isTableAdmin: true,
         note: "Table host",
       },
       {
         name: "Bob",
-        group_id: group.id,
+        groupId: group.id,
         diningSessionId: sessionId,
         isTableAdmin: false,
       },
       {
         name: "Charlie",
-        group_id: group.id,
+        groupId: group.id,
         diningSessionId: sessionId,
         isTableAdmin: false,
       },

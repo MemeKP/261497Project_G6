@@ -106,6 +106,7 @@ export interface PaymentGraphProps {
 export interface ActiveSession {
   id: number;
   tableId: number;
+  tableNumber?: number;
   startedAt: string;
   status: string;
   totalCustomers: number;
@@ -123,14 +124,40 @@ export interface ActiveSessionGroup {
 
 export interface Order {
   id: number;
-  table_id: number;
+  tableId: number;
   group_id: number | null;
   user_id: number | null;
   dining_session_id: number;
   status: "PENDING" | "PREPARING" | "COMPLETED" | "SERVED" | string;
-  created_at: string;
+  createdAt: string;
   totalPrice?: number;
   key: string;
+}
+
+export type DiningSession = {
+  id: number;
+  tableId: number;
+  openedByAdminId: number;
+  total: number; 
+  totalCustomers: number; 
+  qrCode: string; 
+  startedAt: string; 
+  endedAt: string | null; 
+  status: 'ACTIVE' | 'CLOSED';
+  createdAt: string; 
+};
+
+export interface Payment {
+  billId: number;
+  splitId: number;  // เพิ่ม splitId
+  memberId: number;
+  name: string;
+  role: string;
+  amount: number;
+  status: 'PAID' | 'PENDING';
+  date: string;
+  method: string;
+  paymentId?: number;
 }
 
 export interface CartItem {

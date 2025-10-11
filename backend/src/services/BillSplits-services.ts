@@ -2,7 +2,7 @@ import { dbClient as db } from "db/client.js";
 import {
   bills,
   billSplits,
-  order_items,
+  orderItems,
   menuItems,
   group_members,
   orders,
@@ -23,16 +23,16 @@ export async function generateBill(orderId: number) {
     return { ...existingBill[0], splits };
   }
 
-  const diningSessionId = Number(order.dining_session_id);
+  const diningSessionId = Number(order.diningSessionId);
 
   const items = await db
     .select({
       price: menuItems.price,
-      quantity: order_items.quantity,
+      quantity: orderItems.quantity,
     })
-    .from(order_items)
-    .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
-    .where(eq(order_items.order_id, orderId));
+    .from(orderItems)
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+    .where(eq(orderItems.orderId, orderId));
 
   const subtotal = items.reduce((sum, i) => sum + i.price * (i.quantity ?? 0), 0);
   const serviceCharge = +(subtotal * 0.07).toFixed(2);
@@ -64,21 +64,21 @@ export async function generateBillForSession(sessionId: number, force = false) {
   const ordersData = await db
     .select()
     .from(orders)
-    .where(eq(orders.dining_session_id, sessionId));
+    .where(eq(orders.diningSessionId, sessionId));
   if (ordersData.length === 0) throw new Error("No orders found for this session");
 
   const orderIds = ordersData.map((o) => o.id);
 
   const items = await db
     .select({
-      memberId: order_items.member_id,
+      memberId: orderItems.memberId,
       price: menuItems.price,
-      quantity: order_items.quantity,
+      quantity: orderItems.quantity,
       menuName: menuItems.name,
     })
-    .from(order_items)
-    .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
-    .where(inArray(order_items.order_id, orderIds));
+    .from(orderItems)
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+    .where(inArray(orderItems.orderId, orderIds));
 
   const subtotal = items.reduce((sum, i) => sum + i.price * (i.quantity ?? 0), 0);
   const serviceCharge = +(subtotal * 0.07).toFixed(2);
@@ -138,18 +138,18 @@ export async function calculateSplitForSession(
   const ordersData = await db
     .select()
     .from(orders)
-    .where(eq(orders.dining_session_id, sessionId));
+    .where(eq(orders.diningSessionId, sessionId));
   const orderIds = ordersData.map((o) => o.id);
 
   const items = await db
     .select({
-      memberId: order_items.member_id,
+      memberId: orderItems.memberId,
       price: menuItems.price,
-      quantity: order_items.quantity,
+      quantity: orderItems.quantity,
     })
-    .from(order_items)
-    .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
-    .where(inArray(order_items.order_id, orderIds));
+    .from(orderItems)
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+    .where(inArray(orderItems.orderId, orderIds));
 
   const memberTotals: Record<number, number> = {};
   for (const item of items) {
@@ -161,7 +161,6 @@ export async function calculateSplitForSession(
   const memberCount = Object.keys(memberTotals).length || 1;
   const servicePerMember = +(serviceCharge / memberCount).toFixed(2);
 
-  // ✅ update ทับแทน delete
   for (const [memberId, amount] of Object.entries(memberTotals)) {
     const [existing] = await db
       .select()
@@ -190,7 +189,7 @@ export async function calculateSplitForSession(
     }
   }
 
-  console.log(`✅ Splits recalculated for bill ${billId}`);
+  console.log(` Splits recalculated for bill ${billId}`);
   return { status: "recalculated", billId };
 }
 
@@ -207,13 +206,13 @@ export async function calculateSplit(
 
   const items = await db
     .select({
-      memberId: order_items.member_id,
+      memberId: orderItems.memberId,
       price: menuItems.price,
-      quantity: order_items.quantity,
+      quantity: orderItems.quantity,
     })
-    .from(order_items)
-    .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
-    .where(eq(order_items.order_id, orderId));
+    .from(orderItems)
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+    .where(eq(orderItems.orderId, orderId));
 
   const memberTotals: Record<number, number> = {};
   for (const item of items) {
@@ -225,7 +224,6 @@ export async function calculateSplit(
   const memberCount = Object.keys(memberTotals).length || 1;
   const servicePerMember = +(serviceCharge / memberCount).toFixed(2);
 
-  // ✅ update ทับแทน delete
   for (const [memberId, amount] of Object.entries(memberTotals)) {
     const [existing] = await db
       .select()
@@ -274,9 +272,6 @@ export async function getSplit(billId: number) {
     .where(eq(billSplits.billId, billId));
 }
 
-/**
- * อัปเดตสถานะการจ่ายเงินของ member
- */
 export async function updatePayment(billId: number, memberId: number) {
   const [updated] = await db
     .update(billSplits)

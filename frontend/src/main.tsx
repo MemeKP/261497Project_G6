@@ -41,7 +41,7 @@ const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
-        path: "/menu/:groupId",
+        path: "/menu/:sessionId",
         element: <MenuPage />,
       },
       {
@@ -89,20 +89,24 @@ const router = createBrowserRouter([
         element: <PaymentPage />,
       },      
       {
-        path:"/admin/dashboard",
-        element: <AdminDashBoard />,
-      },
-      {
         path: "/session/:sessionId",
         element: <SessionPage />,
       },
       {
-        path: "/admin/order",
-        element: <AdminOrderList />
+        path: "/admin/dashboard",
+        element: (
+          <ProtectedRoute>
+            <AdminDashBoard />
+          </ProtectedRoute>
+        ),
       },
       {
-        path: "/admin/payment",
-        element: <AdminPayment/>
+        path: "/admin/order",
+        element: (
+          <ProtectedRoute>
+            <AdminOrderList />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/admin/payment",
@@ -115,14 +119,14 @@ const router = createBrowserRouter([
     ],
   },
 ]);
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    {/* <App /> */}
     <QueryClientProvider client={queryClient}>
+      <AuthProvider>
         <CartProvider>
-      <RouterProvider router={router} />
-      </CartProvider>
+          <RouterProvider router={router} />
+        </CartProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </StrictMode>
 );

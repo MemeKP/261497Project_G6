@@ -12,6 +12,8 @@ import {
   group_members,
   menuItems,
   orders,
+  orderItems,
+  tables,
 } from "@db/schema.js";
 
 export const startSession = async (
@@ -20,17 +22,38 @@ export const startSession = async (
   next: NextFunction
 ) => {
   try {
-    const { tableId } = req.body;
+    const { tableId } = req.body; // นี่คือ table number (1-9)
+    const adminId = req.session.userId;
+
+    console.log('Starting session for table number:', tableId);
 
     if (!tableId || typeof tableId !== "number") {
       return res.status(400).json({
-        error: "Table ID is required and must be a number",
+        error: "Table number is required and must be a number",
       });
     }
 
+    if (!adminId) {
+      return res.status(401).json({
+        error: "Authentication required. Please log in.",
+      });
+    }
+
+    // ✅ หา table โดยใช้ number
+    const tableRecord = await dbClient.query.tables.findFirst({
+      where: eq(tables.number, tableId),
+    });
+
+    if (!tableRecord) {
+      return res.status(400).json({
+        error: `Table ${tableId} not found. Please contact administrator to seed tables.`,
+      });
+    }
+
+    // ✅ ตรวจสอบว่ามี session active อยู่แล้วหรือไม่
     const existingSession = await dbClient.query.diningSessions?.findFirst({
       where: and(
-        eq(diningSessions.tableId, tableId),
+        eq(diningSessions.tableId, tableRecord.id), // ใช้ tableRecord.id
         eq(diningSessions.status, "ACTIVE")
       ),
     });
@@ -43,33 +66,42 @@ export const startSession = async (
 
     const startedAt = new Date();
 
+    // ✅ สร้าง dining session
     const newSession = await dbClient
       .insert(diningSessions)
       .values({
-        tableId: tableId,
+        tableId: tableRecord.id, // ใช้ tableRecord.id
         startedAt: startedAt,
         status: "ACTIVE",
-        qrCode: "", // QR Code URL will be generated later
-        total_customers: 0,
+        qrCode: "",
+        totalCustomers: 0,
         createdAt: new Date(),
-        openedByAdminId: 1,
+        openedByAdminId: adminId,
       })
       .returning({
         id: diningSessions.id,
-        table_id: diningSessions.tableId,
-        started_at: diningSessions.startedAt,
+        tableId: diningSessions.tableId,
+        startedAt: diningSessions.startedAt,
         status: diningSessions.status,
-        total_customers: diningSessions.total_customers,
-        created_at: diningSessions.createdAt,
+        totalCustomers: diningSessions.totalCustomers,
+        createdAt: diningSessions.createdAt,
       });
 
-    // QR Data setup with dynamic URL based on frontend environment
+    console.log('✅ Dining session created:', newSession[0]);
+
+    // ✅ อัพเดท table status เป็น OCCUPIED
+    await dbClient
+      .update(tables)
+      .set({ status: "OCCUPIED" })
+      .where(eq(tables.id, tableRecord.id));
+
+    // QR Data setup
     const qrData = {
       sessionId: newSession[0].id,
-      tableId: tableId,
+      tableNumber: tableId, // ใช้ table number ที่ user รู้จัก
       url: `${
         process.env.PRODUCTION_FRONTEND_URL || "http://10.0.0.51:5173"
-      }/tables/${newSession[0].id}`, // Dynamic URL ไม่รุ้อ่ะ
+      }/tables/${newSession[0].id}`,
     };
 
     // Generate QR Code
@@ -93,19 +125,23 @@ export const startSession = async (
       message: `Dining session started successfully for table ${tableId}`,
       session: {
         id: newSession[0].id,
-        tableId: newSession[0].table_id,
-        startedAt: newSession[0].started_at,
+        tableId: tableRecord.id, // table record id
+        tableNumber: tableId, // table number ที่ user รู้จัก
+        startedAt: newSession[0].startedAt,
         status: newSession[0].status,
-        totalCustomers: newSession[0].total_customers,
-        createdAt: newSession[0].created_at,
-        qrCode: qrCodeDataURL, // Send back QR Code URL
+        totalCustomers: newSession[0].totalCustomers,
+        createdAt: newSession[0].createdAt,
+        qrCode: qrCodeDataURL,
         qrData: qrData,
+        openedByAdminId: adminId,
       },
     });
   } catch (err) {
+    console.error("Error starting session:", err);
     next(err);
   }
 };
+
 
 export const getQrForTable = async (
   req: Request,
@@ -190,12 +226,12 @@ export const endSession = async (
 
     let totalCustomers = 0;
     const group = await dbClient.query.groups.findFirst({
-      where: eq(groups.table_id, activeSession.tableId),
+      where: eq(groups.tableId, activeSession.tableId),
     });
 
     if (group) {
       const members = await dbClient.query.group_members.findMany({
-        where: eq(group_members.group_id, group.id),
+        where: eq(group_members.groupId, group.id),
       });
       totalCustomers = members?.length || 0;
     }
@@ -206,16 +242,16 @@ export const endSession = async (
       .set({
         endedAt: endedAt,
         status: "COMPLETED",
-        total_customers: totalCustomers,
+        totalCustomers: totalCustomers,
       })
       .where(eq(diningSessions.id, activeSession.id))
       .returning({
         id: diningSessions.id,
-        table_id: diningSessions.tableId,
-        started_at: diningSessions.startedAt,
-        ended_at: diningSessions.endedAt,
+        tableId: diningSessions.tableId,
+        startedAt: diningSessions.startedAt,
+        endedAt: diningSessions.endedAt,
         status: diningSessions.status,
-        total_customers: diningSessions.total_customers,
+        totalCustomers: diningSessions.totalCustomers,
         created_at: diningSessions.createdAt,
       });
 
@@ -228,11 +264,11 @@ export const endSession = async (
       message: `Dining session ended successfully for table ${activeSession.tableId}`,
       session: {
         id: updatedSession[0].id,
-        tableId: updatedSession[0].table_id,
-        startedAt: updatedSession[0].started_at,
-        endedAt: updatedSession[0].ended_at,
+        tableId: updatedSession[0].tableId,
+        startedAt: updatedSession[0].startedAt,
+        endedAt: updatedSession[0].endedAt,
         status: updatedSession[0].status,
-        totalCustomers: updatedSession[0].total_customers,
+        totalCustomers: updatedSession[0].totalCustomers,
         createdAt: updatedSession[0].created_at,
         durationMinutes: durationMinutes,
       },
@@ -256,14 +292,14 @@ export const getActiveSession = async (
     const sessionsWithGroups = await Promise.all(
       activeSessions.map(async (session) => {
         const group = await dbClient.query.groups.findFirst({
-          where: eq(groups.table_id, session.tableId),
+          where: eq(groups.tableId, session.tableId),
         });
 
         let members: Array<{ id: number; name: string; note: string | null }> =
           [];
         if (group) {
           const groupMembers = await dbClient.query.group_members.findMany({
-            where: eq(group_members.group_id, group.id),
+            where: eq(group_members.groupId, group.id),
           });
           members =
             groupMembers?.map((member) => ({
@@ -316,7 +352,8 @@ export const getSession = async (
         startedAt: diningSessions.startedAt,
         endedAt: diningSessions.endedAt,
         status: diningSessions.status,
-        totalCustomers: diningSessions.total_customers,
+        totalCustomers: diningSessions.totalCustomers,
+        total: diningSessions.total, //  เพิ่มบรรทัดนี้
         createdAt: diningSessions.createdAt,
         qrCode: diningSessions.qrCode,
       })
@@ -335,13 +372,13 @@ export const getSession = async (
         .json({ error: "Session QR Code data is missing in the database." });
     }
     const group = await dbClient.query.groups.findFirst({
-      where: eq(groups.table_id, sessionData.tableId),
+      where: eq(groups.tableId, sessionData.tableId),
     });
 
     const members = group
       ? (
           await dbClient.query.group_members.findMany({
-            where: eq(group_members.group_id, group.id),
+            where: eq(group_members.groupId, group.id),
           })
         ).map((member) => ({
           id: member.id,
@@ -365,6 +402,7 @@ export const getSession = async (
         qrCode: sessionData.qrCode,
         status: sessionData.status,
         totalCustomers: members.length,
+        total: Number(sessionData.total) ?? 0,
         createdAt: sessionData.createdAt,
         durationMinutes: duration,
       },

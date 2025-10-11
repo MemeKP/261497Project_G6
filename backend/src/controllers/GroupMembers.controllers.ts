@@ -4,13 +4,13 @@ import { eq, and, isNotNull } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
   users,
-  admins as admin,
-  diningSessions as dining_sessions,
+  admins,
+  diningSessions ,
   groups,
   group_members,
-  menuItems as menu_items,
+  menuItems ,
   orders,
-  diningSessions,
+  
 } from "@db/schema.js";
 
 export const addMembers = async (
@@ -32,7 +32,7 @@ export const addMembers = async (
       return res.status(400).json({ error: "Group not found" });
     }
     const session = await dbClient.query.diningSessions.findFirst({
-      where: eq(diningSessions.tableId, group.table_id),
+      where: eq(diningSessions.tableId, group.tableId),
     });
     if (!session) {
       return res
@@ -43,16 +43,16 @@ export const addMembers = async (
       .insert(group_members)
       .values({
         name,
-        group_id: groupId,
-        user_id: userId || null,
+        groupId: groupId,
+        userId: userId || null,
         diningSessionId: session.id,
         note: note || null,
       })
       .returning({
         id: group_members.id,
         name: group_members.name,
-        group_id: group_members.group_id,
-        user_id: group_members.user_id,
+        group_id: group_members.groupId,
+        user_id: group_members.userId,
         note: group_members.note,
         diningSessionId: group_members.diningSessionId,
       });
@@ -97,7 +97,7 @@ export const deleteAllMembers = async (
 
     await dbClient
       .delete(group_members)
-      .where(eq(group_members.group_id, groupId));
+      .where(eq(group_members.groupId, groupId));
 
     res.json({
       message: `All members removed from group ${groupId} successfully`,
@@ -166,21 +166,21 @@ export const getGroupMembers = async (
     }
 
     const members = await dbClient.query.group_members?.findMany({
-      where: eq(group_members.group_id, groupId),
+      where: eq(group_members.groupId, groupId),
     });
 
     res.json({
       group: {
         id: group.id,
-        tableId: group.table_id,
-        creatorUserId: group.creator_user_id,
-        createdAt: group.created_at,
+        tableId: group.tableId,
+        creatorUserId: group.creatorUserId,
+        createdAt: group.createdAt,
       },
       members:
         members?.map((member) => ({
           id: member.id,
           name: member.name,
-          userId: member.user_id,
+          userId: member.userId,
           note: member.note,
         })) || [],
     });

@@ -523,7 +523,7 @@ import {
   group_members,
   menuItems,
   orders,
-  order_items,
+  orderItems,
 } from "@db/schema.js";
 
 /**
@@ -568,7 +568,6 @@ export async function createOrder(req: Request, res: Response) {
       }
     }
 
-    // ✅ ส่งไปให้ service สร้าง order + items (สถานะเริ่มต้น = DRAFT)
     const order = await orderService.createOrderWithItems(
       Number(diningSessionId),
       Number(req.body.tableId),
@@ -581,11 +580,6 @@ export async function createOrder(req: Request, res: Response) {
   }
 }
 
-/**
- * สำหรับสร้าง Order เปล่า (New Order)
- * ใช้ในหน้าลูกค้าหลัง Checkout order เก่าไปแล้ว
- * → จะไม่กระทบ order เดิมแม้ admin เปลี่ยนสถานะภายหลัง
- */
 export async function createNewOrder(req: Request, res: Response) {
   try {
     const { diningSessionId, tableId, closePreviousOrderId } = req.body;
@@ -594,12 +588,10 @@ export async function createNewOrder(req: Request, res: Response) {
       return res.status(400).json({ error: "Valid diningSessionId is required" });
     }
 
-    // ถ้ามี order เก่าระบุมา → ปิดสถานะเก่าก่อน
     if (closePreviousOrderId) {
       await orderService.updateOrderStatus(Number(closePreviousOrderId), "CLOSED");
     }
 
-    // สร้าง order ใหม่สถานะ DRAFT
     const order = await orderService.createOrder(
       Number(diningSessionId),
       Number(tableId) || 1
@@ -757,7 +749,7 @@ export async function closeOrdersBySession(req: Request, res: Response) {
     const updated = await dbClient
       .update(orders)
       .set({ status: "CLOSED" })
-      .where(eq(orders.dining_session_id, numericSessionId))
+      .where(eq(orders.diningSessionId, numericSessionId))
       .returning();
 
     if (updated.length === 0) {

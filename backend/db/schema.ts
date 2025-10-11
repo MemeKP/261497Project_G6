@@ -17,6 +17,31 @@ import {
 const money = (name: string) =>
   decimal(name, { precision: 10, scale: 2 }).$type<number>();
 
+export const users = pgTable("user", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const groups = pgTable('groups', {
+  id: serial('id').primaryKey(),
+  tableId: integer('table_id').notNull(),
+  creatorUserId: integer('creator_user_id'),
+  createdAt: timestamp('created_at').defaultNow()
+});
+
+export const group_members = pgTable('group_members', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  groupId: integer('group_id').notNull().references(() => groups.id),
+  userId: integer('user_id').references(() => users.id),// null = guest
+  diningSessionId: integer('dining_session_id').notNull(),
+  isTableAdmin: boolean('is_table_admin').default(false),
+  joinedAt: timestamp('joined_at').defaultNow(),
+  note: text('note')
+});
+
+
 /**
  * Admins (staff)
  */
@@ -50,15 +75,13 @@ export const diningSessions = pgTable("dining_sessions", {
   tableId: integer("table_id").notNull().references(() => tables.id),
   openedByAdminId: integer("opened_by_admin_id").notNull().references(() => admins.id),
   total: decimal("total", { precision: 10, scale: 2 }).$type<number>().default(0), 
-  total_customers: integer("total_customers"),
+  totalCustomers: integer("total_customers"),
   qrCode: text("qr_code").notNull(),
   startedAt: timestamp("started_at").defaultNow(),
   endedAt: timestamp("ended_at"),
   status: varchar("status", { length: 20 }).default("ACTIVE"), // ACTIVE, CLOSED
   createdAt: timestamp("created_at").defaultNow(),
 });
-
-
 
 /**
  * Menu items
@@ -83,10 +106,10 @@ export const menuItems = pgTable("menu_items", {
  */
 export const orders = pgTable('orders', {
   id: serial('id').primaryKey(),
-  table_id: integer('table_id').notNull(),
-  group_id: integer('group_id').references(() => groups.id), 
-  user_id: integer('user_id').references(() => users.id), 
-  dining_session_id: integer('dining_session_id').references(() => diningSessions.id),
+  tableId: integer('table_id').notNull(),
+  groupId: integer('group_id').references(() => groups.id), 
+  userId: integer('user_id').references(() => users.id), 
+  diningSessionId: integer('dining_session_id').references(() => diningSessions.id),
   status: varchar('status', { length: 20 }).default("DRAFT").notNull(),
   created_at: timestamp('created_at').defaultNow()
 });
@@ -95,15 +118,14 @@ export const orders = pgTable('orders', {
 /**
  * Order items (ผูกกับ member → ใครสั่ง)
  */
-export const order_items = pgTable('order_items', {
+export const orderItems = pgTable('order_items', {
   id: serial('id').primaryKey(),
-  order_id: integer('order_id').notNull().references(() => orders.id),
-  menu_item_id: integer('menu_item_id').notNull().references(() => menuItems.id),
-  member_id: integer('member_id').notNull().references(() => group_members.id),
+  orderId: integer('order_id').notNull().references(() => orders.id),
+  menuItemId: integer('menu_item_id').notNull().references(() => menuItems.id),
+  memberId: integer('member_id').notNull().references(() => group_members.id),
   quantity: integer('quantity').default(1),
   note: text('note'),
-  status: varchar("status", { length: 20 }).default("PREPARING").notNull(), // ✅ เพิ่มตรงนี้
-
+  status: varchar("status", { length: 20 }).default("PREPARING"),
 });
 
 /**
@@ -148,26 +170,3 @@ export const payments = pgTable("payments", {
 });
 
 
-export const users = pgTable("user", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const groups = pgTable('groups', {
-  id: serial('id').primaryKey(),
-  table_id: integer('table_id').notNull(),
-  creator_user_id: integer('creator_user_id'),
-  created_at: timestamp('created_at').defaultNow()
-});
-
-export const group_members = pgTable('group_members', {
-  id: serial('id').primaryKey(),
-  name: varchar('name', { length: 255 }).notNull(),
-  group_id: integer('group_id').notNull().references(() => groups.id),
-  user_id: integer('user_id').references(() => users.id),// null = guest
-  diningSessionId: integer('dining_session_id').notNull(),
-  isTableAdmin: boolean('is_table_admin').default(false),
-  joinedAt: timestamp('joined_at').defaultNow(),
-  note: text('note')
-});
