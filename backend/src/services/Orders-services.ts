@@ -53,7 +53,7 @@ export async function createOrderWithItems(
         eq(orders.status, "DRAFT")
       )
     )
-    .orderBy(desc(orders.created_at))
+    .orderBy(desc(orders.createdAt))
     .limit(1);
 
   // newOrder
@@ -184,7 +184,7 @@ export async function getDraftOrderBySession(sessionId: number) {
     .select()
     .from(orders)
     .where(and(eq(orders.diningSessionId, sessionId), eq(orders.status, "DRAFT")))
-    .orderBy(desc(orders.created_at))
+    .orderBy(desc(orders.createdAt))
     .limit(1);
 
   return draftOrder || null;

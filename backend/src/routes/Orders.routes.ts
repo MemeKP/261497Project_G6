@@ -36,4 +36,3 @@ router.patch("/:id/status", ordersController.updateOrderStatus);    // PATCH /or
 router.delete("/:id", ordersController.deleteOrder);                // DELETE /orders/:id
 
 export default router;
-
