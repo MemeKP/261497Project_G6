@@ -1,68 +1,154 @@
 import { dbClient as db } from "db/client.js";
-import { bills, billSplits, order_items, menuItems, members, orders, diningSessions } from "db/schema.js";
+import { bills, billSplits, order_items, menuItems,  orders, diningSessions , group_members } from "db/schema.js";
 import { eq, and , inArray } from "drizzle-orm";
 
+// export async function generateBill(orderId: number) {
+//   // check ว่า order มีจริงไหม
+//   const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+//   if (!order) throw new Error("Order not found");
+
+//   // check ว่า orderId นี้มี bill อยู่แล้วหรือยัง
+//   const existingBill = await db.select().from(bills).where(eq(bills.orderId, orderId));
+//   if (existingBill.length > 0) {
+//     // ดึง splits ของบิลเก่ามาด้วย
+//     const splits = await getSplit(existingBill[0].id);
+//     return { ...existingBill[0], splits };
+//   }
+
+//   //  ตรวจให้แน่ใจว่ามีค่าเสมอ
+//       // const diningSessionId = Number(order.dining_session_id);
+
+//     const diningSessionId = Number(order.dining_session_id ?? 0);
+//     if (!diningSessionId) {
+//       throw new Error(`Order ${orderId} missing dining_session_id`);
+//     }
+
+
+//   // คำนวณ subtotal
+//   const items = await db
+//     .select({
+//       price: menuItems.price,
+//       quantity: order_items.quantity,
+//     })
+//     .from(order_items)
+//     .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
+//     .where(eq(order_items.order_id, orderId));
+
+//   const subtotal = items.reduce(
+//     (sum, item) => sum + item.price * (item.quantity ?? 0),
+//     0
+//   );
+
+//   // service charge 7%
+//   const serviceCharge = +(subtotal * 0.07).toFixed(2);
+//   const total = +(subtotal + serviceCharge).toFixed(2);
+
+//   // insert bill
+//   const [bill] = await db
+//     .insert(bills)
+//     .values({
+//       orderId,
+//       diningSessionId,
+//       subtotal,
+//       serviceCharge,
+//       vat: 0,
+//       total,
+//       status: "UNPAID",
+//     })
+//     .returning();
+
+//   await calculateSplit(orderId, bill.id, serviceCharge);
+
+//   // ดึง splits ที่เพิ่งสร้างมา
+//   const splits = await getSplit(bill.id);
+
+//   // return bill + splits
+//   return {
+//     ...bill,
+//     splits,
+//   };
+// }
 export async function generateBill(orderId: number) {
-  // check ว่า order มีจริงไหม
-  const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
-  if (!order) throw new Error("Order not found");
+  try {
+    console.log(" [generateBill] Start generating bill for order:", orderId);
 
-  // check ว่า orderId นี้มี bill อยู่แล้วหรือยัง
-  const existingBill = await db.select().from(bills).where(eq(bills.orderId, orderId));
-  if (existingBill.length > 0) {
-    // ดึง splits ของบิลเก่ามาด้วย
-    const splits = await getSplit(existingBill[0].id);
-    return { ...existingBill[0], splits };
+    // check ว่า order มีจริงไหม
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) throw new Error("Order not found");
+    console.log("[generateBill] Found order:", order);
+
+    // check ว่า orderId นี้มี bill อยู่แล้วหรือยัง
+    const existingBill = await db.select().from(bills).where(eq(bills.orderId, orderId));
+    if (existingBill.length > 0) {
+      console.log("[generateBill] Bill already exists:", existingBill[0]);
+      const splits = await getSplit(existingBill[0].id);
+      return { ...existingBill[0], splits };
+    }
+
+    //  ตรวจให้แน่ใจว่ามีค่าเสมอ
+    const diningSessionId = Number(order.dining_session_id ?? 0);
+    if (!diningSessionId) {
+      throw new Error(`Order ${orderId} missing dining_session_id`);
+    }
+
+    console.log(" [generateBill] Using diningSessionId:", diningSessionId);
+
+    // คำนวณ subtotal
+    const items = await db
+      .select({
+        price: menuItems.price,
+        quantity: order_items.quantity,
+      })
+      .from(order_items)
+      .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
+      .where(eq(order_items.order_id, orderId));
+
+    console.log(" [generateBill] Found order items:", items);
+
+    const subtotal = items.reduce(
+      (sum, item) => sum + item.price * (item.quantity ?? 0),
+      0
+    );
+
+    const serviceCharge = +(subtotal * 0.07).toFixed(2);
+    const total = +(subtotal + serviceCharge).toFixed(2);
+
+    console.log(" [generateBill] subtotal:", subtotal, "serviceCharge:", serviceCharge, "total:", total);
+
+    // insert bill
+    const [bill] = await db
+      .insert(bills)
+      .values({
+        orderId,
+        diningSessionId,
+        subtotal,
+        serviceCharge,
+        vat: 0,
+        total,
+        status: "UNPAID",
+      })
+      .returning();
+
+    console.log("🧾 [generateBill] Inserted bill:", bill);
+
+    await calculateSplit(orderId, bill.id, serviceCharge);
+    console.log(" [generateBill] Finished calculating split for bill:", bill.id);
+
+    // ดึง splits ที่เพิ่งสร้างมา
+    const splits = await getSplit(bill.id);
+    console.log(" [generateBill] getSplit() results:", splits);
+
+    // return bill + splits
+    return {
+      ...bill,
+      splits,
+    };
+  } catch (err: any) {
+    console.error("[generateBill] Error:", err.message);
+    throw err;
   }
-
-  // ✅ ตรวจให้แน่ใจว่ามีค่าเสมอ
-      const diningSessionId = Number(order.dining_session_id);
-
-
-  // คำนวณ subtotal
-  const items = await db
-    .select({
-      price: menuItems.price,
-      quantity: order_items.quantity,
-    })
-    .from(order_items)
-    .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
-    .where(eq(order_items.order_id, orderId));
-
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.price * (item.quantity ?? 0),
-    0
-  );
-
-  // service charge 7%
-  const serviceCharge = +(subtotal * 0.07).toFixed(2);
-  const total = +(subtotal + serviceCharge).toFixed(2);
-
-  // insert bill
-  const [bill] = await db
-    .insert(bills)
-    .values({
-      orderId,
-      diningSessionId,
-      subtotal,
-      serviceCharge,
-      vat: 0,
-      total,
-      status: "UNPAID",
-    })
-    .returning();
-
-  await calculateSplit(orderId, bill.id, serviceCharge);
-
-  // ดึง splits ที่เพิ่งสร้างมา
-  const splits = await getSplit(bill.id);
-
-  // return bill + splits
-  return {
-    ...bill,
-    splits,
-  };
 }
+
 
 /**
  * Generate bill รวมทั้ง session 
@@ -172,10 +258,12 @@ export async function getSplit(billId: number) {
       memberId: billSplits.memberId,
       amount: billSplits.amount,
       paid: billSplits.paid,
-      name: members.name,
+      // name: members.name,
+      name: group_members.name, // เปลี่ยนจาก members → group_members
     })
     .from(billSplits)
-    .innerJoin(members, eq(members.id, billSplits.memberId))
+    // .innerJoin(members, eq(members.id, billSplits.memberId))
+    .innerJoin(group_members, eq(group_members.id, billSplits.memberId))
     .where(eq(billSplits.billId, billId));
 }
 

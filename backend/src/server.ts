@@ -46,8 +46,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false,      // ✅ ต้อง false ใน localhost
-      sameSite: "lax",    // ✅ ถ้าใช้ HTTPS ให้เปลี่ยนเป็น "none"
+      secure: false,      // ต้อง false ใน localhost
+      sameSite: "lax",    // ถ้าใช้ HTTPS ให้เปลี่ยนเป็น "none"
       maxAge: 24 * 60 * 60 * 1000,
     },
   })

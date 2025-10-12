@@ -6,7 +6,7 @@ const router = Router();
 // Create order (checkout พร้อม items)
 router.post("/", ordersController.createOrder);                     // POST /orders
 
-// ✅ สำหรับสร้าง order เปล่า (หน้า OrderStatus)
+// สำหรับสร้าง order เปล่า (หน้า OrderStatus)
 router.post("/new", ordersController.createNewOrder);
 
 // Get all orders (admin/debug)

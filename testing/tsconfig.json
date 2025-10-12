@@ -1,0 +1,5 @@
+{
+  "extends": "@tsconfig/node-lts/tsconfig.json",
+  "compilerOptions": { "types": ["cypress", "node"] },
+  "include": ["**/*.ts", "cypress.config.cjs"]
+}

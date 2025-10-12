@@ -320,7 +320,7 @@ import { eq, and, inArray, desc } from "drizzle-orm";
 
 const allowedStatus = ["PENDING", "CLOSED"] as const;
 
-// ✅ สร้าง order ใหม่
+//  สร้าง order ใหม่
 export async function createOrder(dining_session_id: number, table_id: number) {
   const [newOrder] = await db
     .insert(orders)
@@ -333,7 +333,7 @@ export async function createOrder(dining_session_id: number, table_id: number) {
   return newOrder;
 }
 
-// ✅ สร้าง order + items
+//  สร้าง order + items
 export async function createOrderWithItems(
   diningSessionId: number,
   tableId: number,
@@ -344,7 +344,7 @@ export async function createOrderWithItems(
     memberId: number;
   }>
 ) {
-  // ✅ 1. ตรวจสอบว่ามี order เดิมที่ยังไม่ checkout ไหม
+  //  1. ตรวจสอบว่ามี order เดิมที่ยังไม่ checkout ไหม
   let [existingOrder] = await db
     .select()
     .from(orders)
@@ -357,13 +357,13 @@ export async function createOrderWithItems(
     .orderBy(desc(orders.created_at))
     .limit(1);
 
-  // ✅ 2. ถ้าไม่มี → สร้างใหม่
+  //  2. ถ้าไม่มี → สร้างใหม่
   if (!existingOrder) {
     const [newOrder] = await db
       .insert(orders)
       .values({
         dining_session_id: diningSessionId,
-        table_id: tableId || 1, // ✅ ป้องกัน null
+        table_id: tableId || 1, //  ป้องกัน null
         status: "PENDING",
       })
       .returning();
@@ -371,7 +371,7 @@ export async function createOrderWithItems(
     existingOrder = newOrder;
   }
 
-  // ✅ 3. เพิ่ม order items
+  // 3. เพิ่ม order items
   const orderItemsData = items.map((item) => ({
     order_id: existingOrder.id,
     menu_item_id: item.menuId,
@@ -386,14 +386,14 @@ export async function createOrderWithItems(
     .values(orderItemsData)
     .returning();
 
-  // ✅ 4. ส่งคืนข้อมูลรวม
+  //  4. ส่งคืนข้อมูลรวม
   return {
     ...existingOrder,
     newItems: createdItems,
   };
 }
 
-// ✅ ดึง orders ทั้งหมดของ session พร้อม items
+// ดึง orders ทั้งหมดของ session พร้อม items
 export async function getOrdersBySession(sessionId: number) {
   const ordersData = await db
     .select()
@@ -427,7 +427,7 @@ export async function getOrdersBySession(sessionId: number) {
   }));
 }
 
-// ✅ เปลี่ยนสถานะ order (ใช้ตอน checkout)
+//  เปลี่ยนสถานะ order (ใช้ตอน checkout)
 export async function updateOrderStatus(orderId: number, status: string) {
   if (!allowedStatus.includes(status as any)) {
     throw new Error("Invalid order status");
@@ -442,7 +442,7 @@ export async function updateOrderStatus(orderId: number, status: string) {
   return updated;
 }
 
-// ✅ ใช้สำหรับหน้าแอดมินหรือ debug
+// ใช้สำหรับหน้าแอดมินหรือ debug
 export async function getOrderById(orderId: number) {
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
   return order || null;

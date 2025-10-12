@@ -22,9 +22,13 @@ export async function addOrderItem(
   if (!member) throw new Error("Member not found");
 
   //  checkว่า member กับ order อยู่ใน session เดียวกัน
-  if (member.diningSessionId !== order.dining_session_id) {
-    throw new Error("Member and Order do not belong to the same session");
-  }
+  // if (member.diningSessionId !== order.dining_session_id) {
+  //   throw new Error("Member and Order do not belong to the same session");
+  // }
+if (member.diningSessionId !== order.dining_session_id) {
+  console.log(" Member session:", member.diningSessionId, "Order session:", order.dining_session_id);
+  throw new Error("Member and Order do not belong to the same session");
+}
 
   //  checkว่าเมนูยัง available อยู่
   const [menu] = await db.select().from(menuItems).where(eq(menuItems.id, menu_item_id));
@@ -76,7 +80,7 @@ export async function getOrderItemsByOrderId(orderId: number) {
     })
     .from(order_items)
     .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
-    .leftJoin(group_members, eq(order_items.member_id, group_members.id)) // ✅ join ตาราง members
+    .leftJoin(group_members, eq(order_items.member_id, group_members.id)) //  join ตาราง members
     .where(eq(order_items.order_id, orderId));
 
   return items;
@@ -100,7 +104,7 @@ export async function getOrderItemsBySession(sessionId: number) {
     .from(order_items)
     .innerJoin(orders, eq(order_items.order_id, orders.id))
     .innerJoin(menuItems, eq(order_items.menu_item_id, menuItems.id))
-    .leftJoin( group_members, eq(order_items.member_id, group_members.id)) // ✅ เพิ่ม join member
+    .leftJoin( group_members, eq(order_items.member_id, group_members.id)) //  เพิ่ม join member
     .where(eq(orders.dining_session_id, sessionId));
 }
 

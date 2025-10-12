@@ -37,7 +37,7 @@ services:
     volumes:
       - ./logs:/app/logs
     command: >
-      sh -c "npm run db:migrate && npm run start"
+      sh -c "npm run db:migrate && npm run start && npm run db:seed"
 
 volumes:
   pgdata:

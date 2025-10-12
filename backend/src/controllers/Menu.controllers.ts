@@ -172,11 +172,19 @@ export const deleteMenu = async (
   next: NextFunction
 ) => {
   try {
-    const { id } = req.params;
+     // ✅ แก้จาก const { id } = req.params;
+    const id = Number(req.params.menuId || req.params.id);
+
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid menu ID",
+      });
+    }
 
     // Get menu item to access image URL
     const existingItem = await dbClient.query.menuItems.findFirst({
-      where: eq(menuItems.id, parseInt(id)),
+      where: eq(menuItems.id, id),
     });
 
     if (!existingItem) {
@@ -191,7 +199,7 @@ export const deleteMenu = async (
     }
 
     // Delete from database
-    await dbClient.delete(menuItems).where(eq(menuItems.id, parseInt(id)));
+    await dbClient.delete(menuItems).where(eq(menuItems.id, id));
 
     res.json({
       success: true,
@@ -259,13 +267,24 @@ export const createMenu = async (
   }
 };
 
+
+// เเก้ให้ทำ testing ได้ 
 export const updateMenu = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { id } = req.params;
+       //  เดิมใช้ const { id } = req.params; ทำให้ undefined
+    const id = Number(req.params.menuId || req.params.id);
+
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid menu ID",
+      });
+    }
+
     const {
       name,
       price,
@@ -277,7 +296,7 @@ export const updateMenu = async (
     } = req.body;
 
     const existingItem = await dbClient.query.menuItems.findFirst({
-      where: eq(menuItems.id, parseInt(id)),
+      where: eq(menuItems.id, id),
     });
 
     if (!existingItem) {
@@ -316,7 +335,7 @@ export const updateMenu = async (
           : existingItem.updatedByAdminId,
         updatedAt: new Date(),
       })
-      .where(eq(menuItems.id, parseInt(id)))
+      .where(eq(menuItems.id, id))
       .returning();
 
     res.json({

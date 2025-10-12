@@ -185,7 +185,7 @@ export async function createOrder(req: Request, res: Response) {
   }
 }
 
-// ✅ สำหรับปุ่ม New Order (ไม่มีเมนู)
+// สำหรับปุ่ม New Order
 export async function createNewOrder(req: Request, res: Response) {
   try {
     const { diningSessionId, tableId } = req.body;
@@ -552,7 +552,7 @@ export const updateOrderStatusByAdmin = async (req: Request, res: Response, next
       return res.status(400).json({ error: "Invalid Order ID" });
     }
 
-    // ✅ เปลี่ยน validStatuses เหลือแค่ 2 สถานะหลัก
+    //  เปลี่ยน validStatuses เหลือแค่ 2 สถานะหลัก
     const validStatuses = ["PENDING", "CLOSED"];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({

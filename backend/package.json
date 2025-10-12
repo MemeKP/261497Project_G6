@@ -27,6 +27,7 @@
     "dev": "nodemon",
     "build": "tsc && tsc-alias",
     "start": "node ./dist/src/server.js",
+    "db:seed": "node ./dist/src/seed.js",
     "db:generate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit generate",
     "db:push": "cross-env NODE_OPTIONS=\"--import tsx\" drizzle-kit push",
     "db:migrate": "cross-env NODE_OPTIONS='--import tsx' drizzle-kit migrate",

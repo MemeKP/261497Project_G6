@@ -126,7 +126,8 @@ export const bills = pgTable("bills", {
 export const billSplits = pgTable("bill_splits", {
   id: serial("id").primaryKey(),
   billId: integer("bill_id").notNull().references(() => bills.id),
-  memberId: integer("member_id").notNull().references(() => members.id),
+  // memberId: integer("member_id").notNull().references(() => members.id),
+  memberId: integer("member_id").references(() => group_members.id),
   amount: money("amount").notNull(),
   paid: boolean("paid").default(false),
 });
