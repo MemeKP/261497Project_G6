@@ -9,8 +9,8 @@ import dinningSessionRoutes from "./routes/DiningSession.routes.ts";
 import groupRoutes from "./routes/Group.routes.ts";
 import groupMemRoutes from "./routes/GroupMembers.routes.ts";
 import menuRoutes from './routes/Menu.routes.ts'
-import session from "express-session";
 import tebleRoutes from './routes/Table.routes.ts'
+import session from "express-session";
 
 const app = express();
 
@@ -23,36 +23,27 @@ app.use(
 );
 app.use(express.json());
 
-app.set("trust proxy", 1);
+app.use(session({
+  name: 'sessionId',
+  secret: process.env.SESSION_SECRET || 'dev-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // ตั้งเป็น false ใน development
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    path: '/'
+  }
+}));
 
-// app.use(
-//   session({
-//     secret:
-//       process.env.SESSION_SECRET || "your-secret-key-change-this-in-production",
-//     resave: false,
-//     saveUninitialized: false,
-//     cookie: {
-//       secure: process.env.NODE_ENV === "production",
-//       httpOnly: true,
-//       sameSite: "lax", 
-//       maxAge: 24 * 60 * 60 * 1000,
-//     },
-//   })
-// );
-
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "dev-secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000,
-    },
-  })
-);
+// allow cross-origin requests
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", 
+    "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 
 // Routes
 app.use("/orders", orderRoutes);
@@ -65,6 +56,7 @@ app.use("/group", groupRoutes);
 app.use("/group_members", groupMemRoutes);
 app.use('/menu_items', menuRoutes)
 app.use('/tables', tebleRoutes)
+
 
 declare module "express-session" {
   interface SessionData {
