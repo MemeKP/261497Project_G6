@@ -40,7 +40,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log("❌ Network error in Auth Provider", err);
         setIsAuthenticated(false);
       } finally {
-        setIsLoading(false);
+        setIsLoading(false); // ✅ ตั้งค่า loading เป็น false
       }
     };
 
