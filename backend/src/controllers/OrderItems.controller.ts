@@ -155,4 +155,3 @@ export async function getOrderItemById(req: Request, res: Response) {
     res.status(500).json({ error: err.message });
   }
 }
-

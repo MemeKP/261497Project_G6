@@ -8,9 +8,9 @@ import {
   diningSessions ,
   groups,
   group_members,
-  menuItems ,
+  menuItems,
   orders,
-  
+  orderItems,
 } from "@db/schema.js";
 
 export const addMembers = async (
@@ -51,8 +51,8 @@ export const addMembers = async (
       .returning({
         id: group_members.id,
         name: group_members.name,
-        group_id: group_members.groupId,
-        user_id: group_members.userId,
+        groupId: group_members.groupId,
+        userId: group_members.userId,
         note: group_members.note,
         diningSessionId: group_members.diningSessionId,
       });

@@ -18,13 +18,12 @@ import LoginPage from "./routes/LoginPage.tsx";
 import AdminDashBoard from "./routes/AdminDashBoard.tsx";
 import AdminOrderList from "./routes/AdminOrderList.tsx";
 import AdminPayment from "./routes/AdminPayment.tsx";
+import ProtectedRoute from "./components/ProtectedRoute.tsx";
+import { AuthProvider } from "./context/AuthProvider.tsx";
 import PaymentPage from "./routes/PaymentPage.tsx";
 import SplitBillPage from "./routes/SplitBillPage.tsx";
-import SessionPage from "./routes/SessionPage.tsx";
-import { AuthProvider } from "./context/AuthProvider.tsx";
-import ProtectedRoute from "./components/ProtectedRoute.tsx";
-
 import { CartProvider } from "./context/CartContext.tsx";
+import SessionPage from "./routes/SessionPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -87,10 +86,18 @@ const router = createBrowserRouter([
       {
         path: "/payment/:billId/:memberId",
         element: <PaymentPage />,
-      },      
+      },
       {
         path: "/session/:sessionId",
         element: <SessionPage />,
+      },
+      {
+        path: "/admin/dashboard",
+        element: (
+          <ProtectedRoute>
+            <AdminDashBoard />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/admin/dashboard",
@@ -120,13 +127,13 @@ const router = createBrowserRouter([
   },
 ]);
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+  <StrictMode><AuthProvider>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      
         <CartProvider>
-          <RouterProvider router={router} />
-        </CartProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+      <RouterProvider router={router} />
+      </CartProvider>
+      
+    </QueryClientProvider></AuthProvider>
   </StrictMode>
 );

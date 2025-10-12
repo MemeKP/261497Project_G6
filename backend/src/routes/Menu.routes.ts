@@ -23,11 +23,10 @@ const upload = multer({
 router.get('/bestsellers', getBestSeller)
 router.get('/:menuId', getMenuById)
 router.get('/', getMenus)
-router.post('/:menuId', createMenu)
-router.put('/:menuId', updateMenu)
+// router.post('/:menuId', createMenu)
+// router.put('/:menuId', updateMenu)
 router.post('/', upload.single('image'), createMenu)
 router.put('/:menuId', upload.single('image'), updateMenu)
-router.delete('/:menuId', deleteMenu)
-router.delete('/:menuId', deleteMenu)
+router.delete('/:id', deleteMenu)
 
 export default router

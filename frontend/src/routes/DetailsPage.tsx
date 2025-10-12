@@ -83,42 +83,46 @@ const DetailsPage = () => {
     menu ? (parseFloat(menu.price) * quantity).toFixed(0) : "0";
 
   const handleSave = async () => {
-    if (selectMembers.length === 0) {
-      alert("Please select your member for this menu");
+  if (selectMembers.length === 0) {
+    alert("Please select your member for this menu");
+    return;
+  }
+
+  try {
+    if (editId) {
+      await axios.patch(`/api/order-items/${editId}`, {
+        quantity,
+        note,
+        memberId: selectMembers[0],
+      });
+      alert("✅ Item updated successfully!");
+      navigate(`/cart/${sessionId}`);
       return;
     }
 
-    try {
-      if (editId) {
-        await axios.patch(`/api/order-items/${editId}`, {
-          quantity,
-          note,
-          memberId: selectMembers[0],
-        });
-        alert("Item updated successfully!");
-        navigate(`/cart/${sessionId}`);
-        return;
-      }
+    const items = selectMembers.map((memberId) => ({
+      menuId: menu.id,
+      qty: quantity,
+      note,
+      memberId,
+    }));
 
-      const items = selectMembers.map((memberId) => ({
-        menuId: menu.id,
-        qty: quantity,
-        note,
-        memberId,
-      }));
+    await axios.post("/api/orders", {
+      diningSessionId: sessionId,
+      items,
+    });
 
-      await axios.post("/api/orders", {
-        diningSessionId: sessionId,
-        items,
-      });
+    alert(`🛒 Added ${menu.name} to cart!`);
 
-      alert(`🛒 Added ${menu.name} to cart!`);
-      navigate(`/cart/${sessionId}`);
-    } catch (error: any) {
-      console.error("Error saving item:", error.response?.data || error);
-      alert("Failed to save. Please try again.");
-    }
-  };
+    setQuantity(1);
+    setNote("");
+    setSelectMembers([]);
+  } catch (error: any) {
+    console.error("Error saving item:", error.response?.data || error);
+    alert("Failed to save. Please try again.");
+  }
+};
+
 
   if (isLoading || loadingItem) return <p className="text-white p-6">Loading...</p>;
   if (error) return <p className="text-red-500 p-6">Error loading menu</p>;
@@ -127,9 +131,11 @@ const DetailsPage = () => {
   return (
     <div className="relative min-h-screen overflow-hidden flex flex-col">
       {/* ปุ่มปิด */}
-      <Link to={`/cart/${sessionId}`}>
-        <IoClose className="absolute right-6 top-6 w-9 h-9 text-gray-300 z-20 cursor-pointer" />
-      </Link>
+      <IoClose
+        onClick={() => navigate(-1)}
+        className="absolute right-6 top-6 w-9 h-9 text-gray-300 z-20 cursor-pointer"
+      />
+
 
       {/* BG IMG */}
       <div

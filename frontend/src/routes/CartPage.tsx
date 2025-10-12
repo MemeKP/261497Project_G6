@@ -3,8 +3,17 @@ import { useNavigate, useParams } from "react-router-dom";
 import { FaMinus, FaPlus } from "react-icons/fa";
 import { IoIosArrowBack } from "react-icons/io";
 import basketIcon from "../assets/imgs/basket.png";
-import type { CartItem } from "../types";
 
+interface CartItem {
+  id: number;
+  menuId: number;
+  name: string;
+  price: number;
+  qty: number;
+  note?: string;
+  imageUrl?: string;
+  memberName?: string;
+}
 
 const CartPage = () => {
   const navigate = useNavigate();

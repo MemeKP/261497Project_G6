@@ -13,7 +13,6 @@ export interface Group {
 
 export interface SessionResponse {
   session: Session;
-  tableId: number;
   group: Group | null;
 }
 
@@ -22,7 +21,8 @@ export interface Session {
   tableId: number;
   startedAt: string;     
   endedAt: string | null;
-  qrCode: string;         
+  qrCode: string;     
+  // qrData: string,    
   status: string;
   totalCustomers: number;
   createdAt: string;
@@ -85,11 +85,11 @@ export interface IKImageWrapperProps {
   onError?: () => void;
 }
 
-export interface Table {
-  id: number;
-  number: number;
-  status: string;
-}
+// export interface Table {
+//   id: number;
+//   number: number;
+//   status: string;
+// }
 
 export interface PaymentData {
   date: string;
@@ -127,11 +127,25 @@ export interface Order {
   tableId: number;
   group_id: number | null;
   user_id: number | null;
-  dining_session_id: number;
+  diningSessionId: number;
   status: "PENDING" | "PREPARING" | "COMPLETED" | "SERVED" | string;
   createdAt: string;
   totalPrice?: number;
   key: string;
+}
+
+
+export interface Payment {
+  billId: number;
+  splitId: number;  // เพิ่ม splitId
+  memberId: number;
+  name: string;
+  role: string;
+  amount: number;
+  status: 'PAID' | 'PENDING';
+  date: string;
+  method: string;
+  paymentId?: number;
 }
 
 export type DiningSession = {
@@ -147,27 +161,44 @@ export type DiningSession = {
   createdAt: string; 
 };
 
-export interface Payment {
-  billId: number;
-  splitId: number;  // เพิ่ม splitId
-  memberId: number;
-  name: string;
-  role: string;
-  amount: number;
-  status: 'PAID' | 'PENDING';
-  date: string;
-  method: string;
-  paymentId?: number;
-}
-
-export interface CartItem {
+export type Table = {
   id: number;
-  menuId: number;
-  name: string;
-  price: number;
-  qty: number;
-  note?: string;
-  imageUrl?: string;
-  memberName?: string;
+  number: number; 
+  status: 'AVAILABLE' | 'OCCUPIED' | 'CLOSED'; 
+  createdAt: string; 
+};
+
+export interface RevenueData {
+  chartData: {
+    date: string;
+    amount: number;
+  }[];
+  statistics: {
+    currentTotal: number;
+    previousTotal: number;
+    growthRate: number;
+    avgPerDay: number;
+    period: string;
+  };
 }
 
+export interface PaymentGraphProps {
+  period?: 'week' | 'month' | 'year';
+  onPeriodChange?: (period: 'week' | 'month' | 'year') => void;
+}
+
+interface OrderItem {
+  id: number;
+  menuName: string;
+  quantity: number;
+  status: string;
+  memberName?: string;
+  note?: string; 
+}
+
+interface NewOrder {
+  id: number;
+  status: string;
+  tableId: number;
+  items: OrderItem[];
+}

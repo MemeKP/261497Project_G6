@@ -3,17 +3,17 @@ import QRCode from "qrcode";
 import express from "express";
 import "dotenv/config";
 import ImageKit from "imagekit";
-import { eq, and, isNotNull, ilike, sql, like, or, desc } from "drizzle-orm";
+import { eq, and, isNotNull, ilike, sql, like, or, desc, asc } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
   users,
-  admins ,
-  diningSessions ,
+  admins as admin,
+  diningSessions,
   groups,
   group_members,
-  menuItems ,
+  menuItems,
+  orders,
   orderItems,
-
 } from "@db/schema.js";
 
 function getEnvVar(name: string): string {
@@ -30,26 +30,12 @@ const imagekit = new ImageKit({
   privateKey: getEnvVar("IMAGEKIT_PRIVATE_KEY"),
 });
 
-const getFileIdFromUrl = (url: string): string | null => {
-  try {
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split("/");
-    const fileName = pathParts[pathParts.length - 1];
-
-    const matches = fileName.match(/_([a-zA-Z0-9]+)\./);
-    return matches ? matches[1] : null;
-  } catch (error) {
-    console.error("Error extracting fileId:", error);
-    return null;
-  }
-};
-
 const uploadImageToImagekit = async (file: Express.Multer.File) => {
   try {
     const result = await imagekit.upload({
       file: file.buffer.toString("base64"),
       fileName: `menu_${Date.now()}_${file.originalname}`,
-      folder: "/menu-items",
+      folder: "/261497project",
     });
 
     return {
@@ -64,12 +50,39 @@ const uploadImageToImagekit = async (file: Express.Multer.File) => {
 
 const deleteImageFromImageKit = async (imageUrl: string): Promise<void> => {
   try {
-    const fileId = getFileIdFromUrl(imageUrl);
-    if (fileId) {
-      await imagekit.deleteFile(fileId);
+    console.log(`[DELETE IMAGE] Starting deletion for: ${imageUrl}`);
+    
+    const fileName = imageUrl.split('/').pop();
+    console.log(`[DELETE IMAGE] Searching for: ${fileName}`);
+    
+    const items = await imagekit.listFiles({
+      path: "/261497project",
+      limit: 100
+    });
+    
+    // ใช้ type guard 
+    const isFileObject = (item: any): item is { fileId: string; name: string; url: string } => {
+      return item && typeof item === 'object' && 'fileId' in item && 'name' in item && 'url' in item;
+    };
+    
+    const targetFile = items.find(item => isFileObject(item) && item.name === fileName);
+    
+    if (targetFile && isFileObject(targetFile)) {
+      console.log(`[DELETE IMAGE] Found file:`, {
+        fileId: targetFile.fileId,
+        name: targetFile.name,
+        url: targetFile.url
+      });
+      
+      console.log(`[DELETE IMAGE] Deleting with fileId: ${targetFile.fileId}`);
+      await imagekit.deleteFile(targetFile.fileId);
+      console.log(`✅ [DELETE IMAGE] Successfully deleted!`);
+    } else {
+      console.log(`[DELETE IMAGE] File not found: ${fileName}`);
     }
-  } catch (error) {
-    console.error("ImageKit delete error:", error);
+    
+  } catch (error: any) {
+    console.error("[DELETE IMAGE] Error:", error.message);
   }
 };
 
@@ -109,22 +122,35 @@ export const getMenus = async (
   try {
     const page = parseInt((req.query.page as string) || "1");
     const nolimit = req.query.nolimit === "true";
+    const showAll = req.query.showAll === "true"; //ให้adminใช้
     const defaultLimit = 5;
     const limit = req.query.limit
       ? parseInt(req.query.limit as string)
       : nolimit
-      ? 0
-      : defaultLimit;
+        ? 0
+        : defaultLimit;
 
     const offset = (page - 1) * limit;
     const search = (req.query.search as string)?.trim() || "";
     const category = (req.query.category as string)?.trim() || "";
 
-    const whereConditions = [eq(menuItems.isAvailable, true)];
-    if (search) {
-      const searchPattern = `%${search}%`;
-      whereConditions.push(like(menuItems.name, searchPattern));
+    //const whereConditions = showAll ? [] : [eq(menuItems.isAvailable, true)];
+    const whereConditions: any[] = [];
+    
+    if (!showAll) {
+      whereConditions.push(eq(menuItems.isAvailable, true));
     }
+    if (search) {
+  if (search.length <= 50) { 
+    const searchPattern = `%${search}%`;
+    whereConditions.push(
+      or(
+        ilike(menuItems.name, searchPattern),
+        ilike(menuItems.description, searchPattern)
+      )
+    );
+  }
+}
 
     if (category) {
       whereConditions.push(eq(menuItems.category, category));
@@ -172,33 +198,59 @@ export const deleteMenu = async (
 ) => {
   try {
     const { id } = req.params;
+    console.log(`[DELETE MENU] Raw ID from params:`, id, typeof id);
+
+    // ตรวจสอบว่า id เป็น number ที่ถูกต้อง
+    const menuId = parseInt(id);
+    console.log(`[DELETE MENU] Parsed ID:`, menuId);
+
+    if (isNaN(menuId)) {
+      console.log(`[DELETE MENU] Invalid ID: ${id}`);
+      return res.status(400).json({
+        success: false,
+        error: "Invalid menu ID",
+      });
+    }
 
     // Get menu item to access image URL
     const existingItem = await dbClient.query.menuItems.findFirst({
-      where: eq(menuItems.id, parseInt(id)),
+      where: eq(menuItems.id, menuId),
     });
 
+    console.log(`[DELETE MENU] Found item:`, existingItem);
+
     if (!existingItem) {
+      console.log(`[DELETE MENU] Item not found for ID: ${menuId}`);
       return res.status(404).json({
         success: false,
         error: "Menu item not found",
       });
     }
 
+    // Delete image from ImageKit if exists
     if (existingItem.imageUrl) {
+      console.log(`[DELETE MENU] Deleting image: ${existingItem.imageUrl}`);
       await deleteImageFromImageKit(existingItem.imageUrl);
+    } else {
+      console.log(`[DELETE MENU] No image to delete`);
     }
 
     // Delete from database
-    await dbClient.delete(menuItems).where(eq(menuItems.id, parseInt(id)));
+    console.log(`[DELETE MENU] Deleting from database`);
+    await dbClient.delete(menuItems).where(eq(menuItems.id, menuId));
 
+    console.log(`[DELETE MENU] Successfully deleted menu item ID: ${menuId}`);
     res.json({
       success: true,
       message: "Menu item deleted successfully",
     });
   } catch (error) {
-    console.error("[BACKEND MENUCON] Error deleting menu item:", error);
-    next(error);
+    console.error("[DELETE MENU] Error deleting menu item:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 };
 
@@ -208,15 +260,32 @@ export const createMenu = async (
   next: NextFunction
 ) => {
   try {
-    const {
+     const {
       name,
-      price,
       description,
+      price,
       category,
-      isSignature,
-      isAvailable,
+      isSignature = false,
+      isAvailable = true,
       createdByAdminId,
     } = req.body;
+
+    // แปลง isAvailable เป็น boolean
+    const parsedIsAvailable = 
+      isAvailable === 'true' || 
+      isAvailable === true || 
+      isAvailable === '1';
+
+    // แปลง isSignature เป็น boolean
+    const parsedIsSignature = 
+      isSignature === 'true' || 
+      isSignature === true || 
+      isSignature === '1';
+
+    console.log('✅ [CREATE MENU] Final values:');
+    console.log('isAvailable:', parsedIsAvailable);
+    console.log('isSignature:', parsedIsSignature);
+
 
     // Validate required fields
     if (!name || !price || !category) {
@@ -241,8 +310,8 @@ export const createMenu = async (
         description,
         imageUrl,
         category,
-        isSignature: isSignature || false,
-        isAvailable: isAvailable !== undefined ? isAvailable : true,
+        isSignature: parsedIsSignature,
+        isAvailable: parsedIsAvailable,
         createdByAdminId: createdByAdminId ? parseInt(createdByAdminId) : null,
         updatedByAdminId: createdByAdminId ? parseInt(createdByAdminId) : null,
       })
@@ -264,7 +333,7 @@ export const updateMenu = async (
   next: NextFunction
 ) => {
   try {
-    const { id } = req.params;
+    const { menuId } = req.params;
     const {
       name,
       price,
@@ -276,7 +345,7 @@ export const updateMenu = async (
     } = req.body;
 
     const existingItem = await dbClient.query.menuItems.findFirst({
-      where: eq(menuItems.id, parseInt(id)),
+      where: eq(menuItems.id, parseInt(menuId)),
     });
 
     if (!existingItem) {
@@ -297,6 +366,16 @@ export const updateMenu = async (
       imageUrl = uploadResult.url;
     }
 
+    const parsedIsAvailable = 
+      isAvailable !== undefined 
+        ? (isAvailable === 'true' || isAvailable === true || isAvailable === '1')
+        : existingItem.isAvailable;
+    
+    const parsedIsSignature = 
+      isSignature !== undefined 
+        ? (isSignature === 'true' || isSignature === true || isSignature === '1')
+        : existingItem.isSignature;
+
     const [updatedItem] = await dbClient
       .update(menuItems)
       .set({
@@ -306,16 +385,14 @@ export const updateMenu = async (
           description !== undefined ? description : existingItem.description,
         imageUrl,
         category: category || existingItem.category,
-        isSignature:
-          isSignature !== undefined ? isSignature : existingItem.isSignature,
-        isAvailable:
-          isAvailable !== undefined ? isAvailable : existingItem.isAvailable,
+        isSignature: parsedIsSignature, 
+        isAvailable: parsedIsAvailable,  
         updatedByAdminId: updatedByAdminId
           ? parseInt(updatedByAdminId)
           : existingItem.updatedByAdminId,
         updatedAt: new Date(),
       })
-      .where(eq(menuItems.id, parseInt(id)))
+      .where(eq(menuItems.id, parseInt(menuId)))
       .returning();
 
     res.json({
@@ -323,7 +400,7 @@ export const updateMenu = async (
       data: updatedItem,
     });
   } catch (error) {
-    console.error("[BACKEND MENUCON] Error updating menu item:", error);
+    console.error("[UPDATE MENU] Error updating menu item:", error);
     next(error);
   }
 };
@@ -364,3 +441,34 @@ export const getBestSeller = async (req: Request, res: Response, next: NextFunct
     next(err);
   }
 };
+/*
+const deleteImageFromImageKit = async (imageUrl: string): Promise<void> => {
+  try {
+    const fileId = getFileIdFromUrl(imageUrl);
+    if (fileId) {
+      await imagekit.deleteFile(fileId);
+    }
+  } catch (error) {
+    console.error("ImageKit delete error:", error);
+  }
+};*/
+/*
+const getFileIdFromUrl = (url: string): string | null => {
+  try {
+    console.log(`[GET FILE ID] Processing URL: ${url}`);
+    
+    if (!url) return null;
+
+    const urlObj = new URL(url);
+    
+    // สำหรับ ImageKit เราสามารถใช้ path โดยลบ / ออกหน้าแรก
+    const filePath = urlObj.pathname.substring(1); // ลบ / ตัวแรกออก
+    console.log(`[GET FILE ID] Using file path: ${filePath}`);
+    
+    return filePath; // '496kiwiBird/261497project/menu_1760188389383_water_3p7xrRMO7.png'
+    
+  } catch (error) {
+    console.error("[GET FILE ID] Error:", error);
+    return null;
+  }
+};*/
