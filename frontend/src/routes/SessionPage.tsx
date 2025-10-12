@@ -30,11 +30,9 @@ const SessionPage = () => {
 
         if (!res.ok) throw new Error(raw.error || "Failed to fetch session");
 
-        // ✅ ดึงข้อมูล session และ group
         const s = raw.session;
         const g = raw.group;
 
-        // ✅ แปลงเวลาให้อยู่ในรูปแบบ HH:mm ตาม timezone ไทย
         const formatTime = (timeString?: string | null) => {
           if (!timeString) return null;
           const date = new Date(timeString);
@@ -48,8 +46,8 @@ const SessionPage = () => {
           id: s.id,
           tableNo: s.tableId ?? "-",
           guests: s.totalCustomers ?? g?.members?.length ?? 0,
-          orders: g?.members?.length ?? 0, // ถ้ายังไม่มี order count จริง ๆ ใช้จำนวนสมาชิกแทนชั่วคราว
-          total: 0, // ถ้ามี total จริงใน backend สามารถใส่เพิ่มทีหลัง
+          orders: g?.members?.length ?? 0, 
+          total: s.total, 
           startTime: formatTime(s.startedAt),
           endTime: formatTime(s.endedAt),
         };

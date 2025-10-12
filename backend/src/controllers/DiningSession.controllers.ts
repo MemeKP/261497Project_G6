@@ -2,18 +2,14 @@ import { type Request, type Response, type NextFunction } from "express";
 import QRCode from "qrcode";
 import express from "express";
 import "dotenv/config";
-import { eq, and, isNotNull } from "drizzle-orm";
+import { eq, and,  sql  } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
-  users,
-  admins,
   diningSessions,
   groups,
   group_members,
-  menuItems,
-  orders,
-  orderItems,
   tables,
+  bills,
 } from "@db/schema.js";
 
 export const startSession = async (
@@ -185,6 +181,9 @@ export const getQrForTable = async (
   }
 };
 
+/**
+ * ✅ ปิด session (Admin ใช้)
+ */
 export const endSession = async (
   req: Request,
   res: Response,
@@ -199,18 +198,16 @@ export const endSession = async (
       });
     }
 
-    let whereCondition;
-    if (sessionId) {
-      whereCondition = and(
-        eq(diningSessions.id, sessionId),
-        eq(diningSessions.status, "ACTIVE")
-      );
-    } else {
-      whereCondition = and(
-        eq(diningSessions.tableId, tableId),
-        eq(diningSessions.status, "ACTIVE")
-      );
-    }
+    // สร้างเงื่อนไขค้นหา
+    const whereCondition = sessionId
+      ? and(
+          eq(diningSessions.id, sessionId),
+          eq(diningSessions.status, "ACTIVE")
+        )
+      : and(
+          eq(diningSessions.tableId, tableId),
+          eq(diningSessions.status, "ACTIVE")
+        );
 
     const activeSession = await dbClient.query.diningSessions.findFirst({
       where: whereCondition,
@@ -224,6 +221,15 @@ export const endSession = async (
       });
     }
 
+    // 🧮 รวมยอดจาก bills
+    const [sumResult] = await dbClient
+      .select({ total: sql<number>`COALESCE(SUM(${bills.total}), 0)` })
+      .from(bills)
+      .where(eq(bills.diningSessionId, activeSession.id));
+
+    const totalAmount = sumResult?.total ?? 0;
+
+    // 👥 หาจำนวนสมาชิก
     let totalCustomers = 0;
     const group = await dbClient.query.groups.findFirst({
       where: eq(groups.tableId, activeSession.tableId),
@@ -236,13 +242,17 @@ export const endSession = async (
       totalCustomers = members?.length || 0;
     }
 
+    // 🕒 เวลาปิดโต๊ะ
     const endedAt = new Date();
-    const updatedSession = await dbClient
+
+    // ✅ อัปเดตข้อมูลลง DB
+    const [updatedSession] = await dbClient
       .update(diningSessions)
       .set({
-        endedAt: endedAt,
+        endedAt,
         status: "COMPLETED",
-        totalCustomers: totalCustomers,
+        totalCustomers,
+        total: totalAmount, // ✅ รวมยอดเก็บไว้ใน session
       })
       .where(eq(diningSessions.id, activeSession.id))
       .returning({
@@ -252,31 +262,36 @@ export const endSession = async (
         endedAt: diningSessions.endedAt,
         status: diningSessions.status,
         totalCustomers: diningSessions.totalCustomers,
+        total: diningSessions.total,
         created_at: diningSessions.createdAt,
       });
 
-    const duration =
-      endedAt.getTime() -
-      (activeSession.startedAt?.getTime() || endedAt.getTime());
-    const durationMinutes = Math.round(duration / (1000 * 60));
+    // ⏱ คำนวณเวลาทั้งหมด
+    const durationMinutes = Math.round(
+      (endedAt.getTime() -
+        (activeSession.startedAt?.getTime() || endedAt.getTime())) /
+        60000
+    );
 
     res.json({
       message: `Dining session ended successfully for table ${activeSession.tableId}`,
       session: {
-        id: updatedSession[0].id,
-        tableId: updatedSession[0].tableId,
-        startedAt: updatedSession[0].startedAt,
-        endedAt: updatedSession[0].endedAt,
-        status: updatedSession[0].status,
-        totalCustomers: updatedSession[0].totalCustomers,
-        createdAt: updatedSession[0].created_at,
-        durationMinutes: durationMinutes,
+        id: updatedSession.id,
+        tableId: updatedSession.tableId,
+        startedAt: updatedSession.startedAt,
+        endedAt: updatedSession.endedAt,
+        status: updatedSession.status,
+        totalCustomers: updatedSession.totalCustomers,
+        total: updatedSession.total,
+        createdAt: updatedSession.created_at,
+        durationMinutes,
       },
     });
   } catch (err) {
     next(err);
   }
 };
+
 
 export const getActiveSession = async (
   req: Request,
@@ -417,3 +432,86 @@ export const getSession = async (
     next(err);
   }
 };
+
+export const getSessionPublic = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const sessionId = parseInt(req.params.sessionId);
+    if (isNaN(sessionId)) {
+      return res.status(400).json({ error: "Invalid Session ID" });
+    }
+
+    const [session] = await dbClient
+      .select()
+      .from(diningSessions)
+      .where(eq(diningSessions.id, sessionId))
+      .limit(1);
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    return res.status(200).json({
+      id: session.id,
+      tableId: session.tableId,
+      status: session.status,
+      totalCustomers: session.totalCustomers,
+      startedAt: session.startedAt,
+      endedAt: session.endedAt,
+      total: session.total,
+      durationMinutes:
+        session.endedAt && session.startedAt
+          ? Math.round(
+              (new Date(session.endedAt).getTime() -
+                new Date(session.startedAt).getTime()) /
+                60000
+            )
+          : null,
+    });
+  } catch (err: unknown) {
+    console.error(" getSessionPublic error:", err);
+
+    if (err instanceof Error) {
+      return res.status(500).json({
+        error: "Internal Server Error",
+        details: err.message,
+      });
+    }
+    return res.status(500).json({
+      error: "Unknown error occurred",
+    });
+}
+};
+
+
+
+// export const getSessionPublic = async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const sessionId = parseInt(req.params.sessionId);
+//     if (isNaN(sessionId)) return res.status(400).json({ error: "Invalid Session ID" });
+
+//     // ✅ ดึงข้อมูล session เฉพาะที่จบแล้ว (ไม่ ACTIVE)
+//     const [session] = await dbClient
+//       .select()
+//       .from(diningSessions)
+//       .where(eq(diningSessions.id, sessionId))
+//       .limit(1);
+
+//     if (!session || session.status === "ACTIVE") {
+//       return res.status(404).json({ message: "Session not found or still active." });
+//     }
+
+//     res.json({
+//       id: session.id,
+//       tableId: session.tableId,
+//       totalCustomers: session.totalCustomers,
+//       startedAt: session.startedAt,
+//       endedAt: session.endedAt,
+//       total: session.total,
+//       durationMinutes: session.endedAt && session.startedAt
+//         ? Math.round((session.endedAt.getTime() - session.startedAt.getTime()) / 60000)
+//         : null,
+//     });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
