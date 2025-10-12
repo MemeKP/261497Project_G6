@@ -9,9 +9,10 @@ import {
   diningSessions,
 } from "db/schema.js";
 import { eq, and, inArray } from "drizzle-orm";
+import QRCode from "qrcode";
 
 /**
- * Generate bill สำหรับ order เดียว
+ * ✅ Generate bill สำหรับ order เดียว (ยังเหมือนเดิม)
  */
 export async function generateBill(orderId: number) {
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
@@ -19,12 +20,12 @@ export async function generateBill(orderId: number) {
 
   const existingBill = await db.select().from(bills).where(eq(bills.orderId, orderId));
   if (existingBill.length > 0) {
-    const splits = await getSplit(existingBill[0].id);
-    return { ...existingBill[0], splits };
+    const bill = existingBill[0];
+    const splits = await getSplit(bill.id);
+    return { ...bill, splits };
   }
 
   const diningSessionId = Number(order.diningSessionId);
-
   const items = await db
     .select({
       price: menuItems.price,
@@ -52,19 +53,16 @@ export async function generateBill(orderId: number) {
     .returning();
 
   await calculateSplit(orderId, bill.id, serviceCharge);
-
   const splits = await getSplit(bill.id);
   return { ...bill, splits };
 }
 
 /**
- * Generate bill รวมทุก order ของ session (ใช้เวลาปิดโต๊ะ)
+ * ✅ Generate bill รวมทุก order ของ session
+ * ➤ ใช้ตอนกด “Generate Bill” → ยังไม่ split, ยังไม่สร้าง QR
  */
-export async function generateBillForSession(sessionId: number, force = false) {
-  const ordersData = await db
-    .select()
-    .from(orders)
-    .where(eq(orders.diningSessionId, sessionId));
+export async function generateBillForSession(sessionId: number) {
+  const ordersData = await db.select().from(orders).where(eq(orders.diningSessionId, sessionId));
   if (ordersData.length === 0) throw new Error("No orders found for this session");
 
   const orderIds = ordersData.map((o) => o.id);
@@ -84,10 +82,7 @@ export async function generateBillForSession(sessionId: number, force = false) {
   const serviceCharge = +(subtotal * 0.07).toFixed(2);
   const total = +(subtotal + serviceCharge).toFixed(2);
 
-  const existing = await db
-    .select()
-    .from(bills)
-    .where(eq(bills.diningSessionId, sessionId));
+  const existing = await db.select().from(bills).where(eq(bills.diningSessionId, sessionId));
 
   let bill;
   if (existing.length > 0) {
@@ -102,7 +97,6 @@ export async function generateBillForSession(sessionId: number, force = false) {
       })
       .where(eq(bills.diningSessionId, sessionId))
       .returning();
-
     console.log(`♻️ Updated existing bill for session ${sessionId}`);
   } else {
     [bill] = await db
@@ -116,29 +110,72 @@ export async function generateBillForSession(sessionId: number, force = false) {
         status: "UNPAID",
       })
       .returning();
-
     console.log(`🧾 Created new bill for session ${sessionId}`);
   }
 
-  // ✅ recalculated splits
-  await calculateSplitForSession(sessionId, bill.id, serviceCharge);
-
-  const splits = await getSplit(bill.id);
-  return { ...bill, items, splits };
+  // ❌ ยังไม่ split, ยังไม่สร้าง QR
+  return { ...bill, items, message: "✅ Bill created (no split / QR yet)" };
 }
 
 /**
- * คำนวณ split สำหรับบิลรวมทั้ง session
+ * ✅ Pay Entire Bill → สร้าง QR รวมยอดทั้งหมดของโต๊ะ
  */
+export async function createGroupPaymentQr(sessionId: number) {
+  const [bill] = await db.select().from(bills).where(eq(bills.diningSessionId, sessionId));
+  if (!bill) throw new Error("Bill not found for this session");
+
+  const qrPayload = `PAY:${bill.total}`;
+  const qrBase64 = await QRCode.toDataURL(qrPayload);
+
+  // จะไม่บันทึก qr ลง db ก็ได้ ถ้ายังไม่เพิ่ม column
+  return { ...bill, qrCode: qrBase64, message: "✅ Group QR generated" };
+}
+
+/**
+ * ✅ Split Bill → คำนวณแยกยอด และสร้าง QR ของแต่ละคน
+ */
+export async function splitBillForSession(sessionId: number) {
+  const [bill] = await db.select().from(bills).where(eq(bills.diningSessionId, sessionId));
+  if (!bill) throw new Error("Bill not found for this session");
+
+  // ล้างของเก่าก่อน
+  await db.delete(billSplits).where(eq(billSplits.billId, bill.id));
+  await calculateSplitForSession(sessionId, bill.id, bill.serviceCharge ?? 0);
+
+  const splits = await db
+    .select({
+      memberId: billSplits.memberId,
+      amount: billSplits.amount,
+      name: group_members.name,
+    })
+    .from(billSplits)
+    .innerJoin(group_members, eq(group_members.id, billSplits.memberId))
+    .where(eq(billSplits.billId, bill.id));
+
+  const withQr = await Promise.all(
+    splits.map(async (s) => ({
+      ...s,
+      qrCode: await QRCode.toDataURL(`PAY:${s.amount}`),
+    }))
+  );
+
+  console.log(`✅ Split bill and generated QR for each member in session ${sessionId}`);
+
+  return { 
+    billId: bill.id, 
+    sessionId: bill.diningSessionId, 
+    splits: withQr, 
+    message: "✅ Split bill with QR created" 
+  };
+}
+
+
 export async function calculateSplitForSession(
   sessionId: number,
   billId: number,
   serviceChargeOverride?: number
 ) {
-  const ordersData = await db
-    .select()
-    .from(orders)
-    .where(eq(orders.diningSessionId, sessionId));
+  const ordersData = await db.select().from(orders).where(eq(orders.diningSessionId, sessionId));
   const orderIds = ordersData.map((o) => o.id);
 
   const items = await db
@@ -161,48 +198,29 @@ export async function calculateSplitForSession(
   const memberCount = Object.keys(memberTotals).length || 1;
   const servicePerMember = +(serviceCharge / memberCount).toFixed(2);
 
-  for (const [memberId, amount] of Object.entries(memberTotals)) {
-    const [existing] = await db
-      .select()
-      .from(billSplits)
-      .where(
-        and(eq(billSplits.billId, billId), eq(billSplits.memberId, Number(memberId)))
-      );
+  await db.delete(billSplits).where(eq(billSplits.billId, billId));
 
-    if (existing) {
-      await db
-        .update(billSplits)
-        .set({
-          amount: +(amount + servicePerMember).toFixed(2),
-          paid: false,
-        })
-        .where(
-          and(eq(billSplits.billId, billId), eq(billSplits.memberId, Number(memberId)))
-        );
-    } else {
-      await db.insert(billSplits).values({
-        billId,
-        memberId: Number(memberId),
-        amount: +(amount + servicePerMember).toFixed(2),
-        paid: false,
-      });
-    }
+  for (const [memberId, amount] of Object.entries(memberTotals)) {
+    await db.insert(billSplits).values({
+      billId,
+      memberId: Number(memberId),
+      amount: +(amount + servicePerMember).toFixed(2),
+      paid: false,
+    });
   }
 
-  console.log(` Splits recalculated for bill ${billId}`);
+  console.log(`✅ Splits created for bill ${billId}:`, memberTotals);
   return { status: "recalculated", billId };
 }
 
 /**
- * คำนวณ split สำหรับบิล order เดียว
+ * ✅ คำนวณ split สำหรับบิล order เดียว
  */
-export async function calculateSplit(
-  orderId: number,
-  billId: number,
-  serviceChargeOverride?: number
-) {
+export async function calculateSplit(orderId: number, billId: number, serviceChargeOverride?: number) {
   const [bill] = await db.select().from(bills).where(eq(bills.id, billId));
   if (!bill) throw new Error("Bill not found");
+
+  await db.delete(billSplits).where(eq(billSplits.billId, billId));
 
   const items = await db
     .select({
@@ -225,42 +243,30 @@ export async function calculateSplit(
   const servicePerMember = +(serviceCharge / memberCount).toFixed(2);
 
   for (const [memberId, amount] of Object.entries(memberTotals)) {
-    const [existing] = await db
-      .select()
-      .from(billSplits)
-      .where(
-        and(eq(billSplits.billId, billId), eq(billSplits.memberId, Number(memberId)))
-      );
-
-    if (existing) {
-      await db
-        .update(billSplits)
-        .set({
-          amount: +(amount + servicePerMember).toFixed(2),
-          paid: false,
-        })
-        .where(
-          and(eq(billSplits.billId, billId), eq(billSplits.memberId, Number(memberId)))
-        );
-    } else {
-      await db.insert(billSplits).values({
-        billId,
-        memberId: Number(memberId),
-        amount: +(amount + servicePerMember).toFixed(2),
-        paid: false,
-      });
-    }
+    await db.insert(billSplits).values({
+      billId,
+      memberId: Number(memberId),
+      amount: +(amount + servicePerMember).toFixed(2),
+      paid: false,
+    });
   }
 
-  console.log(`✅ Split recalculated for single order bill ${billId}`);
   return { status: "recalculated", billId };
 }
 
 /**
- * ดึง split ของ bill
+ * ✅ ดึง split ของ bill
  */
 export async function getSplit(billId: number) {
-  return await db
+  const [bill] = await db
+    .select({
+      id: bills.id,
+      diningSessionId: bills.diningSessionId,
+    })
+    .from(bills)
+    .where(eq(bills.id, billId));
+
+  const splits = await db
     .select({
       memberId: billSplits.memberId,
       amount: billSplits.amount,
@@ -270,8 +276,16 @@ export async function getSplit(billId: number) {
     .from(billSplits)
     .innerJoin(group_members, eq(group_members.id, billSplits.memberId))
     .where(eq(billSplits.billId, billId));
+
+  return splits.map((s) => ({
+    ...s,
+    sessionId: bill?.diningSessionId || null,
+  }));
 }
 
+/**
+ * ✅ อัปเดตการชำระเงินของแต่ละคน
+ */
 export async function updatePayment(billId: number, memberId: number) {
   const [updated] = await db
     .update(billSplits)
