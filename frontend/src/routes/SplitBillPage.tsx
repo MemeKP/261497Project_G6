@@ -78,45 +78,44 @@ const SplitBillPage = () => {
 
           {/* List */}
           <div className="w-full max-w-md flex flex-col gap-4">
-  {splits.map((split) => (
-    <div
-      key={split.memberId}
-      onClick={() => navigate(`/payment/${billId}/${split.memberId}`)}
-      className={`flex justify-between items-center px-6 py-4 rounded-full cursor-pointer text-lg font-[Gantari] transition relative
-        ${
-          split.paid
-            ? "bg-white text-black border-2 border-green-600 shadow-[0_0_10px_rgba(74,222,128,0.3)]"
-            : "bg-black/80 text-white border border-white/30 hover:bg-black/60"
-        }`}
-    >
-      <span className="font-semibold">{split.name}</span>
-
-      {/* จำนวนเงิน + ติ๊กถูก */}
-      <span className="flex items-center gap-2">
-        {split.amount} ฿
-        {split.paid && (
-          <span className="w-5 h-5 bg-green-600 text-white rounded-full flex items-center justify-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-3 h-3"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          {splits.map((split) => (
+            <div
+              key={split.memberId}
+              onClick={() => navigate(`/payment/${billId}/${split.memberId}`)}
+              className={`flex justify-between items-center px-6 py-4 rounded-full cursor-pointer text-lg font-[Gantari] transition relative
+                ${
+                  split.paid
+                    ? "bg-white text-black border-2 border-green-600 shadow-[0_0_10px_rgba(74,222,128,0.3)]"
+                    : "bg-black/80 text-white border border-white/30 hover:bg-black/60"
+                }`}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={3}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </span>
-        )}
-      </span>
-    </div>
-  ))}
-</div>
+              <span className="font-semibold">{split.name}</span>
 
+              {/* PAID */}
+              <span className="flex items-center gap-2">
+                {split.amount} ฿
+                {split.paid && (
+                  <span className="w-5 h-5 bg-green-600 text-white rounded-full flex items-center justify-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </span>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
         </div>
       </div>
     </>
