@@ -17,4 +17,6 @@ router.get("/bills/:id/splits", billSplitController.getSplit);
 router.patch("/bills/:id/splits/:memberId/paid", billSplitController.markPaid);
 // ในไม่สร้างซ้ำหลังกด billsplit อีก
 router.get("/sessions/:id/check-bill", billSplitController.checkExistingBill); // เปลี่ยนจาก orders เป็น sessions
+// ลองเพิ่มาใช้แทนตอนดูราคาว่ากินไปเท่าไหร่แล้ว (ไม่สร้างบิลจริง)
+router.get("/sessions/:id/bill-preview", billSplitController.getBillPreview);
 export default router;

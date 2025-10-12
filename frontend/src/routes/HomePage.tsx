@@ -10,6 +10,7 @@ import PageAnimation from "../common/PageAnimetion";
 import { useEffect } from "react";
 import axios from "axios";
 import Search from "../components/Search";
+import { CartProvider } from "../context/CartContext";
 
 const HomePage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -21,15 +22,17 @@ const HomePage = () => {
         .catch((err) => console.error(err));
     }
   }, [sessionId]);
-
+  console.log('AppWrapper - sessionId:', sessionId);
   return (
     <>
-      <Navbar />
+      <CartProvider sessionId={sessionId}>
+        <Navbar />
+    </CartProvider>
       <div className="px-5">
         <section>
           <div className="w-full bg-[#1B1C20] text-white font-[Epilogue]">
             {/* SEARCH */}
-            <Search/>
+            <Search />
             {/* <div className="flex justify-center pt-2">
               <div className="flex items-center bg-zinc-300 rounded-full px-3 py-2 text-sm text-[#6D6D71] w-80">
                 <LuSearch className="mr-2 text-lg" />
@@ -64,7 +67,7 @@ const HomePage = () => {
                       A luxurious bowl featuring marinated beef, soft-boiled
                       egg.
                     </div>
-                    <Link  to={`/details/${sessionId}/4`}>
+                    <Link to={`/details/${sessionId}/4`}>
                       <FaArrowRightLong className="absolute bottom-2 right-2 w-4 h-4 text-white cursor-pointer" />
                     </Link>
                   </div>

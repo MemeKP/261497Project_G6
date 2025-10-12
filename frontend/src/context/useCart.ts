@@ -1,6 +1,7 @@
 import { useContext } from "react";
 import { CartContext } from "./CartContext";
 
+// Hook สำหรับใช้ context
 export const useCart = () => {
   const context = useContext(CartContext);
   if (context === undefined) {

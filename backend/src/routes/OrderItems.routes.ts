@@ -9,17 +9,14 @@ router.post("/", orderItemController.createOrderItem);     // POST /order-items
 router.patch("/:id", orderItemController.updateOrderItem); // PATCH /order-items/:id
 // Delete order item
 router.delete("/:id", orderItemController.deleteOrderItem); // DELETE /order-items/:id
-// router.get('/count', orderItemController.getCartItemCount)
+router.get('/count', orderItemController.getCartItemCount)
 
 // Get order items by orderId (cart)
 router.get("/orders/:orderId/items", orderItemController.getOrderItems);
-
 // Get order items by sessionId (order status page)
 router.get("/sessions/:sessionId/items", orderItemController.getOrderItemsBySession);
-
 // Update status ของ order item (pending → preparing → served)
 router.patch("/:id/status", orderItemController.updateOrderItemStatus);
-
 // Delete order item
 router.delete("/:id", orderItemController.deleteOrderItem);
 

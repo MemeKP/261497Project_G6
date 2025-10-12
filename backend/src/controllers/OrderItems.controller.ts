@@ -1,3 +1,6 @@
+import { dbClient } from "@db/client.js";
+import { orderItems, orders } from "@db/schema.js";
+import { sql } from "drizzle-orm";
 import type { Request, Response } from "express";
 import * as orderItemService from "src/services/OrderItems-services.js";
 
@@ -129,6 +132,43 @@ export async function deleteOrderItem(req: Request, res: Response) {
     res.status(500).json({ error: err.message });
   }
 }
+
+ export async function getCartItemCount(req: Request, res: Response) {
+    try {
+      const { orderId } = req.query;
+
+      if (!orderId) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Order ID is required' 
+        });
+      }
+      const result = await dbClient
+        .select({
+          totalCount: sql<number>`sum(${orderItems.quantity})`
+        })
+        .from(orderItems)
+        .innerJoin(orders, sql`${orders.id} = ${orderItems.orderId}`)
+        .where(sql`
+          ${orders.id} = ${Number(orderId)} 
+          AND ${orders.status} = 'PENDING'
+        `);
+
+      const count = result[0]?.totalCount || 0;
+
+      res.status(200).json({
+        success: true,
+        count: Number(count)
+      });
+
+    } catch (error) {
+      console.error('Error getting cart item count:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Internal server error' 
+      });
+    }
+  }
 
 /*
 export async function getCartItemCount(req: Request, res: Response) {

@@ -22,7 +22,7 @@ import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./context/AuthProvider.tsx";
 import PaymentPage from "./routes/PaymentPage.tsx";
 import SplitBillPage from "./routes/SplitBillPage.tsx";
-import { CartProvider } from "./context/CartContext.tsx";
+import { SessionLayout } from "./layout/SessionLayout.tsx";
 
 const queryClient = new QueryClient();
 
@@ -36,19 +36,35 @@ const router = createBrowserRouter([
       },
       {
         path: "/homepage/:sessionId",
-        element: <HomePage />,
+        element: (
+          <SessionLayout>
+            <HomePage />
+          </SessionLayout>
+        ),
       },
       {
         path: "/menu/:sessionId",
-        element: <MenuPage />,
+        element: (
+          <SessionLayout>
+            <MenuPage />
+          </SessionLayout>
+        ),
       },
       {
         path: "/details/:sessionId/:menuId",
-        element: <DetailsPage />,
+        element: (
+          <SessionLayout>
+            <DetailsPage />
+          </SessionLayout>
+        ),
       },
       {
         path: "/addmember/:sessionId",
-        element: <AddMemberPage />,
+        element: (
+          <SessionLayout>
+            <AddMemberPage />
+          </SessionLayout>
+        ),
       },
       {
         path: "/qr-display/:sessionId",
@@ -68,13 +84,17 @@ const router = createBrowserRouter([
       },
       {
         path: "/orderstatus/:sessionId",
-        element: <OrderStatusPage />,
+        element: (
+          <SessionLayout>
+            <OrderStatusPage />
+          </SessionLayout>
+        ),
       },
       {
         path: "/billpage/:sessionId",
         element: <BillPage />,
       },
-            {
+      {
         path: "/splitbill/:billId",
         element: <SplitBillPage />,
       },
@@ -85,7 +105,7 @@ const router = createBrowserRouter([
       {
         path: "/payment/:billId/:memberId",
         element: <PaymentPage />,
-      },     
+      },
       {
         path: "/admin/dashboard",
         element: (
@@ -115,13 +135,11 @@ const router = createBrowserRouter([
 ]);
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode><AuthProvider>
-    <QueryClientProvider client={queryClient}>
-      
-        <CartProvider>
-      <RouterProvider router={router} />
-      </CartProvider>
-      
-    </QueryClientProvider></AuthProvider>
+  <StrictMode>
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </AuthProvider>
   </StrictMode>
 );

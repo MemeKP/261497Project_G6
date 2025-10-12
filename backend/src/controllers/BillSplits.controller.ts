@@ -143,3 +143,19 @@ export async function checkExistingBill(req: Request, res: Response) {
     res.status(500).json({ error: err.message || "Failed to check bill" });
   }
 }
+
+export async function getBillPreview(req: Request, res: Response) {
+  try {
+    const sessionId = Number(req.params.id);
+    if (isNaN(sessionId)) {
+      return res.status(400).json({ error: "Invalid session id" });
+    }
+
+    // คำนวณราคาจาก orders โดยไม่สร้าง bill ใน database
+    const preview = await billSplitService.calculateBillPreview(sessionId);
+    res.json(preview);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to calculate bill preview" });
+  }
+}
+

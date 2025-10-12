@@ -3,7 +3,7 @@ import { AuthContext } from "./AuthContext";
 
 const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // ✅ เพิ่ม loading state
+  const [isLoading, setIsLoading] = useState(true); 
  
   useEffect(() => {
     const checkSession = async () => {
@@ -14,33 +14,32 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
           credentials: "include", 
         });
 
-        console.log('🔍 Auth check response status:', res.status);
+        // console.log('🔍 Auth check response status:', res.status);
 
         if (res.ok) {
           const data = await res.json();
-          console.log('🔍 Auth check data:', data);
           if (data.admin) {
-            console.log("✅ ADMIN:", data.admin);
+            // console.log("✅ ADMIN:", data.admin);
             setIsAuthenticated(true);  
           } else {
-            console.log("❌ No admin in response");
+            // console.log("❌ No admin in response");
             setIsAuthenticated(false);
           }
         } else {
           if (res.status === 401) {
-            console.log('🔐 Not authenticated (401)');
+            // console.log('🔐 Not authenticated (401)');
             setIsAuthenticated(false);
           } else {
             const errorData = await res.json().catch(() => ({}));
-            console.error('❌ Auth check failed:', res.status, errorData);
+            // console.error('Auth check failed:', res.status, errorData);
             setIsAuthenticated(false);
           }
         }
       } catch (err) {
-        console.log("❌ Network error in Auth Provider", err);
+        console.log("Network error in Auth Provider", err);
         setIsAuthenticated(false);
       } finally {
-        setIsLoading(false); // ✅ ตั้งค่า loading เป็น false
+        setIsLoading(false); 
       }
     };
 

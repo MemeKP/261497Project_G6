@@ -37,7 +37,7 @@ const allowedStatus = [
 
 // Allowed status values
 // const allowedStatus = ["PENDING", "PREPARING", "READY_TO_SERVE", "CANCELLED", "COMPLETE"] as const;
-
+/*
 export async function createOrder(req: Request, res: Response) {
   try {
     const { diningSessionId, items } = req.body;
@@ -67,6 +67,38 @@ export async function createOrder(req: Request, res: Response) {
 
     res.status(201).json(order);
   } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+}*/
+// controllers/orderController.ts
+export async function createOrder(req: Request, res: Response) {
+  try {
+    const { diningSessionId, tableId, status = "PENDING" } = req.body;
+
+    // Validation
+    if (!diningSessionId || !tableId) {
+      return res.status(400).json({ error: "diningSessionId and tableId are required" });
+    }
+
+    // ตรวจสอบว่า session นี้มีอยู่จริง
+    const [session] = await dbClient.select().from(diningSessions).where(eq(diningSessions.id, Number(diningSessionId)));
+    if (!session) {
+      return res.status(404).json({ error: "Dining session not found" });
+    }
+
+    // สร้าง order ใหม่
+    const [newOrder] = await dbClient
+      .insert(orders)
+      .values({
+        tableId: Number(tableId),
+        diningSessionId: Number(diningSessionId),
+        status: status
+      })
+      .returning();
+
+    res.status(201).json(newOrder);
+  } catch (err: any) {
+    console.error('Error creating order:', err);
     res.status(500).json({ error: err.message });
   }
 }

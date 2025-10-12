@@ -308,3 +308,34 @@ export async function updatePayment(billId: number, memberId: number) {
 
   return { ...updated, allPaid };
 }
+
+export async function calculateBillPreview(sessionId: number) {
+  // ดึง orders ทั้งหมดใน session
+  const ordersData = await db.select().from(orders).where(eq(orders.diningSessionId, sessionId));
+  if (ordersData.length === 0) throw new Error("No orders found for this session");
+
+  const orderIds = ordersData.map(o => o.id);
+
+  // ดึง item ทั้งหมดใน orders
+  const items = await db
+    .select({
+      price: menuItems.price,
+      quantity: orderItems.quantity,
+    })
+    .from(orderItems)
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+    .where(inArray(orderItems.orderId, orderIds));
+
+  // คำนวณยอด
+  const subtotal = items.reduce((sum, i) => sum + i.price * (i.quantity ?? 0), 0);
+  const serviceCharge = +(subtotal * 0.07).toFixed(2);
+  const total = +(subtotal + serviceCharge).toFixed(2);
+
+  return {
+    subtotal,
+    serviceCharge,
+    total,
+    itemCount: items.length,
+    orderCount: ordersData.length
+  };
+}

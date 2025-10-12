@@ -11,11 +11,11 @@ import type { Member, SessionResponse } from "../types";
 import { useQuery } from "@tanstack/react-query";
 import IKImageWrapper from "../components/IKImageWrapper";
 import { AnimatePresence, motion } from "motion/react";
+import { useCart } from "../context/useCart";
 
 const fetchMenuById = async (menuId: string) => {
   try {
     const res = await axios.get(`/api/menu_items/${menuId}`);
-    // console.log("Fetched menu:", res.data);
     return res.data;
   } catch (error) {
     console.error("Error fetching menu:", error);
@@ -36,6 +36,8 @@ const DetailsPage = () => {
   const [selectMembers, setSelectMembers] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+  const { addToCart } = useCart();
 
   useEffect(() => {
   if (sessionId) {
@@ -43,7 +45,6 @@ const DetailsPage = () => {
       .get<SessionResponse>(`/api/dining_session/${sessionId}`)
       .then((res) => {
           const group = res.data.group;
-          // console.log(group);
           if (group && Array.isArray(group.members)) {
             setMembers(
               group.members.map((m: unknown) => {
@@ -62,10 +63,7 @@ const DetailsPage = () => {
         .catch((err) => console.error(err));
     }
   }, [sessionId]);
-
-  
-  // console.log("menuId:", menuId);
-  const {
+    const {
     data: menu,
     isLoading,
     error,
@@ -95,57 +93,41 @@ const DetailsPage = () => {
     return (parseFloat(menu.price) * quantity).toFixed(0);
   };
 
-  const handleAddToCart = async () => {
+   const handleAddToCart = async () => {
     if (selectMembers.length === 0) {
       alert("Please select your member for this menu");
       return;
     }
+    if (!sessionId) {
+      alert("No session found. Please return to the main page.");
+      return;
+    }
+    setIsAdding(true); // อันนี้เปลี่ยนมาใช้จาก cartContext
     try {
-      // สร้างรายการ items ที่จะเพิ่ม
-      const items = selectMembers.map(memberId => ({
-        menuId: menu.id,
-        qty: quantity,
-        note,
-        memberId,
-      }));
-
-      // 1. ตรวจสอบว่ามี order เดิมไหม
-      let existingOrder = null;
-      try {
-        const res = await axios.get(`/api/orders/session/${sessionId}`);
-        existingOrder = res.data;
-      } catch (err) {
-        console.warn("No existing order found, will create new one");
+      // เพิ่มสินค้าสำหรับแต่ละ member ที่เลือก
+      for (const memberId of selectMembers) {
+        await addToCart(
+          menu.id,// menuItemId
+          parseInt(memberId), // memberId
+          quantity, // quantity
+          note // note
+        );
       }
 
-      // 2. ถ้ามี order เดิม → เพิ่มเข้า order_items เดิม
-      if (existingOrder && existingOrder.id) {
-        for (const item of items) {
-          await axios.post("/api/order-items", {
-            orderId: existingOrder.id,
-            menu_item_id: item.menuId,
-            member_id: item.memberId,
-            quantity: item.qty,
-            note: item.note,
-          });
-        }
-        alert(`✅ Added ${menu.name} to existing order.`);
-        return;
-      }
-
-      // 3. ถ้ายังไม่มี order → ค่อยสร้าง order ใหม่
-      const createOrderRes = await axios.post("/api/orders", {
-        diningSessionId: sessionId,
-        items,
-      });
-
-      alert(`✅ New order created with ${menu.name}!`);
+      alert(`Added ${menu.name} to cart!`);
+      
+      // reset
+      setSelectMembers([]);
+      setQuantity(1);
+      setNote("");
+      
     } catch (error: any) {
-      console.error("Error adding to cart:", error.response?.data || error);
-      alert("❌ Failed to add to cart. Please try again.");
+      console.error("Error adding to cart:", error);
+      alert("Failed to add to cart. Please try again.");
+    } finally {
+      setIsAdding(false);
     }
   };
-
 
   return (
     <div className="relative min-h-screen overflow-hidden flex flex-col">
@@ -328,3 +310,54 @@ const DetailsPage = () => {
 };
 
 export default DetailsPage;
+
+/*const handleAddToCart = async () => {
+    if (selectMembers.length === 0) {
+      alert("Please select your member for this menu");
+      return;
+    }
+    try {
+      // สร้างรายการ items ที่จะเพิ่ม
+      const items = selectMembers.map(memberId => ({
+        menuId: menu.id,
+        qty: quantity,
+        note,
+        memberId,
+      }));
+
+      // 1. ตรวจสอบว่ามี order เดิมไหม
+      let existingOrder = null;
+      try {
+        const res = await axios.get(`/api/orders/session/${sessionId}`);
+        existingOrder = res.data;
+      } catch (err) {
+        console.warn("No existing order found, will create new one");
+      }
+
+      // 2. ถ้ามี order เดิม → เพิ่มเข้า order_items เดิม
+      if (existingOrder && existingOrder.id) {
+        for (const item of items) {
+          await axios.post("/api/order-items", {
+            orderId: existingOrder.id,
+            menu_item_id: item.menuId,
+            member_id: item.memberId,
+            quantity: item.qty,
+            note: item.note,
+          });
+        }
+        alert(`✅ Added ${menu.name} to existing order.`);
+        return;
+      }
+
+      // 3. ถ้ายังไม่มี order → ค่อยสร้าง order ใหม่
+      const createOrderRes = await axios.post("/api/orders", {
+        diningSessionId: sessionId,
+        items,
+      });
+
+      alert(`✅ New order created with ${menu.name}!`);
+    } catch (error: any) {
+      console.error("Error adding to cart:", error.response?.data || error);
+      alert("❌ Failed to add to cart. Please try again.");
+    }
+  };*/
