@@ -4,18 +4,22 @@ import { payments, billSplits, bills } from "db/schema.js";
 import { eq, and } from "drizzle-orm";
 import QRCode from "qrcode";
 
+
+/** ใช้ยอดที่คำนวณและบันทึกไว้แล้วในตาราง bills */
 async function calculateBillTotal(billId: number): Promise<number> {
   const [bill] = await db.select().from(bills).where(eq(bills.id, billId));
   if (!bill) throw new Error("Bill not found");
-  return Number(bill.total); 
+  return Number(bill.total); // รวม service แล้ว ตาม flow generateBill
 }
 
+/** ใช้ยอดที่คำนวณและบันทึกไว้แล้วในตาราง bill_splits */
 async function calculateSplitTotal(billSplitId: number): Promise<number> {
   const [split] = await db.select().from(billSplits).where(eq(billSplits.id, billSplitId));
   if (!split) throw new Error("Bill split not found");
-  return Number(split.amount); 
+  return Number(split.amount); // เป็นยอดสุทธิของ member นั้นแล้ว
 }
 
+/** สร้าง PromptPay QR จาก bill ทั้งบิลหรือจากบิลสปลิต */ 
 export async function createQrPayment({
   billId,
   memberId,
@@ -23,13 +27,14 @@ export async function createQrPayment({
   billId: number;
   memberId?: number;
 }) {
-  const promptPayId = process.env.PROMPTPAY_ID!;
+  const promptPayId = process.env.PROMPTPAY_ID! || '0903165960';
   if (!promptPayId) throw new Error("PROMPTPAY_ID not configured in .env");
 
   let amount: number;
   let billSplitId: number | undefined;
 
   if (memberId) {
+    //  หา split ตาม billId + memberId
     const [split] = await db
       .select()
       .from(billSplits)
@@ -38,11 +43,22 @@ export async function createQrPayment({
     if (!split) throw new Error("Bill split not found for this member");
     amount = Number(split.amount);
     billSplitId = split.id;
-  } else {
+    } else {
+    // ✅ จ่ายเต็มโต๊ะ (ไม่มี memberId)
     const [bill] = await db.select().from(bills).where(eq(bills.id, billId));
     if (!bill) throw new Error("Bill not found");
+
     amount = Number(bill.total);
+
+    // ✅ อัปเดตสถานะบิลเป็น PENDING ทันที (ให้ฝั่ง Admin เห็น)
+    await db
+      .update(bills)
+      .set({ status: "PENDING" })
+      .where(eq(bills.id, billId));
   }
+
+
+  //  สร้าง PromptPay QR
   const payload = generatePayload(promptPayId, { amount });
   const qrCode = await QRCode.toDataURL(payload);
 
@@ -70,6 +86,8 @@ export async function createQrPayment({
   };
 }
 
+
+/** กดยืนยันว่าจ่ายแล้ว (manual/admin หรือ mock callback) */
 export async function confirmPayment(paymentId: number) {
   const [updated] = await db
     .update(payments)
@@ -79,6 +97,7 @@ export async function confirmPayment(paymentId: number) {
 
   if (!updated) return null;
 
+  // ถ้าเป็นการจ่ายแบบแยก ให้ติ๊ก paid ใน bill_splits ด้วย
   if (updated.billSplitId && updated.memberId) {
     await db
       .update(billSplits)
@@ -91,6 +110,7 @@ export async function confirmPayment(paymentId: number) {
       );
   }
 
+  // ถ้าทุก split ของบิลนี้จ่ายครบแล้ว → ปิดบิลเป็น PAID
   const remaining = await db
     .select()
     .from(billSplits)
@@ -103,43 +123,7 @@ export async function confirmPayment(paymentId: number) {
   return updated;
 }
 
+/** mock callback: ใช้ตอนทดสอบแทน callback จริงจากธนาคาร */
 export async function mockCallback(paymentId: number) {
   return confirmPayment(paymentId);
-}
-
-export async function getPaymentStatus(billId: number, memberId?: number) {
-  if (memberId) {
-    const [split] = await db
-      .select({
-        id: billSplits.id,
-        billId: billSplits.billId,
-        memberId: billSplits.memberId,
-        paid: billSplits.paid,
-      })
-      .from(billSplits)
-      .where(and(eq(billSplits.billId, billId), eq(billSplits.memberId, memberId)));
-
-    if (!split) {
-      throw new Error("Bill split not found for this member");
-    }
-
-    return {
-      success: true,
-      type: "SPLIT",
-      status: split.paid ? "PAID" : "UNPAID",
-      billId: split.billId,
-      memberId: split.memberId,
-    };
-  }
-
-  const [bill] = await db.select().from(bills).where(eq(bills.id, billId));
-  if (!bill) throw new Error("Bill not found");
-
-  return {
-    success: true,
-    type: "FULL",
-    status: bill.status ?? "UNPAID",
-    billId: bill.id,
-    total: bill.total,
-  };
 }

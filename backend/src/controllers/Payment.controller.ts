@@ -44,6 +44,7 @@ export async function confirmPayment(req: Request, res: Response) {
   }
 }
 
+// Mock callback
 export async function mockCallback(req: Request, res: Response) {
   try {
     const { paymentId } = req.body;
@@ -60,27 +61,70 @@ export async function mockCallback(req: Request, res: Response) {
   }
 }
 
-export async function getPaymentStatus(req: Request, res: Response) {
+export async function getPaymentStatus(req: Request, res: Response, next: NextFunction) {
   try {
     const { billId } = req.params;
     const { memberId } = req.query;
 
-    if (!billId || isNaN(Number(billId))) {
-      return res.status(400).json({ error: "Invalid billId" });
+    if (!billId) {
+      return res.status(400).json({
+        error: "Bill ID is required"
+      });
     }
 
-    const status = await paymentService.getPaymentStatus(
-      Number(billId),
-      memberId ? Number(memberId) : undefined
-    );
+    // แปลง billId เป็น number
+    const billIdNum = parseInt(billId as string);
+    const memberIdNum = memberId ? parseInt(memberId as string) : null;
 
-    res.json(status);
-  } catch (err: any) {
-    console.error("getPaymentStatus error:", err.message);
-    res.status(500).json({ error: err.message });
+    let payment;
+
+    if (memberIdNum) {
+      // กรณีจ่ายแบบ split - ใช้ Drizzle query
+      const result = await dbClient
+        .select()
+        .from(payments)
+        .where(
+          and(
+            eq(payments.billId, billIdNum),
+            eq(payments.memberId, memberIdNum)
+          )
+        )
+        .orderBy(desc(payments.paidAt))
+        .limit(1);
+
+      payment = result[0];
+    } else {
+      // กรณีจ่ายทั้งบิล
+      const result = await dbClient
+        .select()
+        .from(payments)
+        .where(eq(payments.billId, billIdNum))
+        .orderBy(desc(payments.paidAt))
+        .limit(1);
+
+      payment = result[0];
+    }
+
+    if (!payment) {
+      return res.status(404).json({
+        error: "Payment not found"
+      });
+    }
+
+    res.json({
+      status: payment.status,
+      paymentId: payment.id,
+      amount: payment.amount,
+      billId: payment.billId,
+      memberId: payment.memberId,
+      billSplitId: payment.billSplitId,
+    });
+
+  } catch (error) {
+    console.error("Error fetching payment status:", error);
+    next(error);
   }
 }
-
 
 // export const getPaymentsByTable = async (req: Request, res: Response, next: NextFunction) => {
 //   const { tableId } = req.query;
@@ -165,7 +209,7 @@ export async function getPaymentStatus(req: Request, res: Response) {
 
 //       // กำหนดสถานะ: ถ้ามี payment และ status เป็น PAID หรือ billSplit paid เป็น true = Paid
 //       const isPaid = split.paid || relatedPayment?.status === 'PAID';
-
+      
 //       return {
 //         billId: split.billId,
 //         splitId: split.splitId,
@@ -174,7 +218,7 @@ export async function getPaymentStatus(req: Request, res: Response) {
 //         // role: split.memberRole,
 //         amount: Number(split.amount),
 //         status: isPaid ? 'PAID' : 'PENDING',
-//         date: relatedPayment?.paidAt || split.billCreatedAt.toISOString(),
+//         date: relatedPayment?.paidAt || split.billCreatedAt?.toISOString() || null,
 //         method: relatedPayment?.method || 'QR',
 //         paymentId: relatedPayment?.id,
 //       };
@@ -191,6 +235,244 @@ export async function getPaymentStatus(req: Request, res: Response) {
 //   }
 // };
 
+export const getPaymentsByTable = async (req: Request, res: Response, next: NextFunction) => {
+  const { tableId } = req.query;
+
+  if (!tableId) {
+    return res.status(400).json({
+      success: false,
+      error: "tableId is required",
+    });
+  }
+
+  try {
+    const tableIdNum = parseInt(tableId as string);
+
+    // 1. ดึง dining session ที่ active ของโต๊ะนี้
+    const diningSessionResult = await dbClient
+      .select()
+      .from(diningSessions)
+      .where(
+        and(
+          eq(diningSessions.tableId, tableIdNum),
+          eq(diningSessions.status, "ACTIVE")
+        )
+      )
+      .limit(1);
+
+    if (diningSessionResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No active dining session found for this table",
+      });
+    }
+
+    const diningSession = diningSessionResult[0];
+    const diningSessionId = diningSession.id;
+
+    // 2. ดึง bills ของ session นี้
+    const billsResult = await dbClient
+      .select()
+      .from(bills)
+      .where(eq(bills.diningSessionId, diningSessionId));
+
+    if (billsResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No bills found for this dining session",
+      });
+    }
+
+    const billIds = billsResult.map((bill) => bill.id);
+
+    // 3. ดึง bill splits และ member information
+    const splitsResult = await dbClient
+      .select({
+        splitId: billSplits.id,
+        billId: billSplits.billId,
+        memberId: billSplits.memberId,
+        amount: billSplits.amount,
+        paid: billSplits.paid,
+        memberName: group_members.name,
+        billCreatedAt: bills.createdAt,
+      })
+      .from(billSplits)
+      .innerJoin(bills, eq(billSplits.billId, bills.id))
+      .innerJoin(group_members, eq(billSplits.memberId, group_members.id))
+      .where(inArray(billSplits.billId, billIds));
+
+    // 4. ดึง payment information
+    const paymentsResult = await dbClient
+      .select()
+      .from(payments)
+      .where(inArray(payments.billId, billIds));
+
+    // 5. รวมข้อมูล SPLIT BILL
+    const formattedPayments = splitsResult.map((split) => {
+      const relatedPayment = paymentsResult.find(
+        (p) =>
+          p.billSplitId === split.splitId ||
+          (p.billId === split.billId && p.memberId === split.memberId)
+      );
+
+      const isPaid = split.paid || relatedPayment?.status === "PAID";
+
+      return {
+        billId: split.billId,
+        splitId: split.splitId,
+        memberId: split.memberId,
+        name: split.memberName,
+        amount: Number(split.amount),
+        status: isPaid ? "PAID" : "PENDING",
+        date:
+          relatedPayment?.paidAt ||
+          split.billCreatedAt?.toISOString() ||
+          null,
+        method: relatedPayment?.method || "QR",
+        paymentId: relatedPayment?.id,
+        role: "Member",
+      };
+    });
+
+    // ✅ 6. เพิ่มกรณีจ่ายทั้งโต๊ะ (ไม่มี splits)
+    const splitBillIds = new Set(splitsResult.map((s) => s.billId));
+
+    const entireTablePayments = billsResult
+      // ✅ เงื่อนไขเพิ่ม: ต้องไม่ใช่บิล UNPAID
+      .filter((bill) => !splitBillIds.has(bill.id) && bill.status !== "UNPAID")
+      .map((bill) => ({
+        billId: bill.id,
+        splitId: 0,
+        memberId: null,
+        name: "Entire Table",
+        amount: Number(bill.total),
+        status: bill.status === "PAID" ? "PAID" : "PENDING",
+        date: bill.createdAt?.toISOString() || new Date().toISOString(),
+        method: "QR",
+        paymentId: null,
+        role: "Group",
+      }));
+
+    // ✅ 7. รวมทั้งหมด
+    const allPayments = [...formattedPayments, ...entireTablePayments];
+
+    return res.json(allPayments);
+  } catch (err) {
+    console.error("Error fetching payments by table:", err);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
+  }
+};
+
+
+// export const togglePaymentStatus = async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const { billId, splitId } = req.params;
+//     const { status } = req.body;
+
+//     const billIdNum = parseInt(billId);
+//     const splitIdNum = parseInt(splitId);
+
+//     // 1. อัพเดต bill_splits.paid
+//     const [updatedSplit] = await dbClient
+//       .update(billSplits)
+//       .set({ 
+//         paid: status === 'PAID' ? true : false
+//       })
+//       .where(
+//         and(
+//           eq(billSplits.id, splitIdNum),
+//           eq(billSplits.billId, billIdNum)
+//         )
+//       )
+//       .returning();
+
+//     if (!updatedSplit) {
+//       return res.status(404).json({
+//         success: false,
+//         error: "Bill split not found"
+//       });
+//     }
+
+//     // 2. อัพเดต payments.status (ถ้ามี payment record)
+//     let updatedPayment = null;
+//     const existingPayment = await dbClient
+//       .select()
+//       .from(payments)
+//       .where(
+//         and(
+//           eq(payments.billSplitId, splitIdNum),
+//           eq(payments.billId, billIdNum)
+//         )
+//       )
+//       .limit(1);
+
+//     if (existingPayment.length > 0) {
+//       [updatedPayment] = await dbClient
+//         .update(payments)
+//         .set({
+//           status: status,
+//           paidAt: status === 'PAID' ? new Date() : null
+//         })
+//         .where(eq(payments.id, existingPayment[0].id))
+//         .returning();
+//     } else {
+//       // สร้าง payment record ใหม่ถ้ายังไม่มี
+//       [updatedPayment] = await dbClient
+//         .insert(payments)
+//         .values({
+//           billId: billIdNum,
+//           billSplitId: splitIdNum,
+//           memberId: updatedSplit.memberId,
+//           method: 'MANUAL', // Admin manually confirmed
+//           amount: updatedSplit.amount,
+//           status: status,
+//           paidAt: status === 'PAID' ? new Date() : null
+//         })
+//         .returning();
+//     }
+
+//     // 3. เช็คว่าทั้ง bill จ่ายครบแล้วหรือยัง
+//     const remainingSplits = await dbClient
+//       .select()
+//       .from(billSplits)
+//       .where(
+//         and(
+//           eq(billSplits.billId, billIdNum),
+//           eq(billSplits.paid, false)
+//         )
+//       );
+
+//     // 4. ถ้าจ่ายครบแล้ว อัพเดต bill status
+//     if (remainingSplits.length === 0) {
+//       await dbClient
+//         .update(bills)
+//         .set({
+//           status: 'PAID'
+//         })
+//         .where(eq(bills.id, billIdNum));
+//     }
+
+//     res.json({
+//       success: true,
+//       data: {
+//         isPaid: updatedSplit.paid,
+//         paymentStatus: status,
+//         paidAt: updatedPayment?.paidAt
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error("Error toggling payment status:", error);
+//     res.status(500).json({
+//       success: false,
+//       error: "Internal server error"
+//     });
+//   }
+// };
+
 export const togglePaymentStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { billId, splitId } = req.params;
@@ -199,100 +481,147 @@ export const togglePaymentStatus = async (req: Request, res: Response, next: Nex
     const billIdNum = parseInt(billId);
     const splitIdNum = parseInt(splitId);
 
-    // 1. อัพเดต bill_splits.paid
-    const [updatedSplit] = await dbClient
-      .update(billSplits)
-      .set({
-        paid: status === 'PAID' ? true : false
-      })
-      .where(
-        and(
-          eq(billSplits.id, splitIdNum),
-          eq(billSplits.billId, billIdNum)
-        )
-      )
-      .returning();
+    let updatedPayment = null;
 
-    if (!updatedSplit) {
-      return res.status(404).json({
-        success: false,
-        error: "Bill split not found"
+    // 🟢 ถ้ามี splitId => เป็น Split Bill
+    if (!isNaN(splitIdNum) && splitIdNum > 0) {
+      // 1️⃣ อัพเดต bill_splits
+      const [updatedSplit] = await dbClient
+        .update(billSplits)
+        .set({
+          paid: status === "PAID",
+        })
+        .where(and(eq(billSplits.id, splitIdNum), eq(billSplits.billId, billIdNum)))
+        .returning();
+
+      if (!updatedSplit) {
+        return res.status(404).json({
+          success: false,
+          error: "Bill split not found",
+        });
+      }
+
+      // 2️⃣ อัพเดตหรือสร้าง payment ของ split นี้
+      const existingPayment = await dbClient
+        .select()
+        .from(payments)
+        .where(and(eq(payments.billSplitId, splitIdNum), eq(payments.billId, billIdNum)))
+        .limit(1);
+
+      if (existingPayment.length > 0) {
+        [updatedPayment] = await dbClient
+          .update(payments)
+          .set({
+            status,
+            paidAt: status === "PAID" ? new Date() : null,
+          })
+          .where(eq(payments.id, existingPayment[0].id))
+          .returning();
+      } else {
+        [updatedPayment] = await dbClient
+          .insert(payments)
+          .values({
+            billId: billIdNum,
+            billSplitId: splitIdNum,
+            memberId: updatedSplit.memberId,
+            method: "MANUAL",
+            amount: Number(updatedSplit.amount ?? 0),
+            status,
+            paidAt: status === "PAID" ? new Date() : null,
+          })
+          .returning();
+      }
+
+      // 3️⃣ ตรวจว่าจ่ายครบทุกคนหรือยัง
+      const remainingSplits = await dbClient
+        .select()
+        .from(billSplits)
+        .where(and(eq(billSplits.billId, billIdNum), eq(billSplits.paid, false)));
+
+      if (remainingSplits.length === 0) {
+        await dbClient
+          .update(bills)
+          .set({ status: "PAID" })
+          .where(eq(bills.id, billIdNum));
+      }
+
+      // ✅ ส่งผลลัพธ์สำหรับ Split Bill
+      return res.json({
+        success: true,
+        data: {
+          type: "split",
+          isPaid: updatedSplit.paid,
+          paymentStatus: status,
+          paidAt: updatedPayment?.paidAt,
+        },
       });
     }
 
-    // 2. อัพเดต payments.status (ถ้ามี payment record)
-    let updatedPayment = null;
-    const existingPayment = await dbClient
-      .select()
-      .from(payments)
-      .where(
-        and(
-          eq(payments.billSplitId, splitIdNum),
-          eq(payments.billId, billIdNum)
-        )
-      )
-      .limit(1);
+    // 🔵 ถ้าไม่มี splitId => เป็น Full Bill (Entire Table)
+    else {
+      const [bill] = await dbClient
+        .select()
+        .from(bills)
+        .where(eq(bills.id, billIdNum));
 
-    if (existingPayment.length > 0) {
-      [updatedPayment] = await dbClient
-        .update(payments)
-        .set({
-          status: status,
-          paidAt: status === 'PAID' ? new Date() : null
-        })
-        .where(eq(payments.id, existingPayment[0].id))
-        .returning();
-    } else {
-      // สร้าง payment record ใหม่ถ้ายังไม่มี
-      [updatedPayment] = await dbClient
-        .insert(payments)
-        .values({
-          billId: billIdNum,
-          billSplitId: splitIdNum,
-          memberId: updatedSplit.memberId,
-          method: 'MANUAL', // Admin manually confirmed
-          amount: updatedSplit.amount,
-          status: status,
-          paidAt: status === 'PAID' ? new Date() : null
-        })
-        .returning();
-    }
+      if (!bill) {
+        return res.status(404).json({
+          success: false,
+          error: "Bill not found",
+        });
+      }
 
-    // 3. เช็คว่าทั้ง bill จ่ายครบแล้วหรือยัง
-    const remainingSplits = await dbClient
-      .select()
-      .from(billSplits)
-      .where(
-        and(
-          eq(billSplits.billId, billIdNum),
-          eq(billSplits.paid, false)
-        )
-      );
+      // อัปเดตหรือสร้าง payment สำหรับทั้งโต๊ะ
+      const existingPayment = await dbClient
+        .select()
+        .from(payments)
+        .where(eq(payments.billId, billIdNum))
+        .limit(1);
 
-    // 4. ถ้าจ่ายครบแล้ว อัพเดต bill status
-    if (remainingSplits.length === 0) {
+      if (existingPayment.length > 0) {
+        [updatedPayment] = await dbClient
+          .update(payments)
+          .set({
+            status,
+            paidAt: status === "PAID" ? new Date() : null,
+          })
+          .where(eq(payments.id, existingPayment[0].id))
+          .returning();
+      } else {
+        [updatedPayment] = await dbClient
+          .insert(payments)
+          .values({
+            billId: billIdNum,
+            amount: Number(bill.total ?? 0),
+            method: "MANUAL",
+            status,
+            paidAt: status === "PAID" ? new Date() : null,
+          })
+          .returning();
+      }
+
+      // อัปเดตสถานะบิล
       await dbClient
         .update(bills)
-        .set({
-          status: 'PAID'
-        })
+        .set({ status })
         .where(eq(bills.id, billIdNum));
+
+      // ✅ ส่งผลลัพธ์สำหรับ Entire Bill
+      return res.json({
+        success: true,
+        data: {
+          type: "entire",
+          billId: billIdNum,
+          paymentStatus: status,
+          paidAt: updatedPayment?.paidAt,
+        },
+      });
     }
-
-    res.json({
-      success: true,
-      data: {
-        isPaid: updatedSplit.paid,
-        paymentStatus: status,
-        paidAt: updatedPayment?.paidAt
-      }
-    });
-
   } catch (error) {
     console.error("Error toggling payment status:", error);
     res.status(500).json({
       success: false,
-      error: "Internal server error"
+      error: "Internal server error",
     });
   }
 };
@@ -362,12 +691,12 @@ export const getRevenue = async (req: Request, res: Response, next: NextFunction
 
     // 3. รวมข้อมูลตามวัน
     const dailyData = groupByDay(currentRevenue, period as string);
-
+    
     // 4. คำนวณสถิติ
     const currentTotal = currentRevenue.reduce((sum, item) => sum + Number(item.amount), 0);
     const previousTotal = previousRevenue.reduce((sum, item) => sum + Number(item.amount), 0);
-
-    const growthRate = previousTotal > 0
+    
+    const growthRate = previousTotal > 0 
       ? ((currentTotal - previousTotal) / previousTotal * 100)
       : currentTotal > 0 ? 100 : 0;
 
@@ -417,45 +746,64 @@ function groupByDay(payments: any[], period: string) {
     grouped[key] += Number(payment.amount);
   });
 
-  // เติมข้อมูลวันที่ที่ขาดหายไป
   return fillMissingDates(grouped, period);
 }
 
 function fillMissingDates(data: { [key: string]: number }, period: string) {
   const result = [];
   const now = new Date();
-  let currentDate: Date;
-  let endDate: Date;
-  let step: number;
-
-  if (period === 'week') {
-    currentDate = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
-    endDate = now;
-    step = 24 * 60 * 60 * 1000; // 1 day
-  } else if (period === 'month') {
-    currentDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    endDate = now;
-    step = 24 * 60 * 60 * 1000; // 1 day
-  } else {
-    currentDate = new Date(now.getFullYear(), 0, 1);
-    endDate = now;
-    step = 30 * 24 * 60 * 60 * 1000; // 1 month (approx)
-  }
-
-  while (currentDate <= endDate) {
-    const key = period === 'year'
-      ? `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
-      : currentDate.toISOString().split('T')[0];
-
-    result.push({
-      date: key,
-      amount: data[key] || 0
-    });
-
-    if (period === 'year') {
-      currentDate.setMonth(currentDate.getMonth() + 1);
-    } else {
+  
+  if (period === 'month') {
+    // สำหรับเดือน: แสดง 30 วันที่ผ่านมาจนถึงวันนี้
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - 29); // 30 วัน (29 + วันนี้)
+    
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= now) {
+      const key = currentDate.toISOString().split('T')[0];
+      
+      result.push({
+        date: key,
+        amount: data[key] || 0
+      });
+      
       currentDate.setDate(currentDate.getDate() + 1);
+    }
+  } else if (period === 'week') {
+    // สำหรับสัปดาห์: แสดง 7 วันที่ผ่านมา
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - 6);
+    
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= now) {
+      const key = currentDate.toISOString().split('T')[0];
+      
+      result.push({
+        date: key,
+        amount: data[key] || 0
+      });
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+  } else {
+    // สำหรับปี: แสดง 12 เดือนที่ผ่านมา
+    const startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      const key = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+      
+      result.push({
+        date: key,
+        amount: data[key] || 0
+      });
+      
+      currentDate.setMonth(currentDate.getMonth() + 1);
     }
   }
 
