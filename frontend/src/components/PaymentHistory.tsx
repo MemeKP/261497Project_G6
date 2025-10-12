@@ -3,7 +3,7 @@ import type { DiningSession, Payment, Table } from '../types';
 import { useQuery } from '@tanstack/react-query';
 
 const PaymentHistory = () => {
-  const [selectedTable, setSelectedTable] = useState<number>(4);
+  const [selectedTable, setSelectedTable] = useState<number>();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -42,7 +42,6 @@ const PaymentHistory = () => {
   // กรองโต๊ะที่มี session active
   const availableTables = tables.filter(table => activeTableIds.includes(table.id));
 
-  // ใน handleToggleStatus
   const handleToggleStatus = async (billId: number, splitId: number, currentStatus: 'PAID' | 'PENDING') => {
     try {
       // สลับสถานะ
@@ -62,7 +61,6 @@ const PaymentHistory = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
 
       if (data.success) {
@@ -104,7 +102,6 @@ const PaymentHistory = () => {
         });
 
         if (!response.ok) {
-          // ถ้าเป็น 404 (ไม่พบข้อมูล) ไม่ต้องแสดง error
           if (response.status === 404) {
             setPayments([]); // เคลียร์ข้อมูลเก่า
             return;
@@ -117,17 +114,16 @@ const PaymentHistory = () => {
         // แปลง status ให้ตรงกับ type
         const formattedData: Payment[] = data.map((item: any) => ({
           ...item,
-          status: item.status === 'PAID' ? 'Completed' : 'Pending'
+          status: item.status
         }));
 
         setPayments(formattedData);
       } catch (err) {
         console.log("ERROR IN FETCHING PAYMENT:", err);
-        // แสดงเฉพาะ error ที่ไม่ใช่ 404
         if (err instanceof Error && !err.message.includes('404')) {
           setError('Failed to load payment data');
         } else {
-          setPayments([]); // เคลียร์ข้อมูลเก่า
+          setPayments([]);
         }
       } finally {
         setLoading(false);
@@ -150,38 +146,31 @@ const PaymentHistory = () => {
 
   return (
     <>
-      
       <div className="min-h-screen p-2 mt-5">
 
-           {/* Table Dropdown Selection */}
-          <div className="mb-6">
-            <label htmlFor="table-select" className="font-bold text-xl">
-              Table:
-            </label>
-            <select
-              id="table-select"
-              className="ml-2 p-2 border rounded-md"
-              value={selectedTable}
-              onChange={(e) => setSelectedTable(Number(e.target.value))}
-            >
-              {availableTables.map((table) => (
-                <option key={table.id} value={table.id}>
-                  Table {table.number}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Table Dropdown Selection */}
+        <div className="mb-6">
+          <label htmlFor="table-select" className="font-bold text-xl">
+            Table:
+          </label>
+          <select
+            id="table-select"
+            className="ml-2 p-2 border rounded-md"
+            value={selectedTable}
+            onChange={(e) => setSelectedTable(Number(e.target.value))}
+          >
+            {availableTables.map((table) => (
+              <option key={table.id} value={table.id}>
+                Table {table.number}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="max-w-4xl mx-auto">
-{/* Header */}
-      <h2 className="font-bold text-xl mb-4">Payment History</h2>
-
-
-       
-
+          {/* Header */}
+          <h2 className="font-bold text-xl mb-4">Payment History</h2>
           {/* Payment History */}
           <div className="bg-white rounded-xl p-4 shadow-sm">
-           
-
             {/* Loading State */}
             {loading && (
               <div className="text-center py-8">
@@ -228,10 +217,11 @@ const PaymentHistory = () => {
 
                       <button
                         onClick={() => handleToggleStatus(p.billId, p.splitId, p.status)}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all hover:scale-105 active:scale-95 ${p.status === 'PAID'
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                          : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                          }`}
+                        disabled={p.status === 'PAID'}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${p.status === 'PAID'
+                            ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                            : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 hover:scale-105 active:scale-95'
+                          } ${p.status !== 'PAID' && 'hover:scale-105 active:scale-95'}`}
                       >
                         {p.status === 'PAID' ? 'Paid' : 'Pending'}
                       </button>

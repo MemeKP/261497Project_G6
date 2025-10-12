@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import {
@@ -11,7 +11,8 @@ import {
   Filter,
 } from "lucide-react";
 import type { MenuItem, MenuResponse } from "../types";
-import MenuFormModal from "./MenuFormModal.tsx";
+import MenuFormModal from "./MenuFormModal";
+import Portal from "./Portal";
 
 const AdminMenuList = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,12 +24,11 @@ const AdminMenuList = () => {
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(
     null
   );
-
   // Fetch menu items
   const { data, isLoading, error } = useQuery<MenuResponse>({
     queryKey: ["admin_menu_items", searchQuery, categoryFilter],
     queryFn: async () => {
-       const params: any = { page: 1, limit: 100, showAll: true };
+      const params: any = { page: 1, limit: 100, showAll: true };
       if (searchQuery) params.search = searchQuery;
       if (categoryFilter !== "all") params.category = categoryFilter;
 
@@ -38,35 +38,43 @@ const AdminMenuList = () => {
   });
 
   // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await axios.delete(`/api/menu_items/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_menu_items"] });
-      setOpenMenuId(null);
-    },
-  });
-
-  // Toggle availability mutation
-  const toggleAvailabilityMutation = useMutation({
-  mutationFn: async ({
-    id,
-    isAvailable,
-  }: {
-    id: number;
-    isAvailable: boolean;
-  }) => {
-    console.log("TOGGLE MENU ITEM ID:", id);
-
-    await axios.put(`/api/menu_items/${id}`, {
-      isAvailable: !isAvailable,
-    });
+const deleteMutation = useMutation({
+  mutationFn: async (menuId: number) => {
+    console.log('Deleting menu with ID:', menuId, typeof menuId);
+    const response = await axios.delete(`/api/menu_items/${menuId}`);
+    return response.data;
   },
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ["admin_menu_items"] });
+    setOpenMenuId(null);
+    alert('Menu deleted successfully!');
+  },
+  onError: (error: any) => {
+    console.error('Delete error:', error);
+    alert('Failed to delete menu: ' + (error.response?.data?.error || error.message));
   },
 });
+
+
+  // Toggle availability mutation
+  const toggleAvailabilityMutation = useMutation({
+    mutationFn: async ({
+      id,
+      isAvailable,
+    }: {
+      id: number;
+      isAvailable: boolean;
+    }) => {
+      console.log("TOGGLE MENU ITEM ID:", id);
+
+      await axios.put(`/api/menu_items/${id}`, {
+        isAvailable: !isAvailable,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_menu_items"] });
+    },
+  });
 
 
   const handleDelete = (id: number) => {
@@ -104,7 +112,43 @@ const AdminMenuList = () => {
     setIsModalOpen(false);
     setSelectedMenuItem(null);
   };
+
+  const [dropdownInfo, setDropdownInfo] = useState<{
+  isOpen: boolean;
+  itemId: number | null;
+  position: { top: number; left: number } | null;
+}>({
+  isOpen: false,
+  itemId: null,
+  position: null
+});
+
+const handleMenuClick = (e: React.MouseEvent, itemId: number) => {
+  const button = e.currentTarget as HTMLButtonElement;
+  const rect = button.getBoundingClientRect();
   
+  // คำนวณตำแหน่งแบบ fixed ที่ไม่เปลี่ยนแปลงเมื่อ scroll
+  setDropdownInfo({
+    isOpen: true,
+    itemId,
+    position: {
+      top: rect.top + rect.height + 5, // ใต้ปุ่ม
+      left: rect.left  + 50 // ขวาของปุ่ม
+    }
+  });
+};
+
+// ปิด dropdown เมื่อ scroll (optional)
+useEffect(() => {
+  const handleScroll = () => {
+    if (dropdownInfo.isOpen) {
+      setDropdownInfo({ isOpen: false, itemId: null, position: null });
+    }
+  };
+
+  window.addEventListener('scroll', handleScroll);
+  return () => window.removeEventListener('scroll', handleScroll);
+}, [dropdownInfo.isOpen]);
   return (
     <div>
       <div className="max-w-7xl mx-auto">
@@ -142,11 +186,11 @@ const AdminMenuList = () => {
                 className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent appearance-none bg-white min-w-[150px]"
               >
                 <option value="all">All</option>
-                <option value="noodles">Noodle</option>
-                <option value="Sushi & Sashimi">Sushi & Sashimi</option>
-                <option value="Appetizers">Appetizers</option>
-                <option value="Desserts">Desserts</option>
-                <option value="Drinks">Drinks</option>
+                <option value="noodle">Noodle</option>
+                <option value="sushi">Sushi & Sashimi</option>
+                <option value="appetizer">Appetizers</option>
+                <option value="dessert">Desserts</option>
+                <option value="drink">Drinks</option>
               </select>
             </div>
 
@@ -177,45 +221,30 @@ const AdminMenuList = () => {
 
         {/* Table */}
         {!isLoading && !error && (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="relative bg-white overflow-x-auto rounded-lg shadow-sm">
+            <div className="relative "></div>
+            <div className=" ">
               <table className="w-full">
                 <thead className="bg-emerald-500 text-white">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">
-                      ID
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">
-                      Name
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">
-                      Price
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">
-                      Category
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold w-16"></th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">ID</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">Name</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">Price</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">Category</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">Status</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold w-16">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {filteredItems.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="px-4 py-8 text-center text-gray-500"
-                      >
-                        Munu not found!
+                      <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                        Menu not found!
                       </td>
                     </tr>
                   ) : (
                     filteredItems.map((item, index) => (
-                      <tr
-                        key={item.id}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
+                      <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3 text-sm text-gray-900">
                           {String(index + 1).padStart(3, "0")}
                         </td>
@@ -242,66 +271,24 @@ const AdminMenuList = () => {
                         <td className="px-4 py-3">
                           <button
                             onClick={() => handleToggleAvailability(item)}
-                            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                              item.isAvailable
-                                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                                : "bg-red-100 text-red-700 hover:bg-red-200"
-                            }`}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${item.isAvailable
+                              ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                              : "bg-red-100 text-red-700 hover:bg-red-200"
+                              }`}
                           >
                             {item.isAvailable ? "Available" : "Unavailable"}
                           </button>
                         </td>
-                        <td className="px-4 py-3 text-center relative">
+                        <td className="px-4 py-3 text-center">
                           <button
-                            onClick={() =>
-                              setOpenMenuId(
-                                openMenuId === item.id ? null : item.id
-                              )
-                            }
+                            onClick={(e) => handleMenuClick(e, item.id)}
                             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                           >
                             <MoreVertical className="w-5 h-5 text-gray-600" />
                           </button>
-
-                          {/* Dropdown Menu */}
-                          {openMenuId === item.id && (
-                            <>
-                              {/* Backdrop */}
-                              <div
-                                className="fixed inset-0 z-10"
-                                onClick={() => setOpenMenuId(null)}
-                              />
-
-                              {/* Menu */}
-                              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                                <button
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                  onClick={() => {
-                                    console.log("View", item.id);
-                                    setOpenMenuId(null);
-                                  }}
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  Details
-                                </button>
-                                <button
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                  onClick={() => handleEditMenu(item)}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                  Edit
-                                </button>
-                                <button
-                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                                  onClick={() => handleDelete(item.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  Delete
-                                </button>
-                              </div>
-                            </>
-                          )}
                         </td>
+
+
                       </tr>
                     ))
                   )}
@@ -310,6 +297,51 @@ const AdminMenuList = () => {
             </div>
           </div>
         )}
+
+        {/* Portal อยู่นอกตารางเลย */}
+        <Portal>
+          {dropdownInfo.isOpen && dropdownInfo.position && (
+            <>
+              {/* Backdrop */}
+              <div
+                className="fixed  bg-opacity-10 inset-0 z-40"
+                onClick={() => setDropdownInfo({ isOpen: false, itemId: null, position: null })}
+              />
+
+              {/* Dropdown Menu */}
+              <div
+                className="fixed z-555 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1"
+                style={{
+                  top: dropdownInfo.position.top,
+                  left: dropdownInfo.position.left,
+                  transform: 'translateX(-100%)'
+                }}
+              >
+                <button
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  onClick={() => {
+                    const item = filteredItems.find(i => i.id === dropdownInfo.itemId);
+                    if (item) handleEditMenu(item);
+                    setDropdownInfo({ isOpen: false, itemId: null, position: null });
+                  }}
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit
+                </button>
+                <button
+                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                  onClick={() => {
+                    if (dropdownInfo.itemId) handleDelete(dropdownInfo.itemId);
+                    setDropdownInfo({ isOpen: false, itemId: null, position: null });
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </button>
+              </div>
+            </>
+          )}
+        </Portal>
 
         {/* Stats */}
         {!isLoading && !error && filteredItems.length > 0 && (

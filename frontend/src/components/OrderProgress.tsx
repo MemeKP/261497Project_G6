@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import type { ActiveSession, Order } from "../types";
 import { useQuery } from "@tanstack/react-query";
 
@@ -25,7 +25,16 @@ const OrderProgress: React.FC<OrderProgressProps> = ({ activeSessions }) => {
   const [selectedTable, setSelectedTable] = useState<"all" | number>("all");
   const allSessionIds = activeSessions?.map((s) => s.id) || [];
 
-   // Fetch orders สำหรับทุก active session
+  // สร้าง mapping ระหว่าง sessionId กับ tableId
+  const sessionToTableMap = useMemo(() => {
+    const map: Record<number, number> = {};
+    activeSessions?.forEach(session => {
+      map[session.id] = session.tableId;
+    });
+    return map;
+  }, [activeSessions]);
+
+  // Fetch orders สำหรับทุก active session
   const { data: orders = [] } = useQuery<Order[]>({
     queryKey: ["ordersForAllSessions", allSessionIds],
     queryFn: async () => {
@@ -46,23 +55,47 @@ const OrderProgress: React.FC<OrderProgressProps> = ({ activeSessions }) => {
       return ordersBySession.flat();
     },
     enabled: allSessionIds.length > 0,
-    refetchInterval: 5000, // 5 sec
+    refetchInterval: 5000,
   });
 
-  // ✅ ใช้ activeSessions แทน orders ในการดึง tables
+  // ดึงข้อมูล tables เพื่อเอา table number
+  const { data: tables = [] } = useQuery({
+    queryKey: ["tables"],
+    queryFn: async () => {
+      const res = await fetch("/api/tables", {
+        credentials: "include",
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  // สร้าง mapping ระหว่าง tableId กับ table number
+  const tableIdToNumberMap = useMemo(() => {
+    const map: Record<number, number> = {};
+    tables.forEach((table: any) => {
+      map[table.id] = table.number;
+    });
+    return map;
+  }, [tables]);
+
+  // ใช้ activeSessions แทน orders ในการดึง tables
   const uniqueTables = activeSessions
     ? Array.from(new Set(activeSessions.map((s) => s.tableId))).sort((a, b) => a - b)
     : [];
 
+  console.log("Session to Table mapping:", sessionToTableMap);
   console.log("Active Sessions:", activeSessions);
-  console.log("Unique Tables from active sessions:", uniqueTables);
   console.log("Orders in OrderProgress:", orders);
 
-  // กรอง order ตาม table
+  // กรอง order ตาม table (ใช้ tableId จริงจาก session mapping)
   const filteredOrders =
     selectedTable === "all"
       ? orders
-      : orders.filter((o) => o.tableId === selectedTable);
+      : orders.filter((order) => {
+          const tableId = sessionToTableMap[order.diningSessionId];
+          return tableId === selectedTable;
+        });
 
   return (
     <div className="mt-6">
@@ -81,9 +114,9 @@ const OrderProgress: React.FC<OrderProgressProps> = ({ activeSessions }) => {
           className="border border-gray-300 rounded-lg text-sm px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
           <option value="all">All Tables</option>
-          {uniqueTables.map((table) => (
-            <option key={table} value={table}>
-              Table {table}
+          {uniqueTables.map((tableId) => (
+            <option key={tableId} value={tableId}>
+              Table {tableIdToNumberMap[tableId] || tableId}
             </option>
           ))}
         </select>
@@ -101,35 +134,41 @@ const OrderProgress: React.FC<OrderProgressProps> = ({ activeSessions }) => {
             </tr>
           </thead>
           <tbody>
-            {filteredOrders.map((order) => (
-              <tr
-                key={`${order.id}-${order.tableId}`} // Combine order.id and table_id to create a unique key
-                className="text-neutral-500 font-medium border-b last:border-0"
-              >
-                <td className="py-2">{order.id}</td>
-                <td>{order.tableId}</td>
-                <td>
-                  <span
-                    className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor(
-                      order.status
-                    )}`}
-                  >
-                    {order.status}
-                  </span>
-                </td>
-                <td>
-                  {order.createdAt
-                    ? new Date(order.createdAt.replace(" ", "T")).toLocaleString([], {
-                      month: 'short',  // Oct, Nov, etc.
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                    : 'N/A' // Or any fallback value, like 'No Date'
-                  }
-                </td>
-              </tr>
-            ))}
+            {filteredOrders.map((order) => {
+              // หา tableId จริงจาก session mapping
+              const tableId = sessionToTableMap[order.diningSessionId];
+              const tableNumber = tableIdToNumberMap[tableId] || tableId;
+              
+              return (
+                <tr
+                  key={`${order.id}-${order.diningSessionId}`}
+                  className="text-neutral-500 font-medium border-b last:border-0"
+                >
+                  <td className="py-2">{order.id}</td>
+                  <td>Table {tableNumber}</td>
+                  <td>
+                    <span
+                      className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor(
+                        order.status
+                      )}`}
+                    >
+                      {order.status}
+                    </span>
+                  </td>
+                  <td>
+                    {order.createdAt
+                      ? new Date(order.createdAt.replace(" ", "T")).toLocaleString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                      : 'N/A'
+                    }
+                  </td>
+                </tr>
+              );
+            })}
 
             {filteredOrders.length === 0 && (
               <tr>
@@ -142,7 +181,6 @@ const OrderProgress: React.FC<OrderProgressProps> = ({ activeSessions }) => {
               </tr>
             )}
           </tbody>
-
         </table>
       </div>
     </div>
