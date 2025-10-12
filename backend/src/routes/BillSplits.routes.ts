@@ -13,9 +13,8 @@ router.get("/sessions/:id/bill", billSplitController.getSessionBill);
 router.patch("/orders/:id/splits/calc", billSplitController.recalcSplit);
 // ดูsplit ของbill
 router.get("/bills/:id/splits", billSplitController.getSplit);
-// Toggle payment status (for admin)
-// router.patch("/bills/:billId/splits/:memberId/toggle-status", billSplitController.togglePaymentStatus);
 // mark paid ให้ member
 router.patch("/bills/:id/splits/:memberId/paid", billSplitController.markPaid);
-
+// ในไม่สร้างซ้ำหลังกด billsplit อีก
+router.get("/sessions/:id/check-bill", billSplitController.checkExistingBill); // เปลี่ยนจาก orders เป็น sessions
 export default router;

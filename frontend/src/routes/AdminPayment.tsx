@@ -1,4 +1,3 @@
-import React from "react";
 import AdminNav from "../components/AdminNav";
 import PaymentGraph from "../components/PaymentGraph"
 import PaymentHistory from "../components/PaymentHistory"

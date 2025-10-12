@@ -119,3 +119,27 @@ export async function markPaid(req: Request, res: Response) {
     res.status(500).json({ error: err.message || "Failed to update payment" });
   }
 }
+
+export async function checkExistingBill(req: Request, res: Response) {
+  try {
+    const sessionId = Number(req.params.id); // เปลี่ยนจาก orderId เป็น sessionId
+    if (isNaN(sessionId)) {
+      return res.status(400).json({ error: "Invalid session id" });
+    }
+
+    // ตรวจสอบว่ามี bill สำหรับ session นี้อยู่แล้วหรือไม่
+    const existingBills = await db.select().from(bills).where(eq(bills.diningSessionId, sessionId));
+    
+    if (existingBills.length === 0) {
+      return res.status(404).json({ error: "No bill found" });
+    }
+
+    // ใช้ bill ล่าสุด
+    const bill = existingBills[existingBills.length - 1];
+    const splits = await billSplitService.getSplit(bill.id);
+    
+    res.json({ ...bill, splits });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to check bill" });
+  }
+}

@@ -100,7 +100,6 @@ const DetailsPage = () => {
       alert("Please select your member for this menu");
       return;
     }
-
     try {
       // สร้างรายการ items ที่จะเพิ่ม
       const items = selectMembers.map(memberId => ({

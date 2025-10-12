@@ -69,7 +69,7 @@ const IKImageWrapper = ({
 
 
   const handleLoad = () => {
-    console.log('Image loaded successfully:', src);
+    // console.log('Image loaded successfully:', src);
     setImageLoading(false);
     onLoad?.();
   };

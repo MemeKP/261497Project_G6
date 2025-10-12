@@ -44,50 +44,50 @@ const TableAndSession: React.FC = () => {
 
   // Mutation: Set Table (สร้าง sessionเปิดโต๊ะ)
   const startSessionMutation = useMutation({
-  mutationFn: async (tableId: number) => {
-    console.log("Starting session for table:", tableId);
+    mutationFn: async (tableId: number) => {
+      console.log("Starting session for table:", tableId);
 
-    const res = await fetch(`/api/dining_session/start`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include", 
-      body: JSON.stringify({ tableId: Number(tableId) }),
-    });
-    
-    if (!res.ok) {
-      // อ่าน error message จาก backend
-      const errorData = await res.json();
-      console.error("Backend error:", errorData);
-      throw new Error(errorData.error || "Failed to set table");
-    }
-    
-    const data = await res.json();
-    console.log("Session started response:", data);
-    return data;
-  },
-  onSuccess: (data) => {
-    console.log("Session created successfully:", data); 
-    queryClient.invalidateQueries({ queryKey: ["activeSession"] });
-    queryClient.invalidateQueries({ queryKey: ["sessionGroups"] });
-    
-    if (data.session) {
-      alert(
-        `Session started successfully!\nTable: ${data.session.tableId}\nSession ID: ${data.session.id}`
-      );
-      
-      createGroupMutation.mutate({
-        tableId: data.session.tableId,
-        sessionId: data.session.id,
+      const res = await fetch(`/api/dining_session/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ tableId: Number(tableId) }),
       });
-    }
 
-    setSelectedTable(null);
-  },
-  onError: (error: Error) => {
-    console.error("Error starting session:", error);
-    alert(`Error: ${error.message}`);
-  },
-});
+      if (!res.ok) {
+        // อ่าน error message จาก backend
+        const errorData = await res.json();
+        console.error("Backend error:", errorData);
+        throw new Error(errorData.error || "Failed to set table");
+      }
+
+      const data = await res.json();
+      console.log("Session started response:", data);
+      return data;
+    },
+    onSuccess: (data) => {
+      console.log("Session created successfully:", data);
+      queryClient.invalidateQueries({ queryKey: ["activeSession"] });
+      queryClient.invalidateQueries({ queryKey: ["sessionGroups"] });
+
+      if (data.session) {
+        alert(
+          `Session started successfully!\nTable: ${data.session.tableId}\nSession ID: ${data.session.id}`
+        );
+
+        createGroupMutation.mutate({
+          tableId: data.session.tableId,
+          sessionId: data.session.id,
+        });
+      }
+
+      setSelectedTable(null);
+    },
+    onError: (error: Error) => {
+      console.error("Error starting session:", error);
+      alert(`Error: ${error.message}`);
+    },
+  });
 
 
   // Mutation: Create Group (สร้างกลุ่มลูกค้าในโต๊ะ)
@@ -176,126 +176,231 @@ const TableAndSession: React.FC = () => {
     }
   };
 
+  // End session mutation
+  const endSessionMutation = useMutation({
+    mutationFn: async (sessionId: number) => {
+      const res = await fetch('/api/dining_session/end', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionId }),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to end session');
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      // Refresh data หลังจากปิด session สำเร็จ
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      queryClient.invalidateQueries({ queryKey: ['activeSessions'] });
+      alert('Session ended successfully!');
+    },
+    onError: (error) => {
+      alert(error.message);
+    }
+  });
+
+  // ฟังก์ชันจัดการปิด session
+  const handleEndSession = async () => {
+    if (!selectedTable) {
+      alert('Please select a table first');
+      return;
+    }
+    // หา active session สำหรับโต๊ะที่เลือก
+    const sessionToEnd = activeSessions?.find(
+      session => session.tableId === selectedTable.id && session.status === "ACTIVE"
+    );
+    if (!sessionToEnd) {
+      alert('No active session found for this table');
+      return;
+    }
+    // ยืนยันการปิด session
+    if (!confirm('Are you sure you want to end this session?')) {
+      return;
+    }
+    try {
+      await endSessionMutation.mutateAsync(sessionToEnd.id);
+    } catch (error) {
+      console.error('Error ending session:', error);
+    }
+  };
+
+  // เพิ่มตัวแปรช่วยตรวจสอบ
+  // const hasActiveSession = activeSessions?.some(
+  //   session => session.tableId === selectedTable?.id && session.status === "ACTIVE"
+  // );
+
   return (
     <div className="pt-6">
-      <h1 className="text-black text-xl font-bold">Table & Sessions</h1>
-      <div className="bg-white rounded-2xl p-4 shadow-md">
-        <div className="grid grid-cols-3 gap-3">
-          {tables.map((table) => (
-            <button
-              key={table.id}
-              onClick={() => setSelectedTable(table)}
-              className={`py-4 rounded-lg cursor-pointer font-semibold text-center 
-                ${table.status === "OCCUPIED"
-                  ? "bg-emerald-500 text-white"
-                  : "bg-zinc-300 text-black"
-                }
-                ${selectedTable?.id === table.id ? "ring-4 ring-black" : ""}
-              `}
-            >
-              Table {table.number}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* MODAL */}
-      <AnimatePresence>
-        {selectedTable && (
-          <motion.div
-            className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedTable(null)}
+    <h1 className="text-black text-xl font-bold">Table & Sessions</h1>
+    <div className="bg-white rounded-2xl p-4 shadow-md">
+      <div className="grid grid-cols-3 gap-3">
+        {tables.map((table) => (
+          <button
+            key={table.id}
+            onClick={() => setSelectedTable(table)}
+            className={`py-4 rounded-lg cursor-pointer font-semibold text-center 
+              ${table.status === "OCCUPIED"
+                ? "bg-emerald-500 text-white"
+                : "bg-zinc-300 text-black"
+              }
+              ${selectedTable?.id === table.id ? "ring-4 ring-black" : ""}
+            `}
           >
-            <motion.div
-              className="bg-white rounded-xl shadow-lg p-6 w-80 relative"
-              initial={{ y: 50, opacity: 0, scale: 0.9 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: 50, opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              onClick={(e) => e.stopPropagation()}
+            Table {table.number}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    {/* MODAL */}
+    <AnimatePresence>
+      {selectedTable && (
+        <motion.div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setSelectedTable(null)}
+        >
+          <motion.div
+            className="bg-white rounded-xl shadow-lg p-6 w-80 relative"
+            initial={{ y: 50, opacity: 0, scale: 0.9 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 50, opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedTable(null)}
+              className="absolute cursor-pointer top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
             >
-              <button
-                onClick={() => setSelectedTable(null)}
-                className="absolute cursor-pointer top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
+              ✕
+            </button>
+
+            {/* Table Info */}
+            <h2 className="text-2xl font-bold text-black mb-4">
+              Table {selectedTable.number}
+            </h2>
+
+            {/* Status */}
+            <div className="mb-4">
+              <h3 className="text-stone-400 text-sm mb-1">Status</h3>
+              <p
+                className={`text-xl font-bold ${selectedTable.status === "OCCUPIED"
+                  ? "text-emerald-500"
+                  : "text-gray-400"
+                  }`}
               >
-                ✕
-              </button>
+                {selectedTable.status === "OCCUPIED" ? "Occupied" : "Free"}
+              </p>
+            </div>
 
-              {/* Table Info */}
-              <h2 className="text-2xl font-bold text-black mb-4">
-                Table {selectedTable.number}
-              </h2>
+            {/* Session Info */}
+            {(() => {
+              // หา session ที่ active สำหรับโต๊ะนี้
+              const currentActiveSession = activeSessions?.find(
+                session => session.tableId === selectedTable.id && session.status === "ACTIVE"
+              );
 
-              {/* Status */}
-              <div className="mb-4">
-                <h3 className="text-stone-400 text-sm mb-1">Status</h3>
-                <p
-                  className={`text-xl font-bold ${selectedTable.status === "OCCUPIED"
-                      ? "text-emerald-500"
-                      : "text-gray-400"
-                    }`}
-                >
-                  {selectedTable.status === "OCCUPIED" ? "Occupied" : "Free"}
-                </p>
-              </div>
+              if (!currentActiveSession) {
+                return (
+                  <div className="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p className="text-sm text-yellow-800 flex items-center gap-2">
+                      <span>⚠️</span>
+                      <span>No active session. Start a session first.</span>
+                    </p>
+                  </div>
+                );
+              }
 
-              {/* Session Info */}
-              {!activeSessions?.id && (
-                <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    ⚠️ No active session. Start a session first.
-                  </p>
+              return (
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-800 mb-2">Active Session</h4>
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <p>Started: {new Date(currentActiveSession.startedAt).toLocaleTimeString()}</p>
+                    <p>Customers: {currentActiveSession.totalCustomers}</p>
+                    {currentActiveSession.group && (
+                      <p>Group Members: {currentActiveSession.group.members.length}</p>
+                    )}
+                  </div>
                 </div>
-              )}
+              );
+            })()}
 
-              {/* Actions */}
-              <div className="mt-4">
-                <h3 className="text-stone-400 text-sm mb-2">Actions</h3>
-                <div className="flex gap-2">
-                  {/* Set Table Button - เปิดโต๊ะ (สร้าง session) */}
-                  {!activeSessions?.id && (
-                    <button
-                      className="flex-1 px-4 py-2 cursor-pointer rounded bg-blue-500 hover:bg-blue-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={handleSetTable}
-                      disabled={startSessionMutation.isPending}
-                    >
-                      {startSessionMutation.isPending
-                        ? "Starting..."
-                        : "Start Session"}
-                    </button>
-                  )}
+            {/* Actions */}
+            <div className="mt-4">
+              <h3 className="text-stone-400 text-sm mb-2">Actions</h3>
+              <div className="flex flex-col gap-2">
+                {(() => {
+                  // หา session ที่ active สำหรับโต๊ะนี้
+                  const currentActiveSession = activeSessions?.find(
+                    session => session.tableId === selectedTable.id && session.status === "ACTIVE"
+                  );
 
-                  {/* Generate QR Button - สร้างกลุ่มและ QR */}
-                  {activeSessions?.id && selectedTable.status === "FREE" && (
-                    <button
-                      className="flex-1 px-4 py-2 cursor-pointer rounded bg-purple-500 hover:bg-purple-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                      // onClick={handleGenerateQR}
-                      disabled={createGroupMutation.isPending}
-                    >
-                      {createGroupMutation.isPending
-                        ? "Creating..."
-                        : "Generate QR"}
-                    </button>
-                  )}
+                  return (
+                    <>
+                      {/* Start Session Button */}
+                      {!currentActiveSession && (
+                        <button
+                          className="w-full px-4 py-3 cursor-pointer rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          onClick={handleSetTable}
+                          disabled={startSessionMutation.isPending}
+                        >
+                          {startSessionMutation.isPending
+                            ? "Starting Session..."
+                            : "Start Session"}
+                        </button>
+                      )}
 
-                  {/* View qr - สำหรับโต๊ะที่เปิดsessionแล้ว */}
-                  {selectedTable.status === "OCCUPIED" && (
-                    <button
-                      className="flex-1 px-4 py-2 cursor-pointer rounded bg-gray-500 hover:bg-gray-600 text-white font-semibold"
-                      onClick={() => fetchQR(selectedTable.id)}
-                    >
-                      Qr
-                    </button>
-                  )}
-                </div>
+                      {/* End Session Button */}
+                      {currentActiveSession && (
+                        <button
+                          className="w-full px-4 py-3 cursor-pointer rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          onClick={handleEndSession}
+                          disabled={endSessionMutation.isPending}
+                        >
+                          {endSessionMutation.isPending ? "Ending Session..." : "End Session"}
+                        </button>
+                      )}
+
+                      {/* Generate QR Button */}
+                      {currentActiveSession && selectedTable.status === "FREE" && (
+                        <button
+                          className="w-full px-4 py-3 cursor-pointer rounded-lg bg-purple-500 hover:bg-purple-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          // onClick={handleGenerateQR}
+                          disabled={createGroupMutation.isPending}
+                        >
+                          {createGroupMutation.isPending
+                            ? "Creating QR..."
+                            : "Generate QR"}
+                        </button>
+                      )}
+
+                      {/* View QR Button */}
+                      {currentActiveSession && selectedTable.status === "OCCUPIED" && (
+                        <button
+                          className="w-full px-4 py-3 cursor-pointer rounded-lg bg-gray-500 hover:bg-gray-600 text-white font-semibold transition-colors"
+                          onClick={() => fetchQR(selectedTable.id)}
+                        >
+                          View QR Code
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
-            </motion.div>
+            </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </motion.div>
+      )}
+    </AnimatePresence>
 
       {/* QR Code Modal */}
       <AnimatePresence>

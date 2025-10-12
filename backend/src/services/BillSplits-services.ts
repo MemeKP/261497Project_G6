@@ -19,10 +19,19 @@ export async function generateBill(orderId: number) {
   if (!order) throw new Error("Order not found");
 
   // ถ้ามี bill เดิมของ order นี้อยู่แล้ว → return เลย
+  // const existingBill = await db.select().from(bills).where(eq(bills.orderId, orderId));
+  // if (existingBill.length > 0) {
+  //   const splits = await getSplit(existingBill[0].id);
+  //   return { ...existingBill[0], splits };
+  // }
+   // ✅ ตรวจสอบ bill เก่าอย่างเข้มงวด
   const existingBill = await db.select().from(bills).where(eq(bills.orderId, orderId));
+  
   if (existingBill.length > 0) {
-    const splits = await getSplit(existingBill[0].id);
-    return { ...existingBill[0], splits };
+    console.log("📄 Using existing bill for order:", orderId);
+    const bill = existingBill[0]; // ใช้ตัวแรกเสมอ
+    const splits = await getSplit(bill.id);
+    return { ...bill, splits };
   }
 
   const diningSessionId = Number(order.diningSessionId);

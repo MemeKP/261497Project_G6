@@ -8,7 +8,7 @@ interface OrderItem {
   quantity: number;
   status: string;
   memberName?: string;
-  note?: string; 
+  note?: string;
 }
 
 interface Order {
@@ -30,37 +30,37 @@ const OrderStatusPage = () => {
   };
 
   useEffect(() => {
-  const fetchOrders = async () => {
-    try {
-      const res = await fetch(`/api/orders/session/${sessionId}`);
-      const rawData = await res.json();
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch(`/api/orders/session/${sessionId}`);
+        const rawData = await res.json();
 
-      const data = (rawData || []).map((order: any) => ({
-        id: order.id,
-        status: order.status || "PREPARING",
-        tableId: order.table_id,
-        items: (order.items || []).map((item: any) => ({
-          id: item.id,
-          menuName:
-            item.menuName ||
-            item.menu_item_name ||
-            item.menuItem?.name ||
-            "Unnamed Item",
-          quantity: item.quantity ?? 0,
-          status: item.status || order.status || "PREPARING",
-          memberName: item.memberName || "Unknown", 
-        })),
-      }));
+        const data = (rawData || []).map((order: any) => ({
+          id: order.id,
+          status: order.status || "PREPARING",
+          tableId: order.table_id,
+          items: (order.items || []).map((item: any) => ({
+            id: item.id,
+            menuName:
+              item.menuName ||
+              item.menu_item_name ||
+              item.menuItem?.name ||
+              "Unnamed Item",
+            quantity: item.quantity ?? 0,
+            status: item.status || order.status || "PREPARING",
+            memberName: item.memberName || "Unknown",
+          })),
+        }));
 
-      setOrders(data);
-    } catch (err) {
-      console.error("Error fetching order status:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchOrders();
-}, [sessionId]);
+        setOrders(data);
+      } catch (err) {
+        console.error("Error fetching order status:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, [sessionId]);
 
 
   if (loading) return <div className="text-white p-4">Loading...</div>;
@@ -75,7 +75,7 @@ const OrderStatusPage = () => {
   const preparing = allItems.filter((i) => i.status === "PREPARING" || i.status === "PENDING");
   const ready = allItems.filter((i) => i.status === "READY");
   const completed = allItems.filter((i) => i.status === "COMPLETED");
-  
+
   const groupedItems = preparing.reduce((acc: any, item) => {
     const key = item.menuName;
     if (!acc[key]) {
@@ -86,7 +86,7 @@ const OrderStatusPage = () => {
     return acc;
   }, {});
 
-const groupedList = Object.values(groupedItems);
+  const groupedList = Object.values(groupedItems);
 
   return (
     <div className="w-full min-h-screen relative bg-[#1E1E1E] text-white p-6 flex flex-col">
@@ -102,7 +102,7 @@ const groupedList = Object.values(groupedItems);
         Orders in progress:{" "}
         <span className="font-semibold">
           {preparing.reduce((sum, item) => sum + item.quantity, 0) +
-          ready.reduce((sum, item) => sum + item.quantity, 0)}{" "}
+            ready.reduce((sum, item) => sum + item.quantity, 0)}{" "}
           items
         </span>
 
@@ -125,24 +125,24 @@ const groupedList = Object.values(groupedItems);
         </div>
 
         {openSection === "preparing" && (
-        <div className="mt-2 text-sm">
-          {groupedList.length > 0 ? (
-            groupedList.map((item: any, idx) => (
-              <div key={idx} className="flex flex-col px-1 mb-2">
-                <div className="flex justify-between">
-                  <span>{item.menuName}</span>
-                  <span className="text-gray-700 font-medium">x {item.quantity}</span>
+          <div className="mt-2 text-sm">
+            {groupedList.length > 0 ? (
+              groupedList.map((item: any, idx) => (
+                <div key={idx} className="flex flex-col px-1 mb-2">
+                  <div className="flex justify-between">
+                    <span>{item.menuName}</span>
+                    <span className="text-gray-700 font-medium">x {item.quantity}</span>
+                  </div>
+                  <span className="text-gray-500 text-xs">
+                    👤 {item.members.join(", ")}
+                  </span>
                 </div>
-                <span className="text-gray-500 text-xs">
-                  👤 {item.members.join(", ")}
-                </span>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-500">No items preparing.</p>
-          )}
-        </div>
-      )}
+              ))
+            ) : (
+              <p className="text-gray-500">No items preparing.</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Ready Section */}
@@ -212,36 +212,30 @@ const groupedList = Object.values(groupedItems);
         <button
           onClick={async () => {
             try {
-              const tableId = orders[0]?.tableId || orders[orders.length - 1]?.tableId;
-              if (!tableId) {
-                alert("Cannot find tableId for this session.");
-                return;
-              }
-
               const res = await fetch(`/api/orders/new`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   diningSessionId: Number(sessionId),
-                  tableId: tableId,
-                  items: [], 
+                  // ไม่ต้องส่ง tableId, ให้ backend หาเอง
                 }),
                 credentials: "include",
               });
 
-              if (!res.ok) throw new Error("Failed to create new order");
+              if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.error || "Failed to create new order");
+              }
+
               const newOrder = await res.json();
               console.log("🆕 Created new order:", newOrder);
 
               navigate(`/homepage/${sessionId}`);
-            } catch (err) {
+            } catch (err: any) {
               console.error("Error creating new order:", err);
-              alert("Failed to create new order. Please try again.");
+              alert(err.message || "Failed to create new order. Please try again.");
             }
           }}
-          className="w-[300px] h-12 mx-auto rounded-full text-lg font-semibold text-black 
-                    shadow-[0px_4px_18px_0px_rgba(217,217,217,1.00)] 
-                    bg-gradient-to-r from-white to-black hover:opacity-90 transition"
         >
           New Order
         </button>
@@ -286,7 +280,7 @@ const groupedList = Object.values(groupedItems);
                     bg-gradient-to-r from-white to-black hover:opacity-90 transition"
         >
           Generate Bill
-      </button>
+        </button>
 
 
       </div>

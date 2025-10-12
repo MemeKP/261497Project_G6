@@ -73,11 +73,19 @@ export async function createOrder(req: Request, res: Response) {
 
 export async function createNewOrder(req: Request, res: Response) {
   try {
-    const { diningSessionId, tableId, closePreviousOrderId } = req.body;
+    const { diningSessionId, closePreviousOrderId } = req.body;
 
     if (!diningSessionId || isNaN(Number(diningSessionId))) {
       return res.status(400).json({ error: "Valid diningSessionId is required" });
     }
+
+    // หา tableId จาก session
+    const session = await dbClient.select().from(diningSessions).where(eq(diningSessions.id, diningSessionId));
+    if (!session[0]) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    const tableId = session[0].tableId;
 
     if (closePreviousOrderId) {
       await orderService.updateOrderStatus(Number(closePreviousOrderId), "CLOSED");
@@ -85,7 +93,7 @@ export async function createNewOrder(req: Request, res: Response) {
 
     const order = await orderService.createOrder(
       Number(diningSessionId),
-      Number(tableId) || 1
+      Number(tableId)
     );
 
     res.status(201).json(order);

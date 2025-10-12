@@ -127,7 +127,7 @@ export interface Order {
   tableId: number;
   group_id: number | null;
   user_id: number | null;
-  dining_session_id: number;
+  diningSessionId: number;
   status: "PENDING" | "PREPARING" | "COMPLETED" | "SERVED" | string;
   createdAt: string;
   totalPrice?: number;

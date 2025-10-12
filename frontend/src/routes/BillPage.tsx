@@ -10,7 +10,7 @@ interface OrderItem {
 }
 
 interface BillData {
-  id?: number; 
+  id?: number;
   billId: number;
   orderId: number;
   subtotal: number;
@@ -148,43 +148,42 @@ const BillPage = () => {
         <button
           onClick={async () => {
             try {
-              // ✅ ดึง order ล่าสุดใน session (เพื่อให้ได้ orderId)
-              const orderRes = await fetch(`/api/orders/session/${sessionId}`, {
+              // ✅ ตรวจสอบว่ามี bill สำหรับ session นี้อยู่แล้วหรือไม่
+              const checkBillRes = await fetch(`/api/bill-splits/sessions/${sessionId}/check-bill`, {
                 credentials: "include",
               });
-              const orders = await orderRes.json();
-              if (!orders || orders.length === 0) {
-                alert("No orders found for this session.");
-                return;
+
+              let billData;
+
+              if (checkBillRes.ok) {
+                // ถ้ามี bill อยู่แล้ว → ใช้ bill เดิม
+                billData = await checkBillRes.json();
+                console.log("✅ Using existing bill:", billData);
+              } else {
+                // ถ้าไม่มี → สร้าง bill ใหม่จาก session
+                const createBillRes = await fetch(`/api/bill-splits/sessions/${sessionId}/bill`, {
+                  method: "POST",
+                  credentials: "include",
+                });
+                if (!createBillRes.ok) throw new Error("Failed to create bill");
+                billData = await createBillRes.json();
+                console.log("✅ Created new bill:", billData);
               }
 
-              const latestOrder = orders[orders.length - 1];
-              const orderId = latestOrder.id;
-
-              // ✅ สร้าง Split Bill จาก orderId
-              const res = await fetch(`/api/bill-splits/orders/${orderId}/bill`, {
-                method: "POST",
-                credentials: "include",
-              });
-
-              if (!res.ok) throw new Error("Failed to split bill");
-              const billData = await res.json();
-
-              console.log("✅ Split Bill created:", billData);
               navigate(`/splitbill/${billData.id}`);
             } catch (err) {
-              console.error("Error splitting bill:", err);
-              alert("Failed to split bill. Please try again.");
+              console.error("Error:", err);
+              alert("Failed to process bill. Please try again.");
             }
           }}
           className="w-[280px] h-12 rounded-full text-base font-semibold text-black 
-                    shadow-[0px_4px_18px_rgba(217,217,217,1.00)] 
-                    bg-gradient-to-r from-white to-black hover:opacity-90 transition"
+            shadow-[0px_4px_18px_rgba(217,217,217,1.00)] 
+            bg-gradient-to-r from-white to-black hover:opacity-90 transition"
         >
           Split Bill
         </button>
 
-    
+
       </div>
     </div>
   );
