@@ -177,6 +177,7 @@ export async function getPaymentStatus(req: Request, res: Response, next: NextFu
         billStatus: bills.status,
       })
       .from(bills)
+      .leftJoin(diningSessions, eq(bills.diningSessionId, diningSessions.id))
       .where(eq(bills.id, billIdNum))
       .limit(1);
 
@@ -195,7 +196,6 @@ export async function getPaymentStatus(req: Request, res: Response, next: NextFu
     next(error);
   }
 }
-
 
 // export const getPaymentsByTable = async (req: Request, res: Response, next: NextFunction) => {
 //   const { tableId } = req.query;

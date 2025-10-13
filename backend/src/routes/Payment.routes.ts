@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as paymentController from "src/controllers/Payment.controller.js";
 
 const router = Router();
+router.get('/status/:billId', paymentController.getPaymentStatus);
 
 // ดึงข้อมูลการชำระเงินโดยใช้ tableId
 router.get('/', paymentController.getPaymentsByTable);
@@ -11,7 +12,6 @@ router.post("/", paymentController.createPayment);
 router.patch("/:paymentId/confirm", paymentController.confirmPayment);
 // mock callback (แทน SCB callback)
 router.post("/mock-callback", paymentController.mockCallback);
-router.get('/status/:billId', paymentController.getPaymentStatus);
 // PATCH /api/payments/bills/:billId/splits/:splitId/toggle-status
 router.patch('/bills/:billId/splits/:splitId/toggle-status', paymentController.togglePaymentStatus);
 
