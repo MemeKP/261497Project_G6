@@ -97,9 +97,9 @@ const groupedList = Object.values(groupedItems);
       </div>
 
       {/* Title */}
-      <h2 className="text-xl text-center mb-2">Order Status</h2>
+      <h2 className="text-xl text-center mb-2"> Your Order </h2>
       <p className="text-sm text-center mb-6">
-        Orders in progress:{" "}
+        Orders Items:{" "}
         <span className="font-semibold">
           {preparing.reduce((sum, item) => sum + item.quantity, 0) +
           ready.reduce((sum, item) => sum + item.quantity, 0)}{" "}
@@ -114,7 +114,7 @@ const groupedList = Object.values(groupedItems);
         onClick={() => toggleSection("preparing")}
       >
         <div className="flex justify-between items-center font-semibold">
-          <span>Preparing ({preparing.length})</span>
+          <span>All items ({preparing.length})</span>
           <span className="text-sm text-gray-600 flex items-center">
             {openSection === "preparing" ? (
               <FaChevronUp className="ml-2" />
@@ -145,66 +145,12 @@ const groupedList = Object.values(groupedItems);
       )}
       </div>
 
-      {/* Ready Section */}
-      <div
-        className="bg-white text-black rounded-lg p-4 mb-4 cursor-pointer"
-        onClick={() => toggleSection("ready")}
-      >
-        <div className="flex justify-between items-center font-semibold">
-          <span>Ready to Serve ({ready.length})</span>
-          <span className="text-sm text-gray-600 flex items-center">
-            {openSection === "ready" ? (
-              <FaChevronUp className="ml-2" />
-            ) : (
-              <FaChevronDown className="ml-2" />
-            )}
-          </span>
-        </div>
-        {openSection === "ready" && (
-          <div className="mt-2 text-sm">
-            {ready.length > 0 ? (
-              ready.map((item) => (
-                <div key={item.id} className="flex justify-between px-1">
-                  <span>{item.menuName}</span>
-                  <span className="text-gray-700 font-medium">x {item.quantity}</span>
-                </div>
-
-              ))
-            ) : (
-              <p className="text-gray-500">No ready items.</p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Completed Section */}
-      <div
-        className="bg-white text-black rounded-lg p-4 mb-6 cursor-pointer"
-        onClick={() => toggleSection("completed")}
-      >
-        <div className="flex justify-between items-center font-semibold">
-          <span>Completed ({completed.length})</span>
-          {openSection === "completed" ? (
-            <FaChevronUp className="ml-2 text-gray-600" />
-          ) : (
-            <FaChevronDown className="ml-2 text-gray-600" />
-          )}
-        </div>
-        {openSection === "completed" && (
-          <div className="mt-2 text-sm">
-            {completed.length > 0 ? (
-              completed.map((item) => (
-                <div key={item.id} className="flex justify-between px-1">
-                  <span>{item.menuName}</span>
-                  <span className="text-gray-700 font-medium">x {item.quantity}</span>
-                </div>
-
-              ))
-            ) : (
-              <p className="text-gray-500">No completed items.</p>
-            )}
-          </div>
-        )}
+      {/* Message Section */}
+      <div className="flex flex-col flex-1 justify-end">
+        <p className="text-center text-gray-300 text-sm mb-3 leading-relaxed">
+          Your order has been received and  <br />
+          is now being prepared. Please wait a moment.
+        </p>
       </div>
 
       {/* Buttons */}
