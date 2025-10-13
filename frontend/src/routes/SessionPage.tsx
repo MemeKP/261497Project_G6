@@ -13,11 +13,27 @@ interface SessionData {
   endTime?: string | null;
 }
 
+
+
 const SessionPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // 🚫 ป้องกันการย้อนกลับจากหน้า SessionPage
+  useEffect(() => {
+    // บันทึกสถานะปัจจุบันใน history (กันปุ่ม Back)
+    window.history.pushState(null, "", window.location.href);
+
+    const handlePopState = () => {
+      alert("This session has already ended. You cannot go back.");
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   useEffect(() => {
     const fetchSession = async () => {
