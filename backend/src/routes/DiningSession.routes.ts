@@ -9,7 +9,6 @@ router.post('/end', requireAdmin, endSession)
 router.get('/active', requireAdmin, getActiveSession)
 router.get('/:sessionId', getSession)
 router.get('/qr/:tableId', getQrForTable);
-// routes/diningSession.ts
 router.get('/table/:tableNumber', getSessionIdByTableNumber);
 
 

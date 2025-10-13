@@ -70,7 +70,6 @@ export async function createOrder(req: Request, res: Response) {
     res.status(500).json({ error: err.message });
   }
 }*/
-// controllers/orderController.ts
 export async function createOrder(req: Request, res: Response) {
   try {
     const { diningSessionId, tableId, status = "PENDING" } = req.body;

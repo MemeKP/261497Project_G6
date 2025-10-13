@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import bg1 from "../assets/imgs/bg-1.png";
 import PageAnimation from "../common/PageAnimetion";
 import ButtonAnimation from "../common/ButtonAnimetion";
@@ -7,6 +7,18 @@ import axios from "axios";
 
 const LandingPage = () => {
    const { sessionId } = useParams<{ sessionId: string }>();
+   const navigate = useNavigate();
+
+   
+  const handleSharedTable = async () => {
+    try {      
+      await axios.delete(`/api/group_members/sessions/${sessionId}/auto-created`);
+      navigate(`/addmember/${sessionId}`);
+    } catch (error) {
+      console.error('Error cleaning up auto-created members:', error);
+      navigate(`/addmember/${sessionId}`);
+    }
+  };
 
   useEffect(() => {
     if (sessionId) {
@@ -53,11 +65,10 @@ const LandingPage = () => {
             </Link>
           </PageAnimation>
           <PageAnimation index={3}>
-            <Link to={`/addmember/${sessionId}`}>
-              <ButtonAnimation className="flex flex-col mt-10 w-60 items-center bg-white rounded-full p-2 text-2xl font-medium shadow-[0px_4px_18px_0px_rgba(217,217,217,1.00)] border-3 font-[Gantari]">
+              <ButtonAnimation onClick={handleSharedTable}
+              className="flex flex-col mt-10 w-60 items-center bg-white rounded-full p-2 text-2xl font-medium shadow-[0px_4px_18px_0px_rgba(217,217,217,1.00)] border-3 font-[Gantari]">
                 Shared Table
               </ButtonAnimation>
-            </Link>
           </PageAnimation>
         </div>
       </div>

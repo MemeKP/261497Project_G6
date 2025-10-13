@@ -28,7 +28,7 @@ export const group_members = pgTable('group_members', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
   groupId: integer('group_id').notNull().references(() => groups.id),
-  userId: integer('user_id').references(() => users.id),// null = guest
+  userId: integer('user_id').references(() => users.id),
   diningSessionId: integer('dining_session_id').notNull(),
   isTableAdmin: boolean('is_table_admin').default(false),
   joinedAt: timestamp('joined_at').defaultNow(),

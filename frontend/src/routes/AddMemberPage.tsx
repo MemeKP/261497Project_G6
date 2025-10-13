@@ -12,87 +12,117 @@ const AddMemberPage: React.FC = () => {
   const [groupId, setGroupId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchGroupAndMembers = async () => {
-    setIsLoading(true);
-    try {
-      if (!sessionId) {
-        console.warn("[FRONTEND] Session ID is missing in URL parameters.");
-        setIsLoading(false);
-        return;
-      }
+//   const fetchGroupAndMembers = async () => {
+//   setIsLoading(true);
+//   try {
+//     if (!sessionId) return;
 
-      const res = await axios.get<SessionResponse>(
-        `/api/dining_session/${sessionId}`
+//     // session group
+//     const sessionRes = await axios.get(`/api/dining_session/${sessionId}`);
+//     // members จาก session
+//     const membersRes = await axios.get(`/api/group_members/by-session/${sessionId}`);
+//     const group = sessionRes.data.group;
+//     const members = membersRes.data.members || []; 
+
+//     if (group && group.id) {
+//       setGroupId(group.id);
+//       setMembers(
+//         members.map((member: any) => ({
+//           id: String(member.id),
+//           name: member.name,
+//           note: member.note || null,
+//         }))
+//       );
+
+//       console.log(`Group ${group.id}, Members: ${members.length}`);
+//     } else {
+//       console.warn("No group found");
+//       setGroupId(null);
+//       setMembers([]);
+//     }
+//   } catch (err) {
+//     console.error("ERROR:", err);
+//     setGroupId(null);
+//     setMembers([]);
+//   } finally {
+//     setIsLoading(false);
+//   }
+// };
+
+const fetchGroupAndMembers = async () => {
+  setIsLoading(true);
+  try {
+    if (!sessionId) return;
+
+    // session group
+    const sessionRes = await axios.get(`/api/dining_session/${sessionId}`);
+    // members จาก session
+    const membersRes = await axios.get(`/api/group_members/by-session/${sessionId}`);
+    const group = sessionRes.data.group;
+    const allMembers = membersRes.data.members || []; 
+
+    // ✅ กรองเอาเฉพาะ member ที่ไม่ใช่ auto-created
+    const filteredMembers = allMembers.filter((member: any) => 
+      !member.note?.includes('auto_created:true') &&
+      !member.note?.includes('Auto-created') &&
+      !member.note?.includes('Auto-created owner member')
+    );
+
+    if (group && group.id) {
+      setGroupId(group.id);
+      setMembers(
+        filteredMembers.map((member: any) => ({
+          id: String(member.id),
+          name: member.name,
+          note: member.note || null,
+        }))
       );
 
-      console.log("[FRONTEND] API Response Data (RES.DATA):", res.data);
-
-      const group = res.data.group;
-
-      if (group && group.id && Array.isArray(group.members)) {
-        setGroupId(group.id);
-        setMembers(
-          group.members.map((m: unknown) => {
-            const member = m as {
-              id: number;
-              name: string;
-              note?: string | null;
-            };
-            return {
-              id: String(member.id),
-              name: member.name,
-              note: member.note || null,
-            };
-          })
-        );
-
-        console.log(
-          `[FRONTEND] SUCCESS: Group loaded with ID: ${group.id}, Members count: ${group.members.length}`
-        );
-      } else {
-        console.warn(
-          `[FRONTEND] WARNING: Group structure in response is incorrect or group is null. Check res.data above. Response Group object:`,
-          group
-        );
-        setGroupId(null);
-      }
-    } catch (err) {
-      console.error(
-        "[FRONTEND] ERROR: Failed to fetch group/session data. Check Network tab for API call details.",
-        err
-      );
+      console.log(`Group ${group.id}, All Members: ${allMembers.length}, Filtered: ${filteredMembers.length}`);
+    } else {
+      console.warn("No group found");
       setGroupId(null);
-    } finally {
-      setIsLoading(false);
+      setMembers([]);
     }
-  };
+  } catch (err) {
+    console.error("ERROR:", err);
+    setGroupId(null);
+    setMembers([]);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchGroupAndMembers();
   }, [sessionId]);
 
   const handleAdd = async () => {
-    if (!input.trim() || groupId === null) {
-      console.warn("Input is empty or Group ID is not set. Cannot add member.");
-      return;
-    }
-
-    try {
-      const res = await axios.post<Member>("/api/group_members/add", {
-        name: input,
-        groupId,
-        diningSessionId: sessionId,
-      });
-
-      await fetchGroupAndMembers();
-
-      setInput("");
-      console.log("Member added successfully:", res.data.name);
-    } catch (err) {
-      console.error("Failed to add member:", err);
-    }
-  };
-
+  if (!input.trim() || groupId === null) {
+    console.warn("Input is empty or Group ID is not set. Cannot add member.");
+    return;
+  }
+  try {
+    // console.log("[FRONTEND] Sending data:", {
+    //   name: input,
+    //   groupId: groupId,
+    //   sessionId: sessionId,
+    //   diningSessionId: parseInt(sessionId!)
+    // });
+    const res = await axios.post<Member>("/api/group_members/add", {
+      name: input,
+      groupId: groupId,
+      diningSessionId: parseInt(sessionId!), 
+    });
+    console.log("Member added response:", res.data);
+    await fetchGroupAndMembers();
+    setInput("");
+    
+  } catch (err) {
+    console.error("Failed to add member:", err);
+  }
+};
+  
   const handleRemove = async (memberId: string, index: number) => {
     try {
       await axios.delete(`/api/group_members/member/${memberId}`);
@@ -197,3 +227,80 @@ const AddMemberPage: React.FC = () => {
 };
 
 export default AddMemberPage;
+
+ // const handleAdd = async () => {
+  //   if (!input.trim() || groupId === null) {
+  //     console.warn("Input is empty or Group ID is not set. Cannot add member.");
+  //     return;
+  //   }
+
+  //   try {
+  //     const res = await axios.post<Member>("/api/group_members/add", {
+  //       name: input,
+  //       groupId,
+  //       diningSessionId: sessionId,
+  //     });
+
+  //     await fetchGroupAndMembers();
+
+  //     setInput("");
+  //     console.log("Member added successfully:", res.data.name);
+  //   } catch (err) {
+  //     console.error("Failed to add member:", err);
+  //   }
+  // };
+
+  // const fetchGroupAndMembers = async () => {
+  //   setIsLoading(true);
+  //   try {
+  //     if (!sessionId) {
+  //       console.warn("[FRONTEND] Session ID is missing in URL parameters.");
+  //       setIsLoading(false);
+  //       return;
+  //     }
+
+  //     const res = await axios.get<SessionResponse>(
+  //       `/api/dining_session/${sessionId}`
+  //     );
+
+  //     console.log("[FRONTEND] API Response Data (RES.DATA):", res.data);
+
+  //     const group = res.data.group;
+
+  //     if (group && group.id && Array.isArray(group.members)) {
+  //       setGroupId(group.id);
+  //       setMembers(
+  //         group.members.map((m: unknown) => {
+  //           const member = m as {
+  //             id: number;
+  //             name: string;
+  //             note?: string | null;
+  //           };
+  //           return {
+  //             id: String(member.id),
+  //             name: member.name,
+  //             note: member.note || null,
+  //           };
+  //         })
+  //       );
+
+  //       console.log(
+  //         `[FRONTEND] SUCCESS: Group loaded with ID: ${group.id}, Members count: ${group.members.length}`
+  //       );
+  //     } else {
+  //       console.warn(
+  //         `[FRONTEND] WARNING: Group structure in response is incorrect or group is null. Check res.data above. Response Group object:`,
+  //         group
+  //       );
+  //       setGroupId(null);
+  //     }
+  //   } catch (err) {
+  //     console.error(
+  //       "[FRONTEND] ERROR: Failed to fetch group/session data. Check Network tab for API call details.",
+  //       err
+  //     );
+  //     setGroupId(null);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };

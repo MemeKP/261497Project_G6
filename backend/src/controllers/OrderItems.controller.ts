@@ -4,37 +4,94 @@ import { sql } from "drizzle-orm";
 import type { Request, Response } from "express";
 import * as orderItemService from "src/services/OrderItems-services.js";
 
-export async function createOrderItem(req: Request, res: Response) {
+// export async function createOrderItem(req: Request, res: Response) {
+//   try {
+//     const { orderId, menuItemId, memberId, quantity, note } = req.body;
+
+//     // Validation
+//     if (!orderId || !menuItemId || !quantity) {
+//       return res.status(400).json({ error: "orderId, menuItemId, and quantity are required" });
+//     }
+//     if ([orderId, menuItemId, memberId, quantity].some(v => isNaN(Number(v)))) {
+//       return res.status(400).json({ error: "orderId, menuItemId, memberId, and quantity must be numbers" });
+//     }
+//     if (Number(quantity) < 1) {
+//       return res.status(400).json({ error: "Quantity must be at least 1" });
+//     }
+
+//     const item = await orderItemService.addOrderItem(
+//       Number(orderId),
+//       Number(menuItemId),
+//       Number(memberId),
+//       Number(quantity),
+//       note,
+//     );
+
+//     res.status(201).json(item);
+//   } catch (err: any) {
+//     if (err.message.includes("not found")) {
+//       return res.status(404).json({ error: err.message });
+//     }
+//     res.status(500).json({ error: err.message });
+//   }
+// }
+export const createOrderItem = async (req: Request, res: Response) => {
   try {
     const { orderId, menuItemId, memberId, quantity, note } = req.body;
 
+    console.log('🔍 [BACKEND] createOrderItem received:', {
+      orderId,
+      menuItemId,
+      memberId,
+      quantity,
+      note,
+      memberIdType: typeof memberId,
+      quantityType: typeof quantity 
+    });
+
     // Validation
-    if (!orderId || !menuItemId || !memberId || !quantity) {
-      return res.status(400).json({ error: "orderId, menuItemId, memberId, and quantity are required" });
-    }
-    if ([orderId, menuItemId, memberId, quantity].some(v => isNaN(Number(v)))) {
-      return res.status(400).json({ error: "orderId, menuItemId, memberId, and quantity must be numbers" });
-    }
-    if (Number(quantity) < 1) {
-      return res.status(400).json({ error: "Quantity must be at least 1" });
+    if (!orderId || !menuItemId || !quantity) {
+      return res.status(400).json({ 
+        error: "orderId, menuItemId, and quantity are required" 
+      });
     }
 
+    const orderIdNum = Number(orderId);
+    const menuItemIdNum = Number(menuItemId);
+    const quantityNum = Number(quantity);
+
+    if (isNaN(orderIdNum) || isNaN(menuItemIdNum) || isNaN(quantityNum)) {
+      return res.status(400).json({ 
+        error: "orderId, menuItemId, and quantity must be valid numbers" 
+      });
+    }
+
+    if (quantityNum < 1) {
+      return res.status(400).json({ 
+        error: "Quantity must be at least 1" 
+      });
+    }
     const item = await orderItemService.addOrderItem(
-      Number(orderId),
-      Number(menuItemId),
-      Number(memberId),
-      Number(quantity),
-      note
+      orderIdNum,
+      menuItemIdNum,
+      quantityNum, 
+      note,
+      memberId ? Number(memberId) : undefined
     );
 
+    console.log('✅ [BACKEND] Order item created successfully:', item);
     res.status(201).json(item);
+
   } catch (err: any) {
+    console.error('❌ [BACKEND] Error in createOrderItem:', err);
+    
     if (err.message.includes("not found")) {
       return res.status(404).json({ error: err.message });
     }
     res.status(500).json({ error: err.message });
   }
-}
+};
+
 
 export async function getOrderItems(req: Request, res: Response) {
   try {

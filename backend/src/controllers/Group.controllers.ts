@@ -3,7 +3,7 @@ import "dotenv/config";
 import { eq, and } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
-  diningSessions as dining_sessions,
+  diningSessions,
   group_members,
   groups,
 } from "@db/schema.js";
@@ -27,9 +27,9 @@ export const createGroup = async (
         console.log("Checking dining session...");
         const diningSession = await dbClient.query.diningSessions.findFirst({
           where: and(
-            eq(dining_sessions.id, sessionId),
-            eq(dining_sessions.tableId, tableId),
-            eq(dining_sessions.status, "ACTIVE")
+            eq(diningSessions.id, sessionId),
+            eq(diningSessions.tableId, tableId),
+            eq(diningSessions.status, "ACTIVE")
           ),
         });
     
@@ -90,6 +90,32 @@ export const createGroup = async (
         next(err);
       }
 };
+// แก้ไข backend ให้สร้าง group ใหม่ได้เสมอ
+// export const createGroup = async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const { sessionId, tableId } = req.body;
+
+//     // ... validation ...
+
+//     // ✅ สร้าง group ใหม่เสมอ (ไม่ต้องตรวจสอบ existing)
+//     console.log("Creating new group...");
+//     const newGroup = await dbClient
+//       .insert(groups)
+//       .values({
+//         tableId: tableId,
+//         creatorUserId: null,
+//       })
+//       .returning();
+
+//     res.status(201).json({
+//       message: "Group created successfully",
+//       group: newGroup[0]
+//     });
+//   } catch (err) {
+//     console.error("Error creating group:", err);
+//     next(err);
+//   }
+// };
 
 export const getGroupBySession = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -100,7 +126,7 @@ export const getGroupBySession = async (req: Request, res: Response, next: NextF
 
     // หา session
     const session = await dbClient.query.diningSessions.findFirst({
-      where: eq(dining_sessions.id, Number(sessionId)),
+      where: eq(diningSessions.id, Number(sessionId)),
     });
 
     if (!session) return res.status(404).json({ error: "Session not found" });

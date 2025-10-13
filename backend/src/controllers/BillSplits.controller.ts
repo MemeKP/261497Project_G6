@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import * as billSplitService from "src/services/BillSplits-services.js";
 import { dbClient as db } from "db/client.js";
-import { bills } from "db/schema.js";
+import { bills, billSplits } from "db/schema.js";
 import { eq } from "drizzle-orm";
 
 export async function createBill(req: Request, res: Response) {
@@ -18,7 +18,6 @@ export async function createBill(req: Request, res: Response) {
     res.status(500).json({ error: err.message || "Failed to generate bill" });
   }
 }
-
 
 export async function createSessionBill(req: Request, res: Response) {
   try {
@@ -159,3 +158,55 @@ export async function getBillPreview(req: Request, res: Response) {
   }
 }
 
+export async function payEntireBill(req: Request, res: Response) {
+  try {
+    const sessionId = Number(req.params.id);
+    if (isNaN(sessionId)) {
+      return res.status(400).json({ error: "Invalid session id" });
+    }
+
+    const result = await billSplitService.createGroupPaymentQr(sessionId);
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.error("❌ Pay Entire Bill error:", err);
+    res.status(500).json({ error: err.message || "Failed to generate group payment QR" });
+  }
+}
+
+
+// สำหรับปุ่ม "Split Bill" (แยกบิล + สร้าง QR ของแต่ละคน)
+export async function splitBill(req: Request, res: Response) {
+  try {
+    const sessionId = Number(req.params.id);
+    if (isNaN(sessionId)) {
+      return res.status(400).json({ error: "Invalid session id" });
+    }
+
+    const result = await billSplitService.splitBillForSession(sessionId);
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.error("❌ Split Bill error:", err);
+    res.status(500).json({ error: err.message || "Failed to split bill" });
+  }
+}
+
+// ยกเลิกการแยกบิล (ลบ splits ทั้งหมดของ bill)
+export async function cancelSplit(req: Request, res: Response) {
+  try {
+    const billId = Number(req.params.id);
+    if (isNaN(billId)) return res.status(400).json({ error: "Invalid bill id" });
+
+    // ลบ splits ของ bill นี้
+    await db.delete(billSplits).where(eq(billSplits.billId, billId));
+
+    // อัปเดตสถานะบิลกลับเป็น UNPAID
+    await db.update(bills)
+      .set({ status: "UNPAID" })
+      .where(eq(bills.id, billId));
+
+    res.json({ success: true, message: "Split cancelled and bill reset." });
+  } catch (err: any) {
+    console.error("❌ Cancel Split error:", err);
+    res.status(500).json({ error: err.message || "Failed to cancel split" });
+  }
+}

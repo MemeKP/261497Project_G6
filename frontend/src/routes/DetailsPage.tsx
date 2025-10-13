@@ -26,6 +26,7 @@ const fetchMenuById = async (menuId: string) => {
     throw error;
   }
 };
+
 const DetailsPage = () => {
   const { menuId, sessionId } = useParams<{
     menuId: string;
@@ -38,32 +39,62 @@ const DetailsPage = () => {
   const [note, setNote] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const { addToCart } = useCart();
+  const [isSingleCustomer, setIsSingleCustomer] = useState(false);
+  const [ownerMemberId, setOwnerMemberId] = useState<string | null>(null); // มาคนเดว
 
-  useEffect(() => {
+ useEffect(() => {
   if (sessionId) {
     axios
       .get<SessionResponse>(`/api/dining_session/${sessionId}`)
       .then((res) => {
-          const group = res.data.group;
-          if (group && Array.isArray(group.members)) {
-            setMembers(
-              group.members.map((m: unknown) => {
-                const member = m as {
-                  id: number;
-                  name: string;
-                };
-                return {
-                  id: String(member.id),
-                  name: member.name,
-                };
-              })
-            );
+        const group = res.data.group;
+        
+        // ตรวจสอบว่า members มีข้อมูลและมี isTableAdmin หรือไม่
+        const hasMembers = group && Array.isArray(group.members) && group.members.length > 0;
+        
+        if (!hasMembers) {
+          console.log('[DETAILS] No members found - setting as single customer');
+          setIsSingleCustomer(true);
+          setMembers([]);
+        } else {
+          console.log('[DETAILS] Members found, checking for owner...');
+          
+          // แมปข้อมูล members และเพิ่ม isTableAdmin ถ้าหาย
+          const memberList = group.members.map((m: any) => ({
+            id: String(m.id),
+            name: m.name,
+            isTableAdmin: m.isTableAdmin || false 
+          }));
+          
+          setMembers(memberList);
+          
+          // ให้ถือว่า member แรกเป็น owner ถ้ามีแค่คนเดียว
+          if (memberList.length === 1) {
+            console.log('[DETAILS] Only one member - treating as single customer');
+            setIsSingleCustomer(true);
+            setOwnerMemberId(memberList[0].id);
+            setSelectMembers([]);
+          } else {
+            console.log('[DETAILS] Multiple members - group mode');
+            setIsSingleCustomer(false);
+            
+            // ค้นหา owner โดย isTableAdmin หรือใช้ member แรก ของกลุ่มไม่ต้อง
+            // const owner = memberList.find(m => m.isTableAdmin) || memberList[0];
+            // if (owner) {
+            //   // setOwnerMemberId(owner.id);
+            //   // setSelectMembers([owner.id]);
+            // }
           }
-        })
-        .catch((err) => console.error(err));
-    }
-  }, [sessionId]);
-    const {
+        }
+      })
+      .catch((err) => {
+        console.error('❌ [DETAILS] Error fetching session:', err);
+        setIsSingleCustomer(true);
+      });
+  }
+}, [sessionId]);
+
+  const {
     data: menu,
     isLoading,
     error,
@@ -93,34 +124,49 @@ const DetailsPage = () => {
     return (parseFloat(menu.price) * quantity).toFixed(0);
   };
 
-   const handleAddToCart = async () => {
-    if (selectMembers.length === 0) {
+  const handleAddToCart = async () => {
+    // สำหรับ single customer ไม่ต้องตรวจสอบ selectMembers
+    if (!isSingleCustomer && selectMembers.length === 0) {
       alert("Please select your member for this menu");
       return;
     }
+
     if (!sessionId) {
       alert("No session found. Please return to the main page.");
       return;
     }
-    setIsAdding(true); // อันนี้เปลี่ยนมาใช้จาก cartContext
+
+    setIsAdding(true);
     try {
-      // เพิ่มสินค้าสำหรับแต่ละ member ที่เลือก
-      for (const memberId of selectMembers) {
+      if (isSingleCustomer) {
+        // สำหรับ single customer: ไม่ส่ง memberId (backend จะใช้ owner โดยอัตโนมัติ)
         await addToCart(
-          menu.id,// menuItemId
-          parseInt(memberId), // memberId
-          quantity, // quantity
-          note // note
+          Number(menu.id),
+          quantity,
+          note
+          // ไม่ส่ง memberId
         );
+      } else {
+        // สำหรับกลุ่ม: ส่งให้แต่ละ member ที่เลือก
+        for (const memberId of selectMembers) {
+          await addToCart(
+            Number(menu.id),
+            quantity,
+            note,
+            parseInt(memberId)
+          );
+        }
       }
 
       alert(`Added ${menu.name} to cart!`);
-      
-      // reset
-      setSelectMembers([]);
+
+      // reset (แต่ไม่ reset selectMembers สำหรับ single customer)
+      if (!isSingleCustomer) {
+        setSelectMembers([]);
+      }
       setQuantity(1);
       setNote("");
-      
+
     } catch (error: any) {
       console.error("Error adding to cart:", error);
       alert("Failed to add to cart. Please try again.");
@@ -148,12 +194,12 @@ const DetailsPage = () => {
             alt="menu image"
             className="w-70 rounded-xl"
           />
-          <button
+          {!isSingleCustomer && members.length > 1 && <button
             className="absolute w-11 h-11 bg-black/50 rounded-full right-12 top-90 flex justify-center items-center cursor-pointer"
             onClick={() => setIsOpen(true)}
           >
             <IoPersonAddSharp className="w-6 h-6 text-white" />
-          </button>
+          </button>}
         </div>
 
         <AnimatePresence>
@@ -311,53 +357,95 @@ const DetailsPage = () => {
 
 export default DetailsPage;
 
-/*const handleAddToCart = async () => {
-    if (selectMembers.length === 0) {
-      alert("Please select your member for this menu");
-      return;
-    }
-    try {
-      // สร้างรายการ items ที่จะเพิ่ม
-      const items = selectMembers.map(memberId => ({
-        menuId: menu.id,
-        qty: quantity,
-        note,
-        memberId,
-      }));
+ // useEffect(() => {
+  // if (sessionId) {
+  //   axios
+  //     .get<SessionResponse>(`/api/dining_session/${sessionId}`)
+  //     .then((res) => {
+  //         const group = res.data.group;
+  //         if (group && Array.isArray(group.members)) {
+  //           setMembers(
+  //             group.members.map((m: unknown) => {
+  //               const member = m as {
+  //                 id: number;
+  //                 name: string;
+  //               };
+  //               return {
+  //                 id: String(member.id),
+  //                 name: member.name,
+  //               };
+  //             })
+  //           );
+  //         }
+  //       })
+  //       .catch((err) => console.error(err));
+  //   }
+  // }, [sessionId]);
+  //  useEffect(() => {
+  //   if (sessionId) {
+  //     axios
+  //       .get<SessionResponse>(`/api/dining_session/${sessionId}`)
+  //       .then((res) => {
+  //         const group = res.data.group;
 
-      // 1. ตรวจสอบว่ามี order เดิมไหม
-      let existingOrder = null;
-      try {
-        const res = await axios.get(`/api/orders/session/${sessionId}`);
-        existingOrder = res.data;
-      } catch (err) {
-        console.warn("No existing order found, will create new one");
-      }
+  //         if (!group || !Array.isArray(group.members) || group.members.length === 0) {
+  //           setIsSingleCustomer(true);
+  //           setMembers([]);
+  //         } else {
+  //           setIsSingleCustomer(false);
+  //           setMembers(
+  //             group.members.map((m: unknown) => {
+  //               const member = m as {
+  //                 id: number;
+  //                 name: string;
+  //               };
+  //               return {
+  //                 id: String(member.id),
+  //                 name: member.name,
+  //               };
+  //             })
+  //           );
+  //         }
+  //       })
+  //       .catch((err) => {
+  //         console.error(err);
+  //         setIsSingleCustomer(true);
+  //       });
+  //   }
+  // }, [sessionId]);
 
-      // 2. ถ้ามี order เดิม → เพิ่มเข้า order_items เดิม
-      if (existingOrder && existingOrder.id) {
-        for (const item of items) {
-          await axios.post("/api/order-items", {
-            orderId: existingOrder.id,
-            menu_item_id: item.menuId,
-            member_id: item.memberId,
-            quantity: item.qty,
-            note: item.note,
-          });
-        }
-        alert(`✅ Added ${menu.name} to existing order.`);
-        return;
-      }
+   //  const handleAddToCart = async () => {
+  //   if (selectMembers.length === 0) {
+  //     alert("Please select your member for this menu");
+  //     return;
+  //   }
+  //   if (!sessionId) {
+  //     alert("No session found. Please return to the main page.");
+  //     return;
+  //   }
+  //   setIsAdding(true); // อันนี้เปลี่ยนมาใช้จาก cartContext
+  //   try {
+  //     // เพิ่มสินค้าสำหรับแต่ละ member ที่เลือก
+  //     for (const memberId of selectMembers) {
+  //       await addToCart(
+  //         menu.id,// menuItemId
+  //         parseInt(memberId), // memberId
+  //         quantity, // quantity
+  //         note // note
+  //       );
+  //     }
 
-      // 3. ถ้ายังไม่มี order → ค่อยสร้าง order ใหม่
-      const createOrderRes = await axios.post("/api/orders", {
-        diningSessionId: sessionId,
-        items,
-      });
+  //     alert(`Added ${menu.name} to cart!`);
 
-      alert(`✅ New order created with ${menu.name}!`);
-    } catch (error: any) {
-      console.error("Error adding to cart:", error.response?.data || error);
-      alert("❌ Failed to add to cart. Please try again.");
-    }
-  };*/
+  //     // reset
+  //     setSelectMembers([]);
+  //     setQuantity(1);
+  //     setNote("");
+
+  //   } catch (error: any) {
+  //     console.error("Error adding to cart:", error);
+  //     alert("Failed to add to cart. Please try again.");
+  //   } finally {
+  //     setIsAdding(false);
+  //   }
+  // };

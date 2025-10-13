@@ -9,7 +9,7 @@ import {
   diningSessions,
 } from "db/schema.js";
 import { eq, and, inArray } from "drizzle-orm";
-import { sql } from "drizzle-orm";
+import QRCode from "qrcode";
 
 /**
  * Generate bill สำหรับ order เดียว
@@ -24,7 +24,7 @@ export async function generateBill(orderId: number) {
   //   const splits = await getSplit(existingBill[0].id);
   //   return { ...existingBill[0], splits };
   // }
-   // ✅ ตรวจสอบ bill เก่าอย่างเข้มงวด
+   // ตรวจสอบ bill เก่า
   const existingBill = await db.select().from(bills).where(eq(bills.orderId, orderId));
   
   if (existingBill.length > 0) {
@@ -49,8 +49,6 @@ export async function generateBill(orderId: number) {
   const subtotal = items.reduce((sum, i) => sum + i.price * (i.quantity ?? 0), 0);
   const serviceCharge = +(subtotal * 0.07).toFixed(2);
   const total = +(subtotal + serviceCharge).toFixed(2);
-
-  // ✅ insert bill ใหม่
   const [bill] = await db
     .insert(bills)
     .values({
@@ -74,13 +72,11 @@ export async function generateBill(orderId: number) {
  * Generate bill รวมทุก order ของ session (ใช้เวลาปิดโต๊ะ)
  */
 export async function generateBillForSession(sessionId: number, force = false) {
-  // ✅ ดึง orders ทั้งหมดใน session
   const ordersData = await db.select().from(orders).where(eq(orders.diningSessionId, sessionId));
   if (ordersData.length === 0) throw new Error("No orders found for this session");
 
   const orderIds = ordersData.map(o => o.id);
 
-  // ✅ ดึง item ทั้งหมดใน orders
   const items = await db
     .select({
       memberId: orderItems.memberId,
@@ -103,7 +99,6 @@ export async function generateBillForSession(sessionId: number, force = false) {
   let bill;
 
   if (existing.length > 0) {
-    // ⚙️ ถ้ามี → อัปเดตบิลเก่าแทนที่จะลบ
     [bill] = await db
       .update(bills)
       .set({
@@ -118,7 +113,6 @@ export async function generateBillForSession(sessionId: number, force = false) {
 
     console.log(`♻️ Updated existing bill for session ${sessionId}`);
   } else {
-    // 🧾 ถ้าไม่มี → สร้างใหม่
     [bill] = await db
       .insert(bills)
       .values({
@@ -134,19 +128,14 @@ export async function generateBillForSession(sessionId: number, force = false) {
     console.log(`🧾 Created new bill for session ${sessionId}`);
   }
 
-  // ✅ ล้าง splits เก่า (ถ้ามี)
   await db.delete(billSplits).where(eq(billSplits.billId, bill.id));
 
-  // ✅ คำนวณ split ใหม่
   await calculateSplitForSession(sessionId, bill.id, serviceCharge);
 
-  // ✅ ดึง splits ที่เพิ่งคำนวณ
   const splits = await getSplit(bill.id);
 
-  // ✅ คืนค่ากลับให้ frontend
   return { ...bill, items, splits };
 }
-
 
 /**
  * คำนวณ split สำหรับบิลรวมทั้ง session
@@ -337,5 +326,118 @@ export async function calculateBillPreview(sessionId: number) {
     total,
     itemCount: items.length,
     orderCount: ordersData.length
+  };
+}
+
+/**
+ * ✅ Generate bill รวมทุก order ของ session
+ * ➤ ใช้ตอนกด “Generate Bill” → ยังไม่ split, ยังไม่สร้าง QR
+ */
+/*
+export async function generateBillForSession(sessionId: number) {
+  const ordersData = await db.select().from(orders).where(eq(orders.diningSessionId, sessionId));
+  if (ordersData.length === 0) throw new Error("No orders found for this session");
+
+  const orderIds = ordersData.map((o) => o.id);
+
+  const items = await db
+    .select({
+      memberId: orderItems.memberId,
+      price: menuItems.price,
+      quantity: orderItems.quantity,
+      menuName: menuItems.name,
+    })
+    .from(orderItems)
+    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+    .where(inArray(orderItems.orderId, orderIds));
+
+  const subtotal = items.reduce((sum, i) => sum + i.price * (i.quantity ?? 0), 0);
+  const serviceCharge = +(subtotal * 0.07).toFixed(2);
+  const total = +(subtotal + serviceCharge).toFixed(2);
+
+  const existing = await db.select().from(bills).where(eq(bills.diningSessionId, sessionId));
+
+  let bill;
+  if (existing.length > 0) {
+    [bill] = await db
+      .update(bills)
+      .set({
+        subtotal,
+        serviceCharge,
+        vat: 0,
+        total,
+        status: "UNPAID",
+      })
+      .where(eq(bills.diningSessionId, sessionId))
+      .returning();
+    console.log(`♻️ Updated existing bill for session ${sessionId}`);
+  } else {
+    [bill] = await db
+      .insert(bills)
+      .values({
+        diningSessionId: sessionId,
+        subtotal,
+        serviceCharge,
+        vat: 0,
+        total,
+        status: "UNPAID",
+      })
+      .returning();
+    console.log(`🧾 Created new bill for session ${sessionId}`);
+  }
+
+  // ❌ ยังไม่ split, ยังไม่สร้าง QR
+  return { ...bill, items, message: "✅ Bill created (no split / QR yet)" };
+}*/
+
+/**
+ * ✅ Pay Entire Bill → สร้าง QR รวมยอดทั้งหมดของโต๊ะ
+ */
+export async function createGroupPaymentQr(sessionId: number) {
+  const [bill] = await db.select().from(bills).where(eq(bills.diningSessionId, sessionId));
+  if (!bill) throw new Error("Bill not found for this session");
+
+  const qrPayload = `PAY:${bill.total}`;
+  const qrBase64 = await QRCode.toDataURL(qrPayload);
+
+  // จะไม่บันทึก qr ลง db ก็ได้ ถ้ายังไม่เพิ่ม column
+  return { ...bill, qrCode: qrBase64, message: "✅ Group QR generated" };
+}
+
+/**
+ * ✅ Split Bill → คำนวณแยกยอด และสร้าง QR ของแต่ละคน
+ */
+export async function splitBillForSession(sessionId: number) {
+  const [bill] = await db.select().from(bills).where(eq(bills.diningSessionId, sessionId));
+  if (!bill) throw new Error("Bill not found for this session");
+
+  // ล้างของเก่าก่อน
+  await db.delete(billSplits).where(eq(billSplits.billId, bill.id));
+  await calculateSplitForSession(sessionId, bill.id, bill.serviceCharge ?? 0);
+
+  const splits = await db
+    .select({
+      memberId: billSplits.memberId,
+      amount: billSplits.amount,
+      name: group_members.name,
+    })
+    .from(billSplits)
+    .innerJoin(group_members, eq(group_members.id, billSplits.memberId))
+    .where(eq(billSplits.billId, bill.id));
+
+  const withQr = await Promise.all(
+    splits.map(async (s) => ({
+      ...s,
+      qrCode: await QRCode.toDataURL(`PAY:${s.amount}`),
+    }))
+  );
+
+  console.log(`✅ Split bill and generated QR for each member in session ${sessionId}`);
+
+  return { 
+    billId: bill.id, 
+    sessionId: bill.diningSessionId, 
+    splits: withQr, 
+    message: "✅ Split bill with QR created" 
   };
 }

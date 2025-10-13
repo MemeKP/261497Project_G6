@@ -9,6 +9,10 @@ router.post("/orders/:id/bill", billSplitController.createBill);
 router.post("/sessions/:id/bill", billSplitController.createSessionBill);
 // ดูรายละเอียดบิลทั้งหมด (หน้า Your Order)
 router.get("/sessions/:id/bill", billSplitController.getSessionBill);
+// จ่ายรวมทั้งโต๊ะ (Pay Entire Bill)
+router.post("/sessions/:id/pay-entire", billSplitController.payEntireBill);
+// แยกบิล (Split Bill)
+router.post("/sessions/:id/split", billSplitController.splitBill);
 // คำนวณsplitใหม่
 router.patch("/orders/:id/splits/calc", billSplitController.recalcSplit);
 // ดูsplit ของbill

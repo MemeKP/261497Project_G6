@@ -22,25 +22,23 @@ const CartPage = () => {
   const [loading, setLoading] = useState(true);
   const [confirmItem, setConfirmItem] = useState<CartItem | null>(null);
 
-  // ✅ โหลดออเดอร์ล่าสุดของ session (PENDING เท่านั้น)
+  // โหลดออเดอร์ล่าสุดของ session (PENDING เท่านั้น)
   useEffect(() => {
     const fetchCart = async () => {
   try {
     console.log("🧾 Fetching ALL orders for session:", sessionId);
 
-    // 1️⃣ ดึงออเดอร์ทั้งหมดของ session
+    //  ดึงออเดอร์ทั้งหมดของ session
     const orderRes = await fetch(`/api/orders/session/${sessionId}`, {
       credentials: "include",
     });
-
-    console.log("Order response status:", orderRes.status);
 
     if (!orderRes.ok) throw new Error(`Failed to fetch order: ${orderRes.status}`);
     const orders = await orderRes.json();
 
     console.log("📦 All orders:", orders.map((o: any) => ({ id: o.id, status: o.status, createdAt: o.createdAt })));
 
-    // 2️⃣ กรองเฉพาะออเดอร์ที่ยังไม่ปิด (PENDING)
+    //กรองเฉพาะออเดอร์ที่ยังไม่ปิด (PENDING)
     const pendingOrders = orders.filter((o: any) => o.status === "PENDING");
     
     console.log("Pending orders:", pendingOrders.map((o: any) => o.id));
@@ -52,11 +50,10 @@ const CartPage = () => {
       return;
     }
 
-    // 3️⃣ ดึง order_items จากทุก pending orders
+    //ดึง order_items จากทุก pending orders
     let allOrderItems: any[] = [];
 
     for (const order of pendingOrders) {
-      console.log(`🔍 Fetching items for order ${order.id}...`);
       
       const res = await fetch(`/api/order-items/orders/${order.id}/items`, {
         credentials: "include",
@@ -73,7 +70,7 @@ const CartPage = () => {
 
     console.log("🛒 ALL order items combined:", allOrderItems);
 
-    // 4️⃣ Map ข้อมูลให้เป็น CartItem[]
+    //Map ข้อมูลให้เป็น CartItem[]
     const mapped: CartItem[] = allOrderItems.map((item: any) => ({
       id: item.id,
       menuId: item.menuItemId ?? item.menu_item_id ?? 0,
@@ -86,7 +83,7 @@ const CartPage = () => {
       orderId: item.orderId ?? item.order_id,
     }));
 
-    console.log("🎯 Final cart items:", mapped);
+    console.log("Final cart items:", mapped);
     setCart(mapped);
     
   } catch (err) {
@@ -98,9 +95,6 @@ const CartPage = () => {
     if (sessionId) fetchCart();
   }, [sessionId]);
 
-
-
-  // ✅ ปรับจำนวนสินค้า
   const updateQty = async (id: number, delta: number) => {
     const target = cart.find((item) => item.id === id);
     if (!target) return;
@@ -126,7 +120,7 @@ const CartPage = () => {
 
       if (!res.ok) throw new Error("Failed to update quantity in database");
 
-      console.log(`✅ Updated item ${id} → qty = ${newQty}`);
+      console.log(`Updated item ${id} → qty = ${newQty}`);
     } catch (err) {
       console.error("Error updating quantity:", err);
       alert("Failed to update item. Please try again.");

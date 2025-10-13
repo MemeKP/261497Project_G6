@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import QRCode from "qrcode";
 import express from "express";
 import "dotenv/config";
-import { eq, and, isNotNull, asc } from "drizzle-orm";
+import { eq, and, isNotNull, asc, desc } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
   users,
@@ -18,7 +18,7 @@ import {
 
 export const startSession = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { tableId } = req.body; // นี่คือ table record id (เช่น 14)
+    const { tableId } = req.body;
     const adminId = req.session.userId;
 
     console.log('Starting session for table RECORD ID:', tableId);
@@ -29,9 +29,8 @@ export const startSession = async (req: Request, res: Response, next: NextFuncti
       });
     }
 
-    // ✅ แก้ไข: หา table โดยใช้ id (ไม่ใช่ number)
     const tableRecord = await dbClient.query.tables.findFirst({
-      where: eq(tables.id, tableId), // ใช้ id แทน number
+      where: eq(tables.id, tableId),
     });
 
     console.log('🔍 Table record found:', tableRecord);
@@ -42,7 +41,6 @@ export const startSession = async (req: Request, res: Response, next: NextFuncti
       });
     }
 
-    // ✅ ตรวจสอบว่ามี session active อยู่แล้วหรือไม่ (ใช้ tableRecord.id)
     const existingSession = await dbClient.query.diningSessions?.findFirst({
       where: and(
         eq(diningSessions.tableId, tableRecord.id),
@@ -80,16 +78,43 @@ export const startSession = async (req: Request, res: Response, next: NextFuncti
 
     console.log('✅ Dining session created:', newSession[0]);
 
+    // 2. อัพเดทสถานะโต๊ะ
     await dbClient
       .update(tables)
       .set({ status: "OCCUPIED" })
       .where(eq(tables.id, tableRecord.id));
 
-    // QR Data setup
+    // 3. สร้าง group สำหรับ session นี้
+    const [newGroup] = await dbClient
+      .insert(groups)
+      .values({
+        tableId: tableId,
+        creatorUserId: null,
+      })
+      .returning();
+
+    console.log('✅ Group created:', newGroup);
+
+    // 4. สร้าง owner member โดยใช้ isTableAdmin = true
+    const [ownerMember] = await dbClient
+      .insert(group_members)
+      .values({
+        groupId: newGroup.id,
+        diningSessionId: newSession[0].id,
+        name: 'Main Customer',
+        isTableAdmin: true, // ช้ isTableAdmin แทน role
+        joinedAt: new Date(),
+        note: 'Auto-created owner member'
+      })
+      .returning();
+
+    console.log('✅ Owner member created:', ownerMember);
+
+    // 5. QR Data setup
     const qrData = {
       sessionId: newSession[0].id,
-      tableNumber: tableRecord.number, // ใช้ table number จาก record
-      path: `/tables/${tableRecord.number}`, // ใช้ table number ใน URL
+      tableNumber: tableRecord.number,
+      path: `/tables/${tableRecord.number}`,
     };
 
     const fullUrlForQR = `https://0a885cac0563b52cffe9b7f2b8d43d25.serveo.net/tables/${newSession[0].id}`;
@@ -106,18 +131,19 @@ export const startSession = async (req: Request, res: Response, next: NextFuncti
       width: 256,
     });
 
-    // Update session with generated QR Code
+    // Update session ด้วย generated QR Code
     await dbClient
       .update(diningSessions)
       .set({ qrCode: qrCodeDataURL })
       .where(eq(diningSessions.id, newSession[0].id));
 
+    // 6. ส่ง response พร้อมข้อมูลทั้งหมด
     res.status(201).json({
       message: `Dining session started successfully for table ${tableRecord.number}`,
       session: {
         id: newSession[0].id,
-        tableId: tableRecord.id, // table record id
-        tableNumber: tableRecord.number, // table number
+        tableId: tableRecord.id,
+        tableNumber: tableRecord.number,
         startedAt: newSession[0].startedAt,
         status: newSession[0].status,
         totalCustomers: newSession[0].totalCustomers,
@@ -126,12 +152,147 @@ export const startSession = async (req: Request, res: Response, next: NextFuncti
         qrData: qrData,
         openedByAdminId: adminId,
       },
+      group: newGroup,
+      ownerMember: {
+        id: ownerMember.id,
+        name: ownerMember.name,
+        isTableAdmin: ownerMember.isTableAdmin 
+      }
     });
+
   } catch (err) {
     console.error("Error starting session:", err);
     next(err);
   }
 };
+// export const startSession = async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const { tableId } = req.body; // table record id (เช่น 14ในดาต้าเบส)
+//     const adminId = req.session.userId;
+
+//     console.log('Starting session for table RECORD ID:', tableId);
+
+//     if (!tableId || typeof tableId !== "number") {
+//       return res.status(400).json({
+//         error: "Table ID is required and must be a number",
+//       });
+//     }
+
+//     const tableRecord = await dbClient.query.tables.findFirst({
+//       where: eq(tables.id, tableId), // ใช้ id แทน number
+//     });
+
+//     console.log('🔍 Table record found:', tableRecord);
+
+//     if (!tableRecord) {
+//       return res.status(400).json({
+//         error: `Table ID ${tableId} not found.`,
+//       });
+//     }
+
+//     const existingSession = await dbClient.query.diningSessions?.findFirst({
+//       where: and(
+//         eq(diningSessions.tableId, tableRecord.id),
+//         eq(diningSessions.status, "ACTIVE")
+//       ),
+//     });
+
+//     if (existingSession) {
+//       return res.status(400).json({
+//         error: `Table ${tableRecord.number} already has an active dining session`,
+//       });
+//     }
+
+//     const startedAt = new Date();
+
+//     const newSession = await dbClient
+//       .insert(diningSessions)
+//       .values({
+//         tableId: tableRecord.id, // ใช้ tableRecord.id
+//         startedAt: startedAt,
+//         status: "ACTIVE",
+//         qrCode: "",
+//         totalCustomers: 0,
+//         createdAt: new Date(),
+//         openedByAdminId: adminId,
+//       })
+//       .returning({
+//         id: diningSessions.id,
+//         tableId: diningSessions.tableId,
+//         startedAt: diningSessions.startedAt,
+//         status: diningSessions.status,
+//         totalCustomers: diningSessions.totalCustomers,
+//         createdAt: diningSessions.createdAt,
+//       });
+
+//     console.log('✅ Dining session created:', newSession[0]);
+
+//     await dbClient
+//       .update(tables)
+//       .set({ status: "OCCUPIED" })
+//       .where(eq(tables.id, tableRecord.id));
+
+//     // QR Data setup
+//     const qrData = {
+//       sessionId: newSession[0].id,
+//       tableNumber: tableRecord.number, // ใช้ table number จาก record
+//       path: `/tables/${tableRecord.number}`, // ใช้ table number ใน URL
+//     };
+
+//     const fullUrlForQR = `https://0a885cac0563b52cffe9b7f2b8d43d25.serveo.net/tables/${newSession[0].id}`;
+//     console.log('🔍 QR Code URL:', fullUrlForQR);
+
+//     // Generate QR Code
+//     const qrCodeDataURL = await QRCode.toDataURL(fullUrlForQR, {
+//       errorCorrectionLevel: "M",
+//       margin: 1,
+//       color: {
+//         dark: "#000000",
+//         light: "#FFFFFF",
+//       },
+//       width: 256,
+//     });
+
+//     // Update session ด้วย generated QR Code
+//     await dbClient
+//       .update(diningSessions)
+//       .set({ qrCode: qrCodeDataURL })
+//       .where(eq(diningSessions.id, newSession[0].id));
+
+//     res.status(201).json({
+//       message: `Dining session started successfully for table ${tableRecord.number}`,
+//       session: {
+//         id: newSession[0].id,
+//         tableId: tableRecord.id, // table record id
+//         tableNumber: tableRecord.number, // table number
+//         startedAt: newSession[0].startedAt,
+//         status: newSession[0].status,
+//         totalCustomers: newSession[0].totalCustomers,
+//         createdAt: newSession[0].createdAt,
+//         qrCode: qrCodeDataURL,
+//         qrData: qrData,
+//         openedByAdminId: adminId,
+//       },
+//     });
+//     //เพิ่มให้สร้างgoupใมห่ไปด้วย
+//      const [newGroup] = await dbClient
+//       .insert(groups)
+//       .values({
+//         tableId: tableId,
+//         creatorUserId: null,
+//       })
+//       .returning();
+
+//     res.status(201).json({
+//       session: newSession,
+//       group: newGroup // ส่ง group ใหม่กลับไปด้วย
+//     });
+
+//   } catch (err) {
+//     console.error("Error starting session:", err);
+//     next(err);
+//   }
+// };
 
 export const getQrForTable = async (
   req: Request,
@@ -324,17 +485,13 @@ export const getActiveSession = async (
     next(err);
   }
 };
-
-export const getSession = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const getSession = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sessionId = parseInt(req.params.sessionId);
     if (isNaN(sessionId)) {
       return res.status(400).json({ error: "Invalid Session ID" });
     }
+
     const session = await dbClient
       .select({
         id: diningSessions.id,
@@ -357,32 +514,41 @@ export const getSession = async (
     }
 
     if (!sessionData.qrCode) {
-      return res
-        .status(500)
-        .json({ error: "Session QR Code data is missing in the database." });
+      return res.status(500).json({ error: "Session QR Code data is missing." });
     }
-    const group = await dbClient.query.groups.findFirst({
-      where: eq(groups.tableId, sessionData.tableId),
+
+    // หา group ที่สร้างสำหรับ session นี้ (ไม่ใช้ tableId อย่างเดียว)
+    const groupMembers = await dbClient.query.group_members.findMany({
+      where: eq(group_members.diningSessionId, sessionId),
+      limit: 1
     });
 
-    const members = group
-      ? (
-        await dbClient.query.group_members.findMany({
-          where: eq(group_members.groupId, group.id),
-        })
-      ).map((member) => ({
-        id: member.id,
-        name: member.name,
-        note: member.note,
-      }))
-      : [];
-    const duration =
-      sessionData.endedAt && sessionData.startedAt
-        ? Math.round(
-          (sessionData.endedAt.getTime() - sessionData.startedAt.getTime()) /
-          60000
-        )
-        : null;
+    let group = null;
+    let members = [];
+
+    if (groupMembers.length > 0) {
+      // มี members ใน session นี้ → ใช้ group ของ member ตัวแรก
+      group = await dbClient.query.groups.findFirst({
+        where: eq(groups.id, groupMembers[0].groupId),
+      });
+    } else {
+      // ยังไม่มี members → หา group ล่าสุดของ table นี้
+      const latestGroup = await dbClient.query.groups.findFirst({
+        where: eq(groups.tableId, sessionData.tableId),
+        orderBy: desc(groups.createdAt), // ใช้ group ล่าสุด
+      });
+      group = latestGroup;
+    }
+
+    // ได้เฉพาะ members ของ session นี้
+    members = await dbClient.query.group_members.findMany({
+      where: eq(group_members.diningSessionId, sessionId),
+    });
+
+    const duration = sessionData.endedAt && sessionData.startedAt
+      ? Math.round((sessionData.endedAt.getTime() - sessionData.startedAt.getTime()) / 60000)
+      : null;
+
     res.json({
       session: {
         id: sessionData.id,
@@ -391,22 +557,106 @@ export const getSession = async (
         endedAt: sessionData.endedAt,
         qrCode: sessionData.qrCode,
         status: sessionData.status,
-        totalCustomers: members.length,
+        totalCustomers: members.length, // ใช้จำนวน members จริง
         total: Number(sessionData.total) ?? 0,
         createdAt: sessionData.createdAt,
         durationMinutes: duration,
       },
-      group: group
-        ? {
-          id: group.id,
-          members,
-        }
-        : null,
+      group: group ? {
+        id: group.id,
+        members: members.map(member => ({
+          id: member.id,
+          name: member.name,
+          note: member.note,
+        })),
+      } : null,
     });
   } catch (err) {
     next(err);
   }
 };
+// export const getSession = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   try {
+//     const sessionId = parseInt(req.params.sessionId);
+//     if (isNaN(sessionId)) {
+//       return res.status(400).json({ error: "Invalid Session ID" });
+//     }
+//     const session = await dbClient
+//       .select({
+//         id: diningSessions.id,
+//         tableId: diningSessions.tableId,
+//         startedAt: diningSessions.startedAt,
+//         endedAt: diningSessions.endedAt,
+//         status: diningSessions.status,
+//         totalCustomers: diningSessions.totalCustomers,
+//         total: diningSessions.total,
+//         createdAt: diningSessions.createdAt,
+//         qrCode: diningSessions.qrCode,
+//       })
+//       .from(diningSessions)
+//       .where(eq(diningSessions.id, sessionId))
+//       .limit(1);
+
+//     const sessionData = session[0];
+//     if (!sessionData) {
+//       return res.status(404).json({ error: "Session not found" });
+//     }
+
+//     if (!sessionData.qrCode) {
+//       return res
+//         .status(500)
+//         .json({ error: "Session QR Code data is missing in the database." });
+//     }
+//     const group = await dbClient.query.groups.findFirst({
+//       where: eq(groups.tableId, sessionData.tableId),
+//     });
+
+//     const members = group
+//       ? (
+//         await dbClient.query.group_members.findMany({
+//           where: eq(group_members.groupId, group.id),
+//         })
+//       ).map((member) => ({
+//         id: member.id,
+//         name: member.name,
+//         note: member.note,
+//       }))
+//       : [];
+//     const duration =
+//       sessionData.endedAt && sessionData.startedAt
+//         ? Math.round(
+//           (sessionData.endedAt.getTime() - sessionData.startedAt.getTime()) /
+//           60000
+//         )
+//         : null;
+//     res.json({
+//       session: {
+//         id: sessionData.id,
+//         tableId: sessionData.tableId,
+//         startedAt: sessionData.startedAt,
+//         endedAt: sessionData.endedAt,
+//         qrCode: sessionData.qrCode,
+//         status: sessionData.status,
+//         totalCustomers: members.length,
+//         total: Number(sessionData.total) ?? 0,
+//         createdAt: sessionData.createdAt,
+//         durationMinutes: duration,
+//       },
+//       group: group
+//         ? {
+//           id: group.id,
+//           members,
+//         }
+//         : null,
+//     });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
 
 // ใน getSessionByTableNumber
 export const getSessionIdByTableNumber = async (tableNumber: number) => {
@@ -427,3 +677,29 @@ export const getSessionIdByTableNumber = async (tableNumber: number) => {
 
   return session[0]?.id;
 };
+
+// // Create a new group when a new session is opened
+// export const createGroupForNewSession = async (sessionId: number, tableId: number) => {
+//   // Create a new group for the session
+//   const group = await dbClient.insert(groups).values({
+//     tableId,
+//     creatorUserId: null, // Or specify the creator user ID here
+//     createdAt: new Date(),
+//   }).returning();
+
+//   // Return the created group
+//   return group[0];
+// };
+
+// export const addMembersToNewGroup = async (groupId: number, members: Array<number>) => {
+//   const groupMembers = members.map((memberId) => ({
+//     groupId,
+//     userId: memberId, // Assuming you have the user ID of the members
+//     diningSessionId: groupId, // Associate the group with the dining session
+//     isTableAdmin: false, // Specify if admin
+//     joinedAt: new Date(),
+//   }));
+
+//   // Insert members into the group_members table
+//   await dbClient.insert(group_members).values(groupMembers);
+// };

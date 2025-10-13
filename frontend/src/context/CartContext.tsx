@@ -31,40 +31,101 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, sessionId 
   };
 
   // ฟังก์ชันเพิ่มสินค้าลงตะกร้า
-  const addToCart = async (
-    menuItemId: number,
-    memberId: number,
-    quantity: number = 1,
-    note: string = ''
-  ) => {
-    if (!sessionId) {
-      throw new Error('No session ID');
-    }
-    try {
-      // 1. โหลดหรือสร้าง order (ถ้ายังไม่มี order ปัจจุบัน)
-      let orderId = currentOrderId;
+  // const addToCart = async (
+  //   menuItemId: number,
+  //   quantity: number = 1,
+  //   note?: string,
+  //   memberId?: number,
+  //   // note: string = ''
+  // ) => {
+  //   if (!sessionId) {
+  //     throw new Error('No session ID');
+  //   }
+  //   try {
+  //     // 1. โหลดหรือสร้าง order (ถ้ายังไม่มี order ปัจจุบัน)
+  //     let orderId = currentOrderId;
+  //     if (!orderId) {
+  //       orderId = await loadOrCreateOrder(sessionId);
+  //     }
+  //     // 2. เพิ่มสินค้าลง order_items
+  //     // console.log('Adding item to order:', { orderId, menuItemId, memberId, quantity });
+  //     const response = await axios.post('/api/order-items', {
+  //       orderId,
+  //       menuItemId,
+  //       quantity,
+  //       note,
+  //       memberId, // มาคนเดียวก้ส่ง null ไป
+  //     });
+  //     console.log('✅ Item added to cart:', response.data);
+  //     // 3. อัพเดท cart count
+  //     await fetchCartCount(orderId);
 
-      if (!orderId) {
-        orderId = await loadOrCreateOrder(sessionId);
-      }
-      // 2. เพิ่มสินค้าลง order_items
-      // console.log('Adding item to order:', { orderId, menuItemId, memberId, quantity });
-      const response = await axios.post('/api/order-items', {
-        orderId,
-        menuItemId,
-        memberId,
-        quantity,
-        note,
+  //   } catch (error) {
+  //     console.error('❌ Error adding to cart:', error);
+  //     throw error;
+  //   }
+  // };
+// ฟังก์ชันเพิ่มสินค้าลงตะกร้า
+const addToCart = async (
+  menuItemId: number,
+  quantity: number = 1,
+  note?: string,
+  memberId?: number,
+) => {
+  if (!sessionId) {
+    throw new Error('No session ID');
+  }
+  try {
+    console.log('🔍 [CART] addToCart called with:', {
+      menuItemId,
+      quantity,
+      note,
+      memberId,
+      sessionId
+    });
+
+    // 1. โหลดหรือสร้าง order (ถ้ายังไม่มี order ปัจจุบัน)
+    let orderId = currentOrderId;
+    if (!orderId) {
+      // console.log('[CART] No current order, creating new one...');
+      orderId = await loadOrCreateOrder(sessionId);
+      setCurrentOrderId(orderId);
+    }
+    
+    console.log('[CART] Using orderId:', orderId);
+
+    // 2. เพิ่มสินค้าลง order_items
+    const requestData = {
+      orderId,
+      menuItemId,
+      quantity,
+      note: note || null,
+      memberId: memberId || null,
+    };
+    
+    console.log('[CART] Sending request to /api/order-items:', requestData);
+    
+    const response = await axios.post('/api/order-items', requestData);
+    
+    console.log('✅ [CART] Item added to cart:', response.data);
+    
+    // 3. อัพเดท cart count
+    await fetchCartCount(orderId);
+
+  } catch (error) {
+    console.error('❌ [CART] Error adding to cart:', error);
+    
+    if (axios.isAxiosError(error)) {
+      console.error('❌ [CART] Axios error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
       });
-      console.log('✅ Item added to cart:', response.data);
-      // 3. อัพเดท cart count
-      await fetchCartCount(orderId);
-
-    } catch (error) {
-      console.error('❌ Error adding to cart:', error);
-      throw error;
     }
-  };
+    
+    throw error;
+  }
+};
 
   const checkoutOrder = async () => {
     if (!currentOrderId || !sessionId) {
@@ -110,7 +171,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, sessionId 
 
       if (response.data.success) {
         const count = Number(response.data.count);
-        console.log('✅ Setting cart count to:', count);
+        // console.log('✅ Setting cart count to:', count);
         setCartCount(count);
       } else {
         throw new Error(response.data.message);
@@ -182,7 +243,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, sessionId 
 
       const response = await axios.post('/api/orders', {
         diningSessionId: parseInt(sessionId),
-        tableId: parseInt(sessionId), 
+        tableId: parseInt(sessionId),
         // status: 'PENDING'
       });
 
