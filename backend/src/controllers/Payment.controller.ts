@@ -61,6 +61,71 @@ export async function mockCallback(req: Request, res: Response) {
   }
 }
 
+// export async function getPaymentStatus(req: Request, res: Response, next: NextFunction) {
+//   try {
+//     const { billId } = req.params;
+//     const { memberId } = req.query;
+
+//     if (!billId) {
+//       return res.status(400).json({
+//         error: "Bill ID is required"
+//       });
+//     }
+
+//     // แปลง billId เป็น number
+//     const billIdNum = parseInt(billId as string);
+//     const memberIdNum = memberId ? parseInt(memberId as string) : null;
+
+//     let payment;
+
+//     if (memberIdNum) {
+//       // กรณีจ่ายแบบ split - ใช้ Drizzle query
+//       const result = await dbClient
+//         .select()
+//         .from(payments)
+//         .where(
+//           and(
+//             eq(payments.billId, billIdNum),
+//             eq(payments.memberId, memberIdNum)
+//           )
+//         )
+//         .orderBy(desc(payments.paidAt))
+//         .limit(1);
+
+//       payment = result[0];
+//     } else {
+//       // กรณีจ่ายทั้งบิล
+//       const result = await dbClient
+//         .select()
+//         .from(payments)
+//         .where(eq(payments.billId, billIdNum))
+//         .orderBy(desc(payments.paidAt))
+//         .limit(1);
+
+//       payment = result[0];
+//     }
+
+//     if (!payment) {
+//       return res.status(404).json({
+//         error: "Payment not found"
+//       });
+//     }
+
+//     res.json({
+//       status: payment.status,
+//       paymentId: payment.id,
+//       amount: payment.amount,
+//       billId: payment.billId,
+//       memberId: payment.memberId,
+//       billSplitId: payment.billSplitId,
+//     });
+
+//   } catch (error) {
+//     console.error("Error fetching payment status:", error);
+//     next(error);
+//   }
+// }
+
 export async function getPaymentStatus(req: Request, res: Response, next: NextFunction) {
   try {
     const { billId } = req.params;
@@ -68,48 +133,52 @@ export async function getPaymentStatus(req: Request, res: Response, next: NextFu
 
     if (!billId) {
       return res.status(400).json({
-        error: "Bill ID is required"
+        error: "Bill ID is required",
       });
     }
 
-    // แปลง billId เป็น number
     const billIdNum = parseInt(billId as string);
     const memberIdNum = memberId ? parseInt(memberId as string) : null;
 
     let payment;
 
     if (memberIdNum) {
-      // กรณีจ่ายแบบ split - ใช้ Drizzle query
+      // ✅ กรณี Split Bill
       const result = await dbClient
         .select()
         .from(payments)
         .where(
-          and(
-            eq(payments.billId, billIdNum),
-            eq(payments.memberId, memberIdNum)
-          )
+          and(eq(payments.billId, billIdNum), eq(payments.memberId, memberIdNum))
         )
         .orderBy(desc(payments.paidAt))
         .limit(1);
-
       payment = result[0];
     } else {
-      // กรณีจ่ายทั้งบิล
+      // ✅ กรณี Full Bill
       const result = await dbClient
         .select()
         .from(payments)
         .where(eq(payments.billId, billIdNum))
         .orderBy(desc(payments.paidAt))
         .limit(1);
-
       payment = result[0];
     }
 
     if (!payment) {
       return res.status(404).json({
-        error: "Payment not found"
+        error: "Payment not found",
       });
     }
+
+    // ✅ ดึงข้อมูล bill เพื่อหา sessionId
+    const [bill] = await dbClient
+      .select({
+        sessionId: bills.diningSessionId,
+        billStatus: bills.status,
+      })
+      .from(bills)
+      .where(eq(bills.id, billIdNum))
+      .limit(1);
 
     res.json({
       status: payment.status,
@@ -118,13 +187,15 @@ export async function getPaymentStatus(req: Request, res: Response, next: NextFu
       billId: payment.billId,
       memberId: payment.memberId,
       billSplitId: payment.billSplitId,
+      sessionId: bill?.sessionId || null, // ส่ง sessionId กลับไป
+      billStatus: bill?.billStatus || null, 
     });
-
   } catch (error) {
     console.error("Error fetching payment status:", error);
     next(error);
   }
 }
+
 
 // export const getPaymentsByTable = async (req: Request, res: Response, next: NextFunction) => {
 //   const { tableId } = req.query;
