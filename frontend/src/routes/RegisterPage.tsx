@@ -237,6 +237,7 @@ import { useNavigate } from "react-router-dom";
 import { FaUser, FaLock, FaPhoneAlt, FaHome } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
 import bg1 from "../assets/imgs/bg-1.png";
+import { useAuth } from "../context/useAuth"; // ✅ เพิ่มตรงนี้
 
 const RegisterPage = () => {
   const [username, setName] = useState("");
@@ -249,13 +250,14 @@ const RegisterPage = () => {
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
+  const { login } = useAuth(); 
 
-  /** ✅ ตรวจว่า login อยู่แล้วไหม */
   useEffect(() => {
     const checkIfAlreadyLogin = async () => {
       try {
         const res = await fetch("/api/auth/me", { credentials: "include" });
         if (res.ok) {
+          login(); 
           navigate("/admin/dashboard");
           return;
         }
@@ -266,9 +268,8 @@ const RegisterPage = () => {
       }
     };
     checkIfAlreadyLogin();
-  }, [navigate]);
+  }, [navigate, login]);
 
-  /** ✅ สมัครสมาชิก แล้ว login ทันที */
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -296,7 +297,6 @@ const RegisterPage = () => {
         return;
       }
 
-      // ✅ หลัง register เสร็จ ให้ login ทันทีโดยใช้ email/password เดิม
       const loginRes = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -305,6 +305,7 @@ const RegisterPage = () => {
       });
 
       if (loginRes.ok) {
+        login(); 
         navigate("/admin/dashboard");
       } else {
         navigate("/login");
@@ -315,7 +316,6 @@ const RegisterPage = () => {
     }
   };
 
-  /** ✅ กันกระพริบหน้าจอขณะตรวจ session */
   if (checking) {
     return <div className="bg-black w-full h-screen" />;
   }
