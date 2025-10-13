@@ -74,9 +74,7 @@ export async function generateBill(orderId: number) {
 export async function generateBillForSession(sessionId: number, force = false) {
   const ordersData = await db.select().from(orders).where(eq(orders.diningSessionId, sessionId));
   if (ordersData.length === 0) throw new Error("No orders found for this session");
-
   const orderIds = ordersData.map(o => o.id);
-
   const items = await db
     .select({
       memberId: orderItems.memberId,
@@ -88,12 +86,11 @@ export async function generateBillForSession(sessionId: number, force = false) {
     .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
     .where(inArray(orderItems.orderId, orderIds));
 
-  // ✅ คำนวณยอดใหม่
+  // คำนวณยอดใหม่
   const subtotal = items.reduce((sum, i) => sum + i.price * (i.quantity ?? 0), 0);
   const serviceCharge = +(subtotal * 0.07).toFixed(2);
   const total = +(subtotal + serviceCharge).toFixed(2);
 
-  // ✅ ตรวจว่ามี bill เดิมไหม
   const existing = await db.select().from(bills).where(eq(bills.diningSessionId, sessionId));
 
   let bill;
@@ -124,18 +121,69 @@ export async function generateBillForSession(sessionId: number, force = false) {
         status: "UNPAID",
       })
       .returning();
-
-    console.log(`🧾 Created new bill for session ${sessionId}`);
   }
-
   await db.delete(billSplits).where(eq(billSplits.billId, bill.id));
-
   await calculateSplitForSession(sessionId, bill.id, serviceCharge);
-
   const splits = await getSplit(bill.id);
-
   return { ...bill, items, splits };
 }
+
+/**
+ * ✅ Generate bill รวมทุก order ของ session
+ * ➤ ใช้ตอนกด “Generate Bill” → ยังไม่ split, ยังไม่สร้าง QR
+ */
+// export async function generateBillForSession(sessionId: number) {
+//   const ordersData = await db.select().from(orders).where(eq(orders.diningSessionId, sessionId));
+//   if (ordersData.length === 0) throw new Error("No orders found for this session");
+//   const orderIds = ordersData.map((o) => o.id);
+//   const items = await db
+//     .select({
+//       memberId: orderItems.memberId,
+//       price: menuItems.price,
+//       quantity: orderItems.quantity,
+//       menuName: menuItems.name,
+//     })
+//     .from(orderItems)
+//     .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+//     .where(inArray(orderItems.orderId, orderIds));
+
+//   const subtotal = items.reduce((sum, i) => sum + i.price * (i.quantity ?? 0), 0);
+//   const serviceCharge = +(subtotal * 0.07).toFixed(2);
+//   const total = +(subtotal + serviceCharge).toFixed(2);
+//   const existing = await db.select().from(bills).where(eq(bills.diningSessionId, sessionId));
+
+//   let bill;
+//   if (existing.length > 0) {
+//     [bill] = await db
+//       .update(bills)
+//       .set({
+//         subtotal,
+//         serviceCharge,
+//         vat: 0,
+//         total,
+//         status: "UNPAID",
+//       })
+//       .where(eq(bills.diningSessionId, sessionId))
+//       .returning();
+//     console.log(`♻️ Updated existing bill for session ${sessionId}`);
+//   } else {
+//     [bill] = await db
+//       .insert(bills)
+//       .values({
+//         diningSessionId: sessionId,
+//         subtotal,
+//         serviceCharge,
+//         vat: 0,
+//         total,
+//         status: "UNPAID",
+//       })
+//       .returning();
+//     console.log(`🧾 Created new bill for session ${sessionId}`);
+//   }
+
+//   // ยังไม่ split, ยังไม่สร้าง QR
+//   return { ...bill, items, message: "✅ Bill created (no split / QR yet)" };
+// }
 
 /**
  * คำนวณ split สำหรับบิลรวมทั้ง session
@@ -234,7 +282,15 @@ export async function calculateSplit(
  * ดึง split ของ bill
  */
 export async function getSplit(billId: number) {
-  return await db
+  const [bill] = await db
+    .select({
+      id: bills.id,
+      diningSessionId: bills.diningSessionId,
+    })
+    .from(bills)
+    .where(eq(bills.id, billId));
+
+  const splits = await db
     .select({
       memberId: billSplits.memberId,
       amount: billSplits.amount,
@@ -244,6 +300,11 @@ export async function getSplit(billId: number) {
     .from(billSplits)
     .innerJoin(group_members, eq(group_members.id, billSplits.memberId))
     .where(eq(billSplits.billId, billId));
+
+  return splits.map((s) => ({
+    ...s,
+    sessionId: bill?.diningSessionId || null,
+  }));
 }
 
 /**
@@ -328,67 +389,6 @@ export async function calculateBillPreview(sessionId: number) {
     orderCount: ordersData.length
   };
 }
-
-/**
- * ✅ Generate bill รวมทุก order ของ session
- * ➤ ใช้ตอนกด “Generate Bill” → ยังไม่ split, ยังไม่สร้าง QR
- */
-/*
-export async function generateBillForSession(sessionId: number) {
-  const ordersData = await db.select().from(orders).where(eq(orders.diningSessionId, sessionId));
-  if (ordersData.length === 0) throw new Error("No orders found for this session");
-
-  const orderIds = ordersData.map((o) => o.id);
-
-  const items = await db
-    .select({
-      memberId: orderItems.memberId,
-      price: menuItems.price,
-      quantity: orderItems.quantity,
-      menuName: menuItems.name,
-    })
-    .from(orderItems)
-    .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
-    .where(inArray(orderItems.orderId, orderIds));
-
-  const subtotal = items.reduce((sum, i) => sum + i.price * (i.quantity ?? 0), 0);
-  const serviceCharge = +(subtotal * 0.07).toFixed(2);
-  const total = +(subtotal + serviceCharge).toFixed(2);
-
-  const existing = await db.select().from(bills).where(eq(bills.diningSessionId, sessionId));
-
-  let bill;
-  if (existing.length > 0) {
-    [bill] = await db
-      .update(bills)
-      .set({
-        subtotal,
-        serviceCharge,
-        vat: 0,
-        total,
-        status: "UNPAID",
-      })
-      .where(eq(bills.diningSessionId, sessionId))
-      .returning();
-    console.log(`♻️ Updated existing bill for session ${sessionId}`);
-  } else {
-    [bill] = await db
-      .insert(bills)
-      .values({
-        diningSessionId: sessionId,
-        subtotal,
-        serviceCharge,
-        vat: 0,
-        total,
-        status: "UNPAID",
-      })
-      .returning();
-    console.log(`🧾 Created new bill for session ${sessionId}`);
-  }
-
-  // ❌ ยังไม่ split, ยังไม่สร้าง QR
-  return { ...bill, items, message: "✅ Bill created (no split / QR yet)" };
-}*/
 
 /**
  * ✅ Pay Entire Bill → สร้าง QR รวมยอดทั้งหมดของโต๊ะ

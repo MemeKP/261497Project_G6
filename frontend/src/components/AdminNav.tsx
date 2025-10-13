@@ -71,7 +71,7 @@ const AdminNav = () => {
         }`}
       >
         <Link to="/admin/dashboard">Overview</Link>
-        <Link to="/admin/order">Order List</Link>
+        <Link to="/admin/order">Menu List</Link>
         <Link to="/admin/payment">Payment</Link>
       </div>
     </div>

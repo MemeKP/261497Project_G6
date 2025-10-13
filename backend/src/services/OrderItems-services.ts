@@ -2,59 +2,6 @@ import { dbClient as db, dbClient } from "db/client.js";
 import { orderItems, orders, menuItems,group_members } from "db/schema.js";
 import { and, eq } from "drizzle-orm";
 
-/**
- * เพิ่ม OrderItem เข้าไปใน Order (Add to cart)
- */
-// export async function addOrderItem(
-//   orderId: number,
-//   menuItemId: number,
-//   memberId: number,
-//   quantity: number,
-//   note?: string,
-//   status: string = "PREPARING"
-// ) {
-//   // checkว่า orderId มีอยู่จริง
-//   const [order] = await db.select().from(orders).where(eq(orders.id,orderId));
-//   if (!order) throw new Error("Order not found");
-
-//   // checkว่า memberId มีอยู่จริง
-//   const [member] = await db.select().from(group_members).where(eq(group_members.id, memberId));
-//   if (!member) throw new Error("Member not found");
-
-//   //  checkว่า member กับ order อยู่ใน session เดียวกัน
-//   if (member.diningSessionId !== order.diningSessionId) {
-//     throw new Error("Member and Order do not belong to the same session");
-//   }
-
-//   //  checkว่าเมนูยัง available อยู่
-//   const [menu] = await db.select().from(menuItems).where(eq(menuItems.id, menuItemId));
-//   if (!menu) throw new Error("Menu item not found");
-//   if (!menu.isAvailable) {
-//     throw new Error("This menu item is not available");
-//   }
-
-//   // check qty
-//   if (quantity <= 0) throw new Error("Quantity must be at least 1");
-
-//   //  insert order item
-//   const [newItem] = await db
-//     .insert(orderItems)
-//     .values({
-//       orderId,
-//       menuItemId,
-//       memberId,
-//       quantity,
-//       note: note || null,
-//     })
-//     .returning();
-
-//   // return item พร้อมข้อมูลเมนู
-//   return {
-//     ...newItem,
-//     menuName: menu.name,
-//     menuPrice: menu.price,
-//   };
-// }
 export const addOrderItem = async (
   orderId: number,
   menuItemId: number,
@@ -70,24 +17,18 @@ export const addOrderItem = async (
       note,
       memberId,
       memberIdType: typeof memberId,
-      quantityType: typeof quantity // ✅ เพิ่ม debug นี้
+      quantityType: typeof quantity 
     });
 
-    // ✅ แก้ไข: แปลง quantity ให้แน่ใจว่าเป็น number
     const quantityNum = Number(quantity);
-    console.log('🔍 [SERVICE] Quantity after conversion:', quantityNum, 'Type:', typeof quantityNum);
-
     // check ว่า orderId มีอยู่จริง
     const [order] = await dbClient.select().from(orders).where(eq(orders.id, orderId));
-    console.log('🔍 [SERVICE] Found order:', order);
     
     if (!order) throw new Error("Order not found");
 
     let finalMemberId = memberId;
     
-    if (memberId === null || memberId === undefined) {
-      console.log('🔍 [SERVICE] No memberId provided, finding table admin...');
-      
+    if (memberId === null || memberId === undefined) { 
       const tableAdminMembers = await dbClient
         .select()
         .from(group_members)
@@ -128,13 +69,9 @@ export const addOrderItem = async (
     if (member.diningSessionId !== order.diningSessionId) {
       throw new Error("Member and Order do not belong to the same session");
     }
-
     // check ว่าเมนูยัง available อยู่
-    const menuItemsResult = await dbClient.select().from(menuItems).where(eq(menuItems.id, menuItemId));
-    console.log('🔍 [SERVICE] Found menu item:', menuItemsResult[0]);
-    
+    const menuItemsResult = await dbClient.select().from(menuItems).where(eq(menuItems.id, menuItemId));    
     if (menuItemsResult.length === 0) throw new Error("Menu item not found");
-    
     const menu = menuItemsResult[0];
     if (!menu.isAvailable) {
       throw new Error("This menu item is not available");
@@ -143,7 +80,6 @@ export const addOrderItem = async (
       throw new Error(`Quantity must be at least 1, but got: ${quantityNum} (type: ${typeof quantityNum})`);
     }
 
-    
     const newItems = await dbClient
       .insert(orderItems)
       .values({
@@ -156,7 +92,6 @@ export const addOrderItem = async (
       .returning();
 
     console.log('✅ [SERVICE] Order item inserted successfully:', newItems[0]);
-
     return {
       ...newItems[0],
       menuName: menu.name,
@@ -190,7 +125,7 @@ export async function getOrderItemsByOrderId(orderId: number) {
     })
     .from(orderItems)
     .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
-    .leftJoin(group_members, eq(orderItems.memberId, group_members.id)) // ✅ join ตาราง members
+    .leftJoin(group_members, eq(orderItems.memberId, group_members.id)) 
     .where(eq(orderItems.orderId, orderId));
 
   return items;
@@ -214,7 +149,7 @@ export async function getOrderItemsBySession(sessionId: number) {
     .from(orderItems)
     .innerJoin(orders, eq(orderItems.orderId, orders.id))
     .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
-    .leftJoin( group_members, eq(orderItems.memberId, group_members.id)) // ✅ เพิ่ม join member
+    .leftJoin( group_members, eq(orderItems.memberId, group_members.id)) 
     .where(eq(orders.diningSessionId, sessionId));
 }
 
@@ -287,3 +222,57 @@ export async function deleteOrderItem(id: number) {
   // ลบแล้วไม่จำเป็นต้อง join menu 
   return { ...deleted, message: "Deleted successfully" };
 }
+
+/**
+ * เพิ่ม OrderItem เข้าไปใน Order (Add to cart)
+ */
+// export async function addOrderItem(
+//   orderId: number,
+//   menuItemId: number,
+//   memberId: number,
+//   quantity: number,
+//   note?: string,
+//   status: string = "PREPARING"
+// ) {
+//   // checkว่า orderId มีอยู่จริง
+//   const [order] = await db.select().from(orders).where(eq(orders.id,orderId));
+//   if (!order) throw new Error("Order not found");
+
+//   // checkว่า memberId มีอยู่จริง
+//   const [member] = await db.select().from(group_members).where(eq(group_members.id, memberId));
+//   if (!member) throw new Error("Member not found");
+
+//   //  checkว่า member กับ order อยู่ใน session เดียวกัน
+//   if (member.diningSessionId !== order.diningSessionId) {
+//     throw new Error("Member and Order do not belong to the same session");
+//   }
+
+//   //  checkว่าเมนูยัง available อยู่
+//   const [menu] = await db.select().from(menuItems).where(eq(menuItems.id, menuItemId));
+//   if (!menu) throw new Error("Menu item not found");
+//   if (!menu.isAvailable) {
+//     throw new Error("This menu item is not available");
+//   }
+
+//   // check qty
+//   if (quantity <= 0) throw new Error("Quantity must be at least 1");
+
+//   //  insert order item
+//   const [newItem] = await db
+//     .insert(orderItems)
+//     .values({
+//       orderId,
+//       menuItemId,
+//       memberId,
+//       quantity,
+//       note: note || null,
+//     })
+//     .returning();
+
+//   // return item พร้อมข้อมูลเมนู
+//   return {
+//     ...newItem,
+//     menuName: menu.name,
+//     menuPrice: menu.price,
+//   };
+// }

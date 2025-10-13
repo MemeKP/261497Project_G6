@@ -2,7 +2,8 @@ import type { Request, Response } from "express";
 import * as billSplitService from "src/services/BillSplits-services.js";
 import { dbClient as db } from "db/client.js";
 import { bills, billSplits } from "db/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, and, inArray, desc } from "drizzle-orm";
+import QRCode from "qrcode";
 
 export async function createBill(req: Request, res: Response) {
   try {
@@ -158,6 +159,20 @@ export async function getBillPreview(req: Request, res: Response) {
   }
 }
 
+// export async function payEntireBill(req: Request, res: Response) {
+//   try {
+//     const sessionId = Number(req.params.id);
+//     if (isNaN(sessionId)) {
+//       return res.status(400).json({ error: "Invalid session id" });
+//     }
+
+//     const result = await billSplitService.createGroupPaymentQr(sessionId);
+//     res.status(200).json(result);
+//   } catch (err: any) {
+//     console.error("❌ Pay Entire Bill error:", err);
+//     res.status(500).json({ error: err.message || "Failed to generate group payment QR" });
+//   }
+// }
 export async function payEntireBill(req: Request, res: Response) {
   try {
     const sessionId = Number(req.params.id);
@@ -165,14 +180,63 @@ export async function payEntireBill(req: Request, res: Response) {
       return res.status(400).json({ error: "Invalid session id" });
     }
 
-    const result = await billSplitService.createGroupPaymentQr(sessionId);
-    res.status(200).json(result);
+    // 1. ตรวจสอบว่ามี entire bill อยู่แล้วโดยดูจากว่าไม่มี splits
+    const existingBills = await db
+      .select()
+      .from(bills)
+      .where(eq(bills.diningSessionId, sessionId));
+
+    let entireBill;
+
+    // หา bill ที่ไม่มี splits (นั่นคือ entire bill)
+    for (const bill of existingBills) {
+      const splits = await db
+        .select()
+        .from(billSplits)
+        .where(eq(billSplits.billId, bill.id))
+        .limit(1);
+
+      if (splits.length === 0) {
+        entireBill = bill;
+        break;
+      }
+    }
+
+    if (entireBill) {
+      // ใช้ entire bill ที่มีอยู่
+      console.log("💰 Using existing entire bill:", entireBill.id);
+    } else {
+      // 2. สร้าง entire bill ใหม่จาก bill ล่าสุด
+      const latestBill = existingBills[existingBills.length - 1];
+      
+      if (!latestBill) {
+        return res.status(404).json({ error: "No bill found for this session" });
+      }
+
+      // ลบ splits จาก bill ล่าสุดเพื่อแปลงเป็น entire bill
+      await db
+        .delete(billSplits)
+        .where(eq(billSplits.billId, latestBill.id));
+
+      entireBill = latestBill;
+      console.log("✅ Converted latest bill to entire bill:", latestBill.id);
+    }
+
+    // 3. สร้าง QR code
+    const qrPayload = `PAY:${entireBill.total}`;
+    const qrBase64 = await QRCode.toDataURL(qrPayload);
+
+    return res.status(200).json({ 
+      ...entireBill, 
+      qrCode: qrBase64, 
+      message: "✅ Entire bill created successfully" 
+    });
+
   } catch (err: any) {
     console.error("❌ Pay Entire Bill error:", err);
-    res.status(500).json({ error: err.message || "Failed to generate group payment QR" });
+    res.status(500).json({ error: err.message || "Failed to create entire bill" });
   }
 }
-
 
 // สำหรับปุ่ม "Split Bill" (แยกบิล + สร้าง QR ของแต่ละคน)
 export async function splitBill(req: Request, res: Response) {

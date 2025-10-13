@@ -23,6 +23,7 @@ import { AuthProvider } from "./context/AuthProvider.tsx";
 import PaymentPage from "./routes/PaymentPage.tsx";
 import SplitBillPage from "./routes/SplitBillPage.tsx";
 import { SessionLayout } from "./layout/SessionLayout.tsx";
+import SessionPage from "./routes/SessionPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -105,6 +106,10 @@ const router = createBrowserRouter([
       {
         path: "/payment/:billId/:memberId",
         element: <PaymentPage />,
+      },
+      {
+        path: "/session/:sessionId",
+        element: (<ProtectedRoute><SessionPage /></ProtectedRoute>),
       },
       {
         path: "/admin/dashboard",

@@ -133,7 +133,7 @@ const TableAndSession: React.FC = () => {
         setQrCodeData(data.group.qrCode);
         setShowqr(true);
       } else {
-        alert("Group created but QR code not found");
+        alert("Group created");
         setSelectedTable(null);
       }
     },

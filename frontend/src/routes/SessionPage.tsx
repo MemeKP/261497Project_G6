@@ -15,13 +15,27 @@ interface SessionData {
 
 const SessionPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const navigate = useNavigate();
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // 🚫 ป้องกันการย้อนกลับจากหน้า SessionPage
+  useEffect(() => {
+    // บันทึกสถานะปัจจุบันใน history (กันปุ่ม Back)
+    window.history.pushState(null, "", window.location.href);
+
+    const handlePopState = () => {
+      alert("This session has already ended. You cannot go back.");
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   useEffect(() => {
     const fetchSession = async () => {
       try {
+        console.log(`🔄 Fetching session for ID: ${sessionId}`);
         const res = await fetch(`/api/dining_session/${sessionId}`, {
           credentials: "include",
         });
@@ -30,11 +44,9 @@ const SessionPage = () => {
 
         if (!res.ok) throw new Error(raw.error || "Failed to fetch session");
 
-        // ✅ ดึงข้อมูล session และ group
         const s = raw.session;
         const g = raw.group;
 
-        // ✅ แปลงเวลาให้อยู่ในรูปแบบ HH:mm ตาม timezone ไทย
         const formatTime = (timeString?: string | null) => {
           if (!timeString) return null;
           const date = new Date(timeString);
@@ -48,8 +60,8 @@ const SessionPage = () => {
           id: s.id,
           tableNo: s.tableId ?? "-",
           guests: s.totalCustomers ?? g?.members?.length ?? 0,
-          orders: g?.members?.length ?? 0, // ถ้ายังไม่มี order count จริง ๆ ใช้จำนวนสมาชิกแทนชั่วคราว
-          total: 0, // ถ้ามี total จริงใน backend สามารถใส่เพิ่มทีหลัง
+          orders: g?.members?.length ?? 0, 
+          total: s.total, 
           startTime: formatTime(s.startedAt),
           endTime: formatTime(s.endedAt),
         };

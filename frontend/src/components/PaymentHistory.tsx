@@ -89,49 +89,98 @@ const PaymentHistory = () => {
   };
 
   // ใน useEffect ที่ดึงข้อมูล
+  // useEffect(() => {
+  //   const fetchPayments = async () => {
+  //     if (!selectedTable) return;
+
+  //     setLoading(true);
+  //     setError('');
+  //     try {
+  //       const response = await fetch(`/api/payments?tableId=${selectedTable}`, {
+  //         method: 'GET',
+  //         credentials: 'include',
+  //       });
+
+  //       if (!response.ok) {
+  //         if (response.status === 404) {
+  //           setPayments([]); // เคลียร์ข้อมูลเก่า
+  //           return;
+  //         }
+  //         throw new Error(`Error fetching payments: ${response.status}`);
+  //       }
+
+  //       const data = await response.json();
+
+  //       // แปลง status ให้ตรงกับ type
+  //       const formattedData: Payment[] = data.map((item: any) => ({
+  //         ...item,
+  //         status: item.status
+  //       }));
+
+  //       setPayments(formattedData);
+  //     } catch (err) {
+  //       console.log("ERROR IN FETCHING PAYMENT:", err);
+  //       if (err instanceof Error && !err.message.includes('404')) {
+  //         setError('Failed to load payment data');
+  //       } else {
+  //         setPayments([]);
+  //       }
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchPayments();
+  // }, [selectedTable]);
   useEffect(() => {
-    const fetchPayments = async () => {
-      if (!selectedTable) return;
+  const fetchPayments = async () => {
+    if (!selectedTable) return;
 
-      setLoading(true);
-      setError('');
-      try {
-        const response = await fetch(`/api/payments?tableId=${selectedTable}`, {
-          method: 'GET',
-          credentials: 'include',
-        });
+    setLoading(true);
+    setError('');
+    try {
+      console.log(`🔄 Fetching payments for table: ${selectedTable}`);
+      
+      const response = await fetch(`/api/payments?tableId=${selectedTable}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
 
-        if (!response.ok) {
-          if (response.status === 404) {
-            setPayments([]); // เคลียร์ข้อมูลเก่า
-            return;
-          }
-          throw new Error(`Error fetching payments: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        // แปลง status ให้ตรงกับ type
-        const formattedData: Payment[] = data.map((item: any) => ({
-          ...item,
-          status: item.status
-        }));
-
-        setPayments(formattedData);
-      } catch (err) {
-        console.log("ERROR IN FETCHING PAYMENT:", err);
-        if (err instanceof Error && !err.message.includes('404')) {
-          setError('Failed to load payment data');
-        } else {
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log('📭 No payments found for table');
           setPayments([]);
+          return;
         }
-      } finally {
-        setLoading(false);
+        throw new Error(`Error fetching payments: ${response.status}`);
       }
-    };
 
-    fetchPayments();
-  }, [selectedTable]);
+      const data = await response.json();
+      console.log('📦 Payments data received:', data);
+
+      // แปลง status ให้ตรงกับ type
+      const formattedData: Payment[] = data.map((item: any) => ({
+        ...item,
+        status: item.status
+      }));
+
+      console.log(`✅ Loaded ${formattedData.length} payments`);
+      setPayments(formattedData);
+      
+    } catch (err) {
+      console.log("❌ ERROR IN FETCHING PAYMENT:", err);
+      if (err instanceof Error && !err.message.includes('404')) {
+        setError('Failed to load payment data');
+      } else {
+        setPayments([]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchPayments();
+}, [selectedTable]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

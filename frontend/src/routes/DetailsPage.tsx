@@ -176,6 +176,7 @@ const DetailsPage = () => {
   };
 
   return (
+    <div className="max-w-[400px]">
     <div className="relative min-h-screen overflow-hidden flex flex-col">
       <Link to={`/homepage/${sessionId}`}>
         <IoClose className="absolute right-6 top-6 w-9 h-9 text-gray-300 z-20" />
@@ -351,7 +352,7 @@ const DetailsPage = () => {
           </span>{" "}
         </button>
       </div>
-    </div>
+    </div> </div>
   );
 };
 

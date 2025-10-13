@@ -25,12 +25,13 @@ const HomePage = () => {
   console.log('AppWrapper - sessionId:', sessionId);
   return (
     <>
+    <div className="w-[400px]  bg-[#1B1C20] text-white font-[Epilogue]">
       <CartProvider sessionId={sessionId}>
         <Navbar />
-    </CartProvider>
+      </CartProvider>
       <div className="px-5">
         <section>
-          <div className="w-full bg-[#1B1C20] text-white font-[Epilogue]">
+          <div className=" bg-[#1B1C20] text-white font-[Epilogue]">
             {/* SEARCH */}
             <Search />
             {/* <div className="flex justify-center pt-2">
@@ -90,7 +91,7 @@ const HomePage = () => {
         <h1 className="mt-10 text-white font-bold">All Menu</h1>
         <MenuList />
       </div>
-    </>
+   </div> </>
   );
 };
 

@@ -12,9 +12,9 @@ router.patch("/:paymentId/confirm", paymentController.confirmPayment);
 // mock callback (แทน SCB callback)
 router.post("/mock-callback", paymentController.mockCallback);
 router.get('/status/:billId', paymentController.getPaymentStatus);
-// PATCH /api/payments/bills/:billId/splits/:splitId/toggle-status
 router.patch('/bills/:billId/splits/:splitId/toggle-status', paymentController.togglePaymentStatus);
 // แสดงกราฟ
 router.get('/revenue', paymentController.getRevenue);
+router.patch('/bills/:id/toggle-entire-status', paymentController.toggleEntireBillStatus);
 
 export default router;

@@ -48,16 +48,16 @@ export const createGroup = async (
     
         console.log("Existing group found:", existingGroup);
     
-        if (existingGroup) {
-          return res.status(400).json({
-            error: `Group for table ${tableId} already exists`,
-            group: {
-              id: existingGroup.id,
-              tableId: existingGroup.tableId,
-              createdAt: existingGroup.createdAt,
-            },
-          });
-        }
+        // if (existingGroup) {
+        //   return res.status(400).json({
+        //     error: `Group for table ${tableId} already exists`,
+        //     group: {
+        //       id: existingGroup.id,
+        //       tableId: existingGroup.tableId,
+        //       createdAt: existingGroup.createdAt,
+        //     },
+        //   });
+        // }
     
         console.log("Creating new group...");
         const newGroup = await dbClient

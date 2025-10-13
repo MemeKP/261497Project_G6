@@ -220,69 +220,93 @@ const BillPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchBill = async () => {
-      try {
-        const res = await fetch(`/api/bill-splits/sessions/${sessionId}/bill`, {
-          credentials: "include",
-        });
-        const data = await res.json();
+  const fetchBill = async () => {
+    try {
+      const res = await fetch(`/api/bill-splits/sessions/${sessionId}/bill`, {
+        credentials: "include",
+      });
+      const data = await res.json();
 
-        if (!data || !data.items) {
-          setBill(null);
-          return;
-        }
+      console.log("📋 [BILL] Raw bill data:", data); // 👈 เพิ่มนี้
 
-        // ✅ ป้องกัน .toFixed error
-        const fixedData = {
-          ...data,
-          items: data.items.map((i: any) => ({
-            ...i,
-            price: Number(i.price),
-          })),
-        };
-
-        setBill(fixedData);
-      } catch (err) {
-        console.error("Error fetching bill:", err);
-      } finally {
-        setLoading(false);
+      if (!data || !data.items) {
+        setBill(null);
+        return;
       }
-    };
 
-    fetchBill();
-  }, [sessionId]);
+      // ✅ ป้องกัน .toFixed error
+      const fixedData = {
+        ...data,
+        items: data.items.map((i: any) => ({
+          ...i,
+          price: Number(i.price),
+        })),
+      };
+
+      console.log("📋 [BILL] Processed bill data:", fixedData); // 👈 เพิ่มนี้
+      setBill(fixedData);
+    } catch (err) {
+      console.error("Error fetching bill:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchBill();
+}, [sessionId]);
 
   if (loading) return <p className="text-center text-white">Loading...</p>;
   if (!bill) return <p className="text-center text-white">No bill found.</p>;
 
-  const confirmPayment = async (type: "full" | "split") => {
-    const message =
-      "Are you sure you want to proceed with the payment?\nOnce confirmed, you will not be able to go back and add more orders.";
+ const confirmPayment = async (type: "full" | "split") => {
+  const message =
+    "Are you sure you want to proceed with the payment?\nOnce confirmed, you will not be able to go back and add more orders.";
 
-    const confirm = window.confirm(message);
-    if (!confirm) return;
+  const confirm = window.confirm(message);
+  if (!confirm) return;
 
-    if (type === "full") {
-      navigate(`/payment/${bill.id}`);
-    } else {
-      try {
-        const res = await fetch(`/api/bill-splits/sessions/${sessionId}/split`, {
-          method: "POST",
-          credentials: "include",
-        });
+  if (type === "full") {
+    try {
+      console.log("💰 [PAYMENT] Creating session bill...");
 
-        if (!res.ok) throw new Error("Failed to split bill");
+      // สร้าง session bill ก่อน
+      const res = await fetch(`/api/bill-splits/sessions/${sessionId}/pay-entire`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
 
-        const billData = await res.json();
-        console.log("✅ Split bill created:", billData);
-        navigate(`/splitbill/${billData.billId}`);
-      } catch (err) {
-        console.error("Error splitting bill:", err);
-        alert("Failed to split bill. Please try again.");
-      }
+      if (!res.ok) throw new Error("Failed to create session bill");
+
+      const billData = await res.json();
+      console.log("💰 [PAYMENT] Session bill created:", billData);
+
+      // ใช้ bill id จาก response
+      const billId = billData.id || billData.billId;
+      navigate(`/payment/${billId}`);
+
+    } catch (err) {
+      console.error("Error creating full payment:", err);
+      alert("Failed to process payment. Please try again.");
     }
-  };
+  } else {
+    try {
+      const res = await fetch(`/api/bill-splits/sessions/${sessionId}/split`, {
+        method: "POST",
+        credentials: "include",
+      });
 
+      if (!res.ok) throw new Error("Failed to split bill");
+
+      const billData = await res.json();
+      console.log("✅ Split bill created:", billData);
+      navigate(`/splitbill/${billData.billId}`);
+    } catch (err) {
+      console.error("Error splitting bill:", err);
+      alert("Failed to split bill. Please try again.");
+    }
+  }
+};
   return (
     <div className="w-full min-h-screen relative bg-[#1E1E1E] text-white p-6 flex flex-col">
       {/* Header */}
