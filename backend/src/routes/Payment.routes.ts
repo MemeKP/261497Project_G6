@@ -17,5 +17,6 @@ router.patch('/bills/:billId/splits/:splitId/toggle-status', paymentController.t
 
 // แสดงกราฟ
 router.get('/revenue', paymentController.getRevenue);
+router.patch('/bills/:id/toggle-entire-status', paymentController.toggleEntireBillStatus);
 
 export default router;

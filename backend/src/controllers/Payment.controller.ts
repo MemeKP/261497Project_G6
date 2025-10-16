@@ -143,7 +143,7 @@ export async function getPaymentStatus(req: Request, res: Response, next: NextFu
     let payment;
 
     if (memberIdNum) {
-      // ✅ กรณี Split Bill
+      // CASE: Split Bill
       const result = await dbClient
         .select()
         .from(payments)
@@ -154,7 +154,7 @@ export async function getPaymentStatus(req: Request, res: Response, next: NextFu
         .limit(1);
       payment = result[0];
     } else {
-      // ✅ กรณี Full Bill
+      // CASE: Full Bill
       const result = await dbClient
         .select()
         .from(payments)
@@ -433,6 +433,99 @@ export const getPaymentsByTable = async (req: Request, res: Response, next: Next
     res.status(500).json({
       success: false,
       error: "Internal server error",
+    });
+  }
+};
+
+// ใน backend controller
+export const toggleEntireBillStatus = async (req: Request, res: Response, next: NextFunction) => {
+  const { billId } = req.params;
+  const { status } = req.body;
+
+  try {
+    const billIdNum = parseInt(billId);
+
+    console.log(`💰 [TOGGLE] Toggling entire bill ${billIdNum} to ${status}`);
+
+    // 1. อัพเดทสถานะ bill
+    await dbClient
+      .update(bills)
+      .set({ 
+        status: status === 'PAID' ? 'PAID' : 'PENDING',
+        createdAt: new Date()
+      })
+      .where(eq(bills.id, billIdNum));
+
+    // 2. จัดการ payment record
+    if (status === 'PAID') {
+      // ตรวจสอบว่ามี payment อยู่แล้วหรือไม่
+      const existingPayment = await dbClient
+        .select()
+        .from(payments)
+        .where(and(
+          eq(payments.billId, billIdNum),
+          eq(payments.billSplitId, 0) // 0 = entire bill
+        ))
+        .limit(1);
+
+      if (existingPayment.length === 0) {
+        // ดึง bill total
+        const billData = await dbClient
+          .select({ total: bills.total })
+          .from(bills)
+          .where(eq(bills.id, billIdNum))
+          .limit(1);
+
+        // สร้าง payment record ใหม่
+        await dbClient
+          .insert(payments)
+          .values({
+            billId: billIdNum,
+            billSplitId: 0, // 0 = entire bill
+            amount: billData[0]?.total || 0,
+            method: 'QR',
+            status: 'PAID',
+            paidAt: new Date(),
+          });
+      } else {
+        // อัพเดท payment ที่มีอยู่
+        await dbClient
+          .update(payments)
+          .set({
+            status: 'PAID',
+            paidAt: new Date(),
+          })
+          .where(and(
+            eq(payments.billId, billIdNum),
+            eq(payments.billSplitId, 0)
+          ));
+      }
+    } else {
+      // ถ้าเปลี่ยนเป็น PENDING, อัพเดท payment (ถ้ามี)
+      await dbClient
+        .update(payments)
+        .set({
+          status: 'PENDING',
+          paidAt: null,
+        })
+        .where(and(
+          eq(payments.billId, billIdNum),
+          eq(payments.billSplitId, 0)
+        ));
+    }
+
+    console.log(`✅ [TOGGLE] Entire bill ${billIdNum} updated to ${status}`);
+
+    res.json({
+      success: true,
+      message: `Entire bill status updated to ${status}`
+    });
+
+  } catch (err) {
+    console.error("❌ [TOGGLE] Error toggling entire bill status:", err);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error"
     });
   }
 };
