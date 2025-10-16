@@ -1,4 +1,4 @@
-import type { Table ,PaymentData } from "../types";
+import type {PaymentData } from "../types";
 
 export const menus = [
   {
@@ -68,17 +68,17 @@ export const category = [
   "Drinks",
 ];
 
-export const tables: Table[] = [
-  { id: 1, number: 1, status: "AVAILABLE" },
-  { id: 2, number: 2, status: "OCCUPIED" },
-  { id: 3, number: 3, status: "AVAILABLE" },
-  { id: 4, number: 4, status: "AVAILABLE" },
-  { id: 5, number: 5, status: "OCCUPIED" },
-  { id: 6, number: 6, status: "OCCUPIED" },
-  { id: 7, number: 7, status: "AVAILABLE" },
-  { id: 8, number: 8, status: "OCCUPIED" },
-  { id: 9, number: 9, status: "AVAILABLE" },
-];
+// export const tables: Table[] = [
+//   { id: 1, number: 1, status: "AVAILABLE" },
+//   { id: 2, number: 2, status: "OCCUPIED" },
+//   { id: 3, number: 3, status: "AVAILABLE" },
+//   { id: 4, number: 4, status: "AVAILABLE" },
+//   { id: 5, number: 5, status: "OCCUPIED" },
+//   { id: 6, number: 6, status: "OCCUPIED" },
+//   { id: 7, number: 7, status: "AVAILABLE" },
+//   { id: 8, number: 8, status: "OCCUPIED" },
+//   { id: 9, number: 9, status: "AVAILABLE" },
+// ];
 
  // Default demo data
 export const defaultData: PaymentData[] = [

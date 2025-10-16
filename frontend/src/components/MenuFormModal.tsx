@@ -12,7 +12,7 @@ const MenuFormModal = ({ isOpen, onClose, menuItem, mode }: MenuFormModalProps) 
     name: '',
     description: '',
     price: '',
-    category: 'noodle',
+    category: 'Noodle',
     isSignature: false,
     isAvailable: true,
   });
@@ -38,7 +38,7 @@ const MenuFormModal = ({ isOpen, onClose, menuItem, mode }: MenuFormModalProps) 
         name: '',
         description: '',
         price: '',
-        category: 'noodle',
+        category: 'Noodle',
         isSignature: false,
         isAvailable: true,
       });
@@ -60,8 +60,8 @@ const MenuFormModal = ({ isOpen, onClose, menuItem, mode }: MenuFormModalProps) 
       onClose();
       alert('Add menu success!');
     },
-    onError: (error: any) => {
-      alert('There are something wrong: ' + (error.response?.data?.error || error.message));
+    onError: (error: Error) => {
+      alert(`[MENU FORM]There are something wrong: ${error.message}`);
     },
   });
 
@@ -78,8 +78,8 @@ const MenuFormModal = ({ isOpen, onClose, menuItem, mode }: MenuFormModalProps) 
       onClose();
       alert('Edit menu successs!');
     },
-    onError: (error: any) => {
-      alert('There are something wrong: ' + (error.response?.data?.error || error.message));
+    onError: (error: Error) => {
+      alert(`[MENU FORM]There are something wrong: ${error.message}`);
     },
   });
 
@@ -275,11 +275,13 @@ const MenuFormModal = ({ isOpen, onClose, menuItem, mode }: MenuFormModalProps) 
                 required
                 disabled={isLoading}
               >
-                <option value="noodle">noodle</option>
-                <option value="Sushi & Sashimi">Sushi & Sashimi</option>
+                <option value="all">All</option>
+                <option value="Noodle">Noodle</option>
+                <option value="Rice">Rice</option>
+                <option value="Sushi">Sushi & Sashimi</option>
                 <option value="Appetizer">Appetizer</option>
-                <option value="Dessert">Dessert</option>
-                <option value="Drink">Drink</option>
+                <option value="Dessert">Desserts</option>
+                <option value="Drink">Drinks</option>
               </select>
             </div>
           </div>

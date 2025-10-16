@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import type { DiningSession, Payment, Table } from '../types';
 import { useQuery } from '@tanstack/react-query';
 
+
 const PaymentHistory = () => {
-  const [selectedTable, setSelectedTable] = useState<number>();
+  const [selectedTable, setSelectedTable] = useState<number | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -21,6 +22,7 @@ const PaymentHistory = () => {
     },
     refetchInterval: 5000,
   });
+
 
   // ดึงข้อมูลโต๊ะทั้งหมด
   const { data: tables = [] } = useQuery<Table[]>({
@@ -41,6 +43,13 @@ const PaymentHistory = () => {
 
   // กรองโต๊ะที่มี session active
   const availableTables = tables.filter(table => activeTableIds.includes(table.id));
+
+  useEffect(() => {
+    if (availableTables.length > 0 && selectedTable === null) {
+      setSelectedTable(availableTables[0].id);
+      console.log('Auto-selected table:', availableTables[0].id);
+    }
+  }, [availableTables, selectedTable]);
 
   const handleToggleStatus = async (billId: number, splitId: number, currentStatus: 'PAID' | 'PENDING') => {
     try {
@@ -133,54 +142,54 @@ const PaymentHistory = () => {
   //   fetchPayments();
   // }, [selectedTable]);
   useEffect(() => {
-  const fetchPayments = async () => {
-    if (!selectedTable) return;
+    const fetchPayments = async () => {
+      if (!selectedTable) return;
 
-    setLoading(true);
-    setError('');
-    try {
-      console.log(`🔄 Fetching payments for table: ${selectedTable}`);
-      
-      const response = await fetch(`/api/payments?tableId=${selectedTable}`, {
-        method: 'GET',
-        credentials: 'include',
-      });
+      setLoading(true);
+      setError('');
+      try {
+        console.log(`🔄 Fetching payments for table: ${selectedTable}`);
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          console.log('📭 No payments found for table');
-          setPayments([]);
-          return;
+        const response = await fetch(`/api/payments?tableId=${selectedTable}`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            console.log('📭 No payments found for table');
+            setPayments([]);
+            return;
+          }
+          throw new Error(`Error fetching payments: ${response.status}`);
         }
-        throw new Error(`Error fetching payments: ${response.status}`);
+
+        const data = await response.json();
+        console.log('📦 Payments data received:', data);
+
+        // แปลง status ให้ตรงกับ type
+        const formattedData: Payment[] = data.map((item: any) => ({
+          ...item,
+          status: item.status
+        }));
+
+        console.log(`✅ Loaded ${formattedData.length} payments`);
+        setPayments(formattedData);
+
+      } catch (err) {
+        console.log("❌ ERROR IN FETCHING PAYMENT:", err);
+        if (err instanceof Error && !err.message.includes('404')) {
+          setError('Failed to load payment data');
+        } else {
+          setPayments([]);
+        }
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const data = await response.json();
-      console.log('📦 Payments data received:', data);
-
-      // แปลง status ให้ตรงกับ type
-      const formattedData: Payment[] = data.map((item: any) => ({
-        ...item,
-        status: item.status
-      }));
-
-      console.log(`✅ Loaded ${formattedData.length} payments`);
-      setPayments(formattedData);
-      
-    } catch (err) {
-      console.log("❌ ERROR IN FETCHING PAYMENT:", err);
-      if (err instanceof Error && !err.message.includes('404')) {
-        setError('Failed to load payment data');
-      } else {
-        setPayments([]);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchPayments();
-}, [selectedTable]);
+    fetchPayments();
+  }, [selectedTable]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -202,18 +211,27 @@ const PaymentHistory = () => {
           <label htmlFor="table-select" className="font-bold text-xl">
             Table:
           </label>
-          <select
-            id="table-select"
-            className="ml-2 p-2 border rounded-md"
-            value={selectedTable}
-            onChange={(e) => setSelectedTable(Number(e.target.value))}
-          >
-            {availableTables.map((table) => (
-              <option key={table.id} value={table.id}>
-                Table {table.number}
-              </option>
-            ))}
-          </select>
+
+          {availableTables.length > 1 ? (
+            <select
+              id="table-select"
+              className="ml-2 p-2 border rounded-md"
+              value={selectedTable}
+              onChange={(e) => setSelectedTable(Number(e.target.value))}
+            >
+              {availableTables.map((table) => (
+                <option key={table.id} value={table.id}>
+                  Table {table.number}
+                </option>
+              ))}
+            </select>
+          ) : availableTables.length === 1 ? (
+            <span className="ml-2 text-lg font-semibold">
+              Table {availableTables[0].number}
+            </span>
+          ) : (
+            <span className="ml-2 text-gray-500">No active tables</span>
+          )}
         </div>
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -268,8 +286,8 @@ const PaymentHistory = () => {
                         onClick={() => handleToggleStatus(p.billId, p.splitId, p.status)}
                         disabled={p.status === 'PAID'}
                         className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${p.status === 'PAID'
-                            ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                            : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 hover:scale-105 active:scale-95'
+                          ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                          : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 hover:scale-105 active:scale-95'
                           } ${p.status !== 'PAID' && 'hover:scale-105 active:scale-95'}`}
                       >
                         {p.status === 'PAID' ? 'Paid' : 'Pending'}

@@ -49,33 +49,33 @@ const uploadImageToImagekit = async (file: Express.Multer.File) => {
 };
 
 const deleteImageFromImageKit = async (imageUrl: string): Promise<void> => {
-  try {    
-    const fileName = imageUrl.split('/').pop();    
+  try {
+    const fileName = imageUrl.split('/').pop();
     const items = await imagekit.listFiles({
       path: "/261497project",
       limit: 100
     });
-    
+
     // ใช้ type guard 
     const isFileObject = (item: any): item is { fileId: string; name: string; url: string } => {
       return item && typeof item === 'object' && 'fileId' in item && 'name' in item && 'url' in item;
     };
-    
+
     const targetFile = items.find(item => isFileObject(item) && item.name === fileName);
-    
+
     if (targetFile && isFileObject(targetFile)) {
       console.log(`[DELETE IMAGE] Found file:`, {
         fileId: targetFile.fileId,
         name: targetFile.name,
         url: targetFile.url
       });
-      
+
       await imagekit.deleteFile(targetFile.fileId);
       console.log(`[DELETE IMAGE] Successfully deleted!`);
     } else {
       console.log(`[DELETE IMAGE] File not found: ${fileName}`);
     }
-    
+
   } catch (error: any) {
     console.error("[DELETE IMAGE] Error:", error.message);
   }
@@ -127,25 +127,31 @@ export const getMenus = async (
 
     const offset = (page - 1) * limit;
     const search = (req.query.search as string)?.trim() || "";
+    const isSignature = req.query.isSignature === "true"; // ดึงเมนูซิกเน
     const category = (req.query.category as string)?.trim() || "";
 
     //const whereConditions = showAll ? [] : [eq(menuItems.isAvailable, true)];
     const whereConditions: any[] = [];
-    
+
     if (!showAll) {
       whereConditions.push(eq(menuItems.isAvailable, true));
     }
+
+    if (isSignature) {
+      whereConditions.push(eq(menuItems.isSignature, true));
+    }
+
     if (search) {
-  if (search.length <= 50) { 
-    const searchPattern = `%${search}%`;
-    whereConditions.push(
-      or(
-        ilike(menuItems.name, searchPattern),
-        ilike(menuItems.description, searchPattern)
-      )
-    );
-  }
-}
+      if (search.length <= 50) {
+        const searchPattern = `%${search}%`;
+        whereConditions.push(
+          or(
+            ilike(menuItems.name, searchPattern),
+            ilike(menuItems.description, searchPattern)
+          )
+        );
+      }
+    }
 
     if (category) {
       whereConditions.push(eq(menuItems.category, category));
@@ -255,7 +261,7 @@ export const createMenu = async (
   next: NextFunction
 ) => {
   try {
-     const {
+    const {
       name,
       description,
       price,
@@ -266,15 +272,15 @@ export const createMenu = async (
     } = req.body;
 
     // แปลง isAvailable เป็น boolean
-    const parsedIsAvailable = 
-      isAvailable === 'true' || 
-      isAvailable === true || 
+    const parsedIsAvailable =
+      isAvailable === 'true' ||
+      isAvailable === true ||
       isAvailable === '1';
 
     // แปลง isSignature เป็น boolean
-    const parsedIsSignature = 
-      isSignature === 'true' || 
-      isSignature === true || 
+    const parsedIsSignature =
+      isSignature === 'true' ||
+      isSignature === true ||
       isSignature === '1';
 
     console.log('✅ [CREATE MENU] Final values:');
@@ -361,13 +367,13 @@ export const updateMenu = async (
       imageUrl = uploadResult.url;
     }
 
-    const parsedIsAvailable = 
-      isAvailable !== undefined 
+    const parsedIsAvailable =
+      isAvailable !== undefined
         ? (isAvailable === 'true' || isAvailable === true || isAvailable === '1')
         : existingItem.isAvailable;
-    
-    const parsedIsSignature = 
-      isSignature !== undefined 
+
+    const parsedIsSignature =
+      isSignature !== undefined
         ? (isSignature === 'true' || isSignature === true || isSignature === '1')
         : existingItem.isSignature;
 
@@ -380,8 +386,8 @@ export const updateMenu = async (
           description !== undefined ? description : existingItem.description,
         imageUrl,
         category: category || existingItem.category,
-        isSignature: parsedIsSignature, 
-        isAvailable: parsedIsAvailable,  
+        isSignature: parsedIsSignature,
+        isAvailable: parsedIsAvailable,
         updatedByAdminId: updatedByAdminId
           ? parseInt(updatedByAdminId)
           : existingItem.updatedByAdminId,

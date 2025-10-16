@@ -292,23 +292,36 @@ async function insertMenuItems() {
     })
     .returning();*/
 
-    const [menu7] = await dbClient
+    // const [menu7] = await dbClient
+    // .insert(menuItems)
+    // .values({
+    //   name: "Katsu curry",
+    //   description:
+    //     "A classic, comforting dish featuring tender beef chunks, slow-cooked with carrots and onions.",
+    //   price: 149.0,
+    //   isSignature: false,
+    //   category: "rice",
+    //   imageUrl:
+    //     "https://ik.imagekit.io/496kiwiBird/261497project/menu6.png?updatedAt=1759410727451",
+    // })
+    // .returning();
+    const [menu8] = await dbClient
     .insert(menuItems)
     .values({
-      name: "Katsu curry",
+      name: "Kyoza",
       description:
-        "A classic, comforting dish featuring tender beef chunks, slow-cooked with carrots and onions.",
-      price: 149.0,
+        "Crispy pork Gyoza.",
+      price: 159.0,
       isSignature: false,
-      category: "rice",
+      category: "appetizer",
       imageUrl:
-        "https://ik.imagekit.io/496kiwiBird/261497project/menu6.png?updatedAt=1759410727451",
+        "https://ik.imagekit.io/496kiwiBird/261497project/kyoza.PNG?updatedAt=1760404585768",
     })
     .returning();
 
     
 
-  console.log("Inserted menu items:", [menu7]);
+  console.log("Inserted menu items:", [menu8]);
   dbConn.end();
 }
 
@@ -516,7 +529,7 @@ async function queryOrderItems() {
   dbConn.end();
 }
 
-seedTables()
+// seedTables()
 // insertAdmin();
 // insertTable();
 // insertGroup()
@@ -524,7 +537,7 @@ seedTables()
 // insertDiningSession();
 // insertDiningSessionWithQR();
 // insertMembers();
-// insertMenuItems();
+insertMenuItems();
 // insertOrder();
 // insertOrderItems();
 

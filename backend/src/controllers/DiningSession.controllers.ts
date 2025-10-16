@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import QRCode from "qrcode";
 import express from "express";
 import "dotenv/config";
-import { eq, and, isNotNull, asc, desc } from "drizzle-orm";
+import { eq, and, isNotNull, asc, desc, sql } from "drizzle-orm";
 import { dbClient } from "@db/client.js";
 import {
   users,
@@ -14,6 +14,7 @@ import {
   orders,
   orderItems,
   tables,
+  bills,
 } from "@db/schema.js";
 
 export const startSession = async (req: Request, res: Response, next: NextFunction) => {
@@ -117,7 +118,7 @@ export const startSession = async (req: Request, res: Response, next: NextFuncti
       path: `/tables/${tableRecord.number}`,
     };
 
-    const fullUrlForQR = `https://0a885cac0563b52cffe9b7f2b8d43d25.serveo.net/tables/${newSession[0].id}`;
+    const fullUrlForQR = `http://10.124.4.84:5173/tables/${newSession[0].id}`;
     console.log('🔍 QR Code URL:', fullUrlForQR);
 
     // Generate QR Code
@@ -336,6 +337,98 @@ export const getQrForTable = async (
   }
 };
 
+// export const endSession = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   try {
+//     const { sessionId, tableId } = req.body;
+
+//     if (!sessionId && !tableId) {
+//       return res.status(400).json({
+//         error: "Either Session ID or Table ID is required",
+//       });
+//     }
+
+//     let whereCondition;
+//     if (sessionId) {
+//       whereCondition = and(
+//         eq(diningSessions.id, sessionId),
+//         eq(diningSessions.status, "ACTIVE")
+//       );
+//     } else {
+//       whereCondition = and(
+//         eq(diningSessions.tableId, tableId),
+//         eq(diningSessions.status, "ACTIVE")
+//       );
+//     }
+
+//     const activeSession = await dbClient.query.diningSessions.findFirst({
+//       where: whereCondition,
+//     });
+
+//     if (!activeSession) {
+//       return res.status(400).json({
+//         error: sessionId
+//           ? `No active session found with ID ${sessionId}`
+//           : `No active session found for table ${tableId}`,
+//       });
+//     }
+
+//     let totalCustomers = 0;
+//     const group = await dbClient.query.groups.findFirst({
+//       where: eq(groups.tableId, activeSession.tableId),
+//     });
+
+//     if (group) {
+//       const members = await dbClient.query.group_members.findMany({
+//         where: eq(group_members.groupId, group.id),
+//       });
+//       totalCustomers = members?.length || 0;
+//     }
+
+//     const endedAt = new Date();
+//     const updatedSession = await dbClient
+//       .update(diningSessions)
+//       .set({
+//         endedAt: endedAt,
+//         status: "COMPLETED",
+//         totalCustomers: totalCustomers,
+//       })
+//       .where(eq(diningSessions.id, activeSession.id))
+//       .returning({
+//         id: diningSessions.id,
+//         tableId: diningSessions.tableId,
+//         startedAt: diningSessions.startedAt,
+//         endedAt: diningSessions.endedAt,
+//         status: diningSessions.status,
+//         totalCustomers: diningSessions.totalCustomers,
+//         created_at: diningSessions.createdAt,
+//       });
+
+//     const duration =
+//       endedAt.getTime() -
+//       (activeSession.startedAt?.getTime() || endedAt.getTime());
+//     const durationMinutes = Math.round(duration / (1000 * 60));
+
+//     res.json({
+//       message: `Dining session ended successfully for table ${activeSession.tableId}`,
+//       session: {
+//         id: updatedSession[0].id,
+//         tableId: updatedSession[0].tableId,
+//         startedAt: updatedSession[0].startedAt,
+//         endedAt: updatedSession[0].endedAt,
+//         status: updatedSession[0].status,
+//         totalCustomers: updatedSession[0].totalCustomers,
+//         createdAt: updatedSession[0].created_at,
+//         durationMinutes: durationMinutes,
+//       },
+//     });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
 export const endSession = async (
   req: Request,
   res: Response,
@@ -350,18 +443,16 @@ export const endSession = async (
       });
     }
 
-    let whereCondition;
-    if (sessionId) {
-      whereCondition = and(
-        eq(diningSessions.id, sessionId),
-        eq(diningSessions.status, "ACTIVE")
-      );
-    } else {
-      whereCondition = and(
-        eq(diningSessions.tableId, tableId),
-        eq(diningSessions.status, "ACTIVE")
-      );
-    }
+    // สร้างเงื่อนไขค้นหา
+    const whereCondition = sessionId
+      ? and(
+          eq(diningSessions.id, sessionId),
+          eq(diningSessions.status, "ACTIVE")
+        )
+      : and(
+          eq(diningSessions.tableId, tableId),
+          eq(diningSessions.status, "ACTIVE")
+        );
 
     const activeSession = await dbClient.query.diningSessions.findFirst({
       where: whereCondition,
@@ -375,6 +466,15 @@ export const endSession = async (
       });
     }
 
+    // 🧮 รวมยอดจาก bills
+    const [sumResult] = await dbClient
+      .select({ total: sql<number>`COALESCE(SUM(${bills.total}), 0)` })
+      .from(bills)
+      .where(eq(bills.diningSessionId, activeSession.id));
+
+    const totalAmount = sumResult?.total ?? 0;
+
+    // 👥 หาจำนวนสมาชิก
     let totalCustomers = 0;
     const group = await dbClient.query.groups.findFirst({
       where: eq(groups.tableId, activeSession.tableId),
@@ -387,13 +487,17 @@ export const endSession = async (
       totalCustomers = members?.length || 0;
     }
 
+    // 🕒 เวลาปิดโต๊ะ
     const endedAt = new Date();
-    const updatedSession = await dbClient
+
+    // ✅ อัปเดตข้อมูลลง DB
+    const [updatedSession] = await dbClient
       .update(diningSessions)
       .set({
-        endedAt: endedAt,
+        endedAt,
         status: "COMPLETED",
-        totalCustomers: totalCustomers,
+        totalCustomers,
+        total: totalAmount, // ✅ รวมยอดเก็บไว้ใน session
       })
       .where(eq(diningSessions.id, activeSession.id))
       .returning({
@@ -403,25 +507,29 @@ export const endSession = async (
         endedAt: diningSessions.endedAt,
         status: diningSessions.status,
         totalCustomers: diningSessions.totalCustomers,
+        total: diningSessions.total,
         created_at: diningSessions.createdAt,
       });
 
-    const duration =
-      endedAt.getTime() -
-      (activeSession.startedAt?.getTime() || endedAt.getTime());
-    const durationMinutes = Math.round(duration / (1000 * 60));
+    // ⏱ คำนวณเวลาทั้งหมด
+    const durationMinutes = Math.round(
+      (endedAt.getTime() -
+        (activeSession.startedAt?.getTime() || endedAt.getTime())) /
+        60000
+    );
 
     res.json({
       message: `Dining session ended successfully for table ${activeSession.tableId}`,
       session: {
-        id: updatedSession[0].id,
-        tableId: updatedSession[0].tableId,
-        startedAt: updatedSession[0].startedAt,
-        endedAt: updatedSession[0].endedAt,
-        status: updatedSession[0].status,
-        totalCustomers: updatedSession[0].totalCustomers,
-        createdAt: updatedSession[0].created_at,
-        durationMinutes: durationMinutes,
+        id: updatedSession.id,
+        tableId: updatedSession.tableId,
+        startedAt: updatedSession.startedAt,
+        endedAt: updatedSession.endedAt,
+        status: updatedSession.status,
+        totalCustomers: updatedSession.totalCustomers,
+        total: updatedSession.total,
+        createdAt: updatedSession.created_at,
+        durationMinutes,
       },
     });
   } catch (err) {
@@ -440,51 +548,115 @@ export const getActiveSession = async (
       orderBy: [diningSessions.createdAt],
     });
 
+    // const sessionsWithGroups = await Promise.all(
+    //   activeSessions.map(async (session) => {
+    //     const group = await dbClient.query.groups.findFirst({
+    //       where: eq(groups.tableId, session.tableId),
+    //     });
+
+    //     let members: Array<{ id: number; name: string; note: string | null }> =
+    //       [];
+    //     if (group) {
+    //       const groupMembers = await dbClient.query.group_members.findMany({
+    //         where: eq(group_members.groupId, group.id),
+    //       });
+    //       members =
+    //         groupMembers?.map((member) => ({
+    //           id: member.id,
+    //           name: member.name,
+    //           note: member.note,
+    //         })) || [];
+    //     }
+
+    //     return {
+    //       id: session.id,
+    //       tableId: session.tableId,
+    //       startedAt: session.startedAt,
+    //       status: session.status,
+    //       totalCustomers: members.length,
+    //       createdAt: session.createdAt,
+    //       group: group
+    //         ? {
+    //           id: group.id,
+    //           members: members,
+    //         }
+    //         : null,
+    //     };
+    //   })
+    // );
+
+    // res.json({
+    //   activeSessions: sessionsWithGroups,
+    //   totalActiveTables: activeSessions.length,
+    // });
     const sessionsWithGroups = await Promise.all(
-      activeSessions.map(async (session) => {
-        const group = await dbClient.query.groups.findFirst({
-          where: eq(groups.tableId, session.tableId),
-        });
-
-        let members: Array<{ id: number; name: string; note: string | null }> =
-          [];
-        if (group) {
-          const groupMembers = await dbClient.query.group_members.findMany({
-            where: eq(group_members.groupId, group.id),
-          });
-          members =
-            groupMembers?.map((member) => ({
-              id: member.id,
-              name: member.name,
-              note: member.note,
-            })) || [];
-        }
-
-        return {
-          id: session.id,
-          tableId: session.tableId,
-          startedAt: session.startedAt,
-          status: session.status,
-          totalCustomers: members.length,
-          createdAt: session.createdAt,
-          group: group
-            ? {
-              id: group.id,
-              members: members,
-            }
-            : null,
-        };
-      })
-    );
-
-    res.json({
-      activeSessions: sessionsWithGroups,
-      totalActiveTables: activeSessions.length,
+  activeSessions.map(async (session) => {
+    // ดึงสมาชิกทั้งหมดของ session นี้
+    const gmRows = await dbClient.query.group_members.findMany({
+      where: eq(group_members.diningSessionId, session.id),
+      orderBy: [asc(group_members.joinedAt), asc(group_members.id)],
     });
+
+    // รวมจำนวนลูกค้าทั้งหมดใน session
+    const totalCustomers = gmRows.length;
+
+    // เลือก "กลุ่มหลัก" ของ session
+    // วิธีที่ 1: เลือก groupId ล่าสุด (ตามเวลา joinedAt/id)
+    let primaryGroupId: number | null = null;
+    if (gmRows.length) {
+      primaryGroupId = gmRows[gmRows.length - 1].groupId;
+    }
+
+    // ถ้าอยากเลือกกลุ่มที่มีสมาชิกมากสุด ให้ใช้วิธีนี้แทน (คอมเมนต์ด้านบน)
+    // const counts = new Map<number, number>();
+    // gmRows.forEach(r => counts.set(r.groupId, (counts.get(r.groupId) ?? 0) + 1));
+    // primaryGroupId = [...counts.entries()].sort((a,b) => b[1]-a[1])[0]?.[0] ?? null;
+
+    // เตรียม group object (ถ้ามี)
+    let groupObj: { id: number; members: Array<{ id: number; name: string; note: string | null }> } | null = null;
+
+    if (primaryGroupId != null) {
+      const group = await dbClient.query.groups.findFirst({
+        where: eq(groups.id, primaryGroupId),
+      });
+
+      const primaryMembers = gmRows
+        .filter(r => r.groupId === primaryGroupId)
+        .map(m => ({
+          id: m.id,
+          name: m.name,
+          note: m.note ?? null,
+        }));
+
+      if (group) {
+        groupObj = {
+          id: group.id,
+          members: primaryMembers,
+        };
+      }
+    }
+
+    return {
+      id: session.id,
+      tableId: session.tableId,
+      startedAt: session.startedAt,
+      status: session.status,
+      totalCustomers, // สมาชิกทั้งหมดใน session
+      createdAt: session.createdAt,
+      group: groupObj, // สมาชิกของ "กลุ่มหลัก" (ถ้ามี)
+    };
+  })
+);
+
+res.json({
+  activeSessions: sessionsWithGroups,
+  totalActiveTables: activeSessions.length,
+});
   } catch (err) {
     next(err);
   }
 };
+
 export const getSession = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sessionId = parseInt(req.params.sessionId);

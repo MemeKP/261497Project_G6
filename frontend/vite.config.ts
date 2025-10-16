@@ -12,9 +12,11 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     allowedHosts: [
-      '0a885cac0563b52cffe9b7f2b8d43d25.serveo.net',
+      '27c3d70ae6e2e7e74569529e31bf2720.serveo.net',
       'large-hornets-sin.loca.lt',
-      '.loca.lt' // อนุญาตทุก subdomain ของ loca.lt
+      '.loca.lt',
+      '.serveo.net',
+      '9560222105452162c0cf87fd9b891609.serveo.net'
     ],
     //https://stackoverflow.com/a/74430384
     proxy: {

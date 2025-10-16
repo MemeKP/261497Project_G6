@@ -6,7 +6,6 @@ import {
   Plus,
   Edit,
   Trash2,
-  Eye,
   Search,
   Filter,
 } from "lucide-react";
@@ -28,7 +27,7 @@ const AdminMenuList = () => {
   const { data, isLoading, error } = useQuery<MenuResponse>({
     queryKey: ["admin_menu_items", searchQuery, categoryFilter],
     queryFn: async () => {
-      const params: any = { page: 1, limit: 100, showAll: true };
+      const params: Record<string, string | number | boolean> = { page: 1, limit: 100, showAll: true };
       if (searchQuery) params.search = searchQuery;
       if (categoryFilter !== "all") params.category = categoryFilter;
 
@@ -49,9 +48,9 @@ const deleteMutation = useMutation({
     setOpenMenuId(null);
     alert('Menu deleted successfully!');
   },
-  onError: (error: any) => {
+  onError: (error: Error) => {
     console.error('Delete error:', error);
-    alert('Failed to delete menu: ' + (error.response?.data?.error || error.message));
+    alert('Failed to delete menu: ' + (error.message));
   },
 });
 
@@ -138,7 +137,7 @@ const handleMenuClick = (e: React.MouseEvent, itemId: number) => {
   });
 };
 
-// ปิด dropdown เมื่อ scroll (optional)
+// ปิด dropdown เมื่อ scroll
 useEffect(() => {
   const handleScroll = () => {
     if (dropdownInfo.isOpen) {
@@ -186,11 +185,12 @@ useEffect(() => {
                 className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent appearance-none bg-white min-w-[150px]"
               >
                 <option value="all">All</option>
-                <option value="noodle">Noodle</option>
-                <option value="sushi">Sushi & Sashimi</option>
-                <option value="appetizer">Appetizers</option>
-                <option value="dessert">Desserts</option>
-                <option value="drink">Drinks</option>
+                <option value="Noodle">Noodle</option>
+                <option value="Rice">Rice</option>
+                <option value="Sushi">Sushi & Sashimi</option>
+                <option value="Appetizer">Appetizer</option>
+                <option value="Dessert">Desserts</option>
+                <option value="Drink">Drinks</option>
               </select>
             </div>
 

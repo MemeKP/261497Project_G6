@@ -6,12 +6,12 @@ const InPageNavigation = () => {
  
   const category = [
     {label: "All", value: ""},
-    {label: "Noodles", value: "noodle"},
-    {label: "Sushi & Sashimi", value: "sushi"},
-    {label: "Appetizers", value: "appetizer"},
-    {label: "Rice", value: "rice"},
-    {label: "Desserts", value: "dessert"},
-    {label: "Drinks", value: "drink"},
+    {label: "Noodles", value: "Noodle"},
+    {label: "Sushi & Sashimi", value: "Sushi"},
+    {label: "Appetizers", value: "Appetizer"},
+    {label: "Rice", value: "Rice"},
+    {label: "Desserts", value: "Dessert"},
+    {label: "Drinks", value: "Drink"},
   ];
 
   const handleCategory = (categoryVal: string) =>{

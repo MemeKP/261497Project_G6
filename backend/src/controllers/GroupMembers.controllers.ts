@@ -240,7 +240,6 @@ export const getMembersBySession = async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.error("[BACKEND] Error getting members:", err);
-    res.status(500).json({ error: err.message });
   }
 };
 

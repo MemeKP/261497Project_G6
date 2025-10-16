@@ -3,7 +3,7 @@ import { BsPlusCircleFill, BsDashLg } from "react-icons/bs";
 import { Link, useParams } from "react-router-dom";
 import PageAnimation from "../common/PageAnimetion";
 import axios from "axios";
-import type { Member, SessionResponse } from "../types";
+import type { Member } from "../types";
 
 const AddMemberPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -11,43 +11,6 @@ const AddMemberPage: React.FC = () => {
   const [members, setMembers] = useState<Member[]>([]);
   const [groupId, setGroupId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-//   const fetchGroupAndMembers = async () => {
-//   setIsLoading(true);
-//   try {
-//     if (!sessionId) return;
-
-//     // session group
-//     const sessionRes = await axios.get(`/api/dining_session/${sessionId}`);
-//     // members จาก session
-//     const membersRes = await axios.get(`/api/group_members/by-session/${sessionId}`);
-//     const group = sessionRes.data.group;
-//     const members = membersRes.data.members || []; 
-
-//     if (group && group.id) {
-//       setGroupId(group.id);
-//       setMembers(
-//         members.map((member: any) => ({
-//           id: String(member.id),
-//           name: member.name,
-//           note: member.note || null,
-//         }))
-//       );
-
-//       console.log(`Group ${group.id}, Members: ${members.length}`);
-//     } else {
-//       console.warn("No group found");
-//       setGroupId(null);
-//       setMembers([]);
-//     }
-//   } catch (err) {
-//     console.error("ERROR:", err);
-//     setGroupId(null);
-//     setMembers([]);
-//   } finally {
-//     setIsLoading(false);
-//   }
-// };
 
 const fetchGroupAndMembers = async () => {
   setIsLoading(true);
@@ -61,8 +24,8 @@ const fetchGroupAndMembers = async () => {
     const group = sessionRes.data.group;
     const allMembers = membersRes.data.members || []; 
 
-    // ✅ กรองเอาเฉพาะ member ที่ไม่ใช่ auto-created
-    const filteredMembers = allMembers.filter((member: any) => 
+    // กรองเอาเฉพาะ member ที่ไม่ใช่ auto-created
+    const filteredMembers = allMembers.filter((member: Member) => 
       !member.note?.includes('auto_created:true') &&
       !member.note?.includes('Auto-created') &&
       !member.note?.includes('Auto-created owner member')
@@ -71,7 +34,7 @@ const fetchGroupAndMembers = async () => {
     if (group && group.id) {
       setGroupId(group.id);
       setMembers(
-        filteredMembers.map((member: any) => ({
+        filteredMembers.map((member: Member) => ({
           id: String(member.id),
           name: member.name,
           note: member.note || null,
@@ -304,3 +267,40 @@ export default AddMemberPage;
   //     setIsLoading(false);
   //   }
   // };
+
+  //   const fetchGroupAndMembers = async () => {
+//   setIsLoading(true);
+//   try {
+//     if (!sessionId) return;
+
+//     // session group
+//     const sessionRes = await axios.get(`/api/dining_session/${sessionId}`);
+//     // members จาก session
+//     const membersRes = await axios.get(`/api/group_members/by-session/${sessionId}`);
+//     const group = sessionRes.data.group;
+//     const members = membersRes.data.members || []; 
+
+//     if (group && group.id) {
+//       setGroupId(group.id);
+//       setMembers(
+//         members.map((member: any) => ({
+//           id: String(member.id),
+//           name: member.name,
+//           note: member.note || null,
+//         }))
+//       );
+
+//       console.log(`Group ${group.id}, Members: ${members.length}`);
+//     } else {
+//       console.warn("No group found");
+//       setGroupId(null);
+//       setMembers([]);
+//     }
+//   } catch (err) {
+//     console.error("ERROR:", err);
+//     setGroupId(null);
+//     setMembers([]);
+//   } finally {
+//     setIsLoading(false);
+//   }
+// };
