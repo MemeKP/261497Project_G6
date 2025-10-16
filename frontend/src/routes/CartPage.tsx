@@ -312,6 +312,8 @@
 // };
 
 // export default CartPage;
+
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaMinus, FaPlus } from "react-icons/fa";
@@ -380,7 +382,7 @@ const CartPage = () => {
         console.log("📦 Raw order items from backend:", data);
 
         const mapped: CartItem[] = data.map((item: any) => ({
-          id: item.id,
+          id: item.id ?? item.orderItemId ?? item.order_item_id ?? 0,  // ✅ เพิ่ม fallback
           menuId: item.menuItemId ?? item.menu_item_id ?? 0,
           name: item.menuName ?? item.menu_name ?? "Unknown Menu",
           price: parseFloat(item.menuPrice ?? item.menu_price ?? 0),
@@ -389,6 +391,7 @@ const CartPage = () => {
           imageUrl: item.menuItem?.imageUrl || "/fallback.png",
           memberName: item.memberName ?? item.member_name ?? "",
         }));
+
 
         setCart(mapped);
       } catch (err) {
@@ -623,6 +626,51 @@ const CartPage = () => {
           </button>
         </div>
       </div>
+              
+                 {/* Confirm Delete Modal */}
+      {confirmItem && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px] z-50">
+          <div className="bg-white rounded-2xl shadow-lg p-6 w-[300px] max-w-[85%] text-center">
+            <p className="text-lg font-medium mb-6">
+              Are you sure you want to remove{" "}
+              <span className="font-bold">{confirmItem.name}</span> from your cart?
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setConfirmItem(null)}
+                className="px-5 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={async () => {
+                  if (!confirmItem) return;
+                  try {
+                    const res = await fetch(`/api/order-items/${confirmItem.id}`, {
+                      method: "DELETE",
+                      credentials: "include",
+                    });
+                    if (!res.ok)
+                      throw new Error("Failed to delete item from database");
+                    setCart((prev) =>
+                      prev.filter((i) => i.id !== confirmItem.id)
+                    );
+                  } catch (err) {
+                    console.error("Error deleting item:", err);
+                    alert("Unable to delete item. Please try again later.");
+                  } finally {
+                    setConfirmItem(null);
+                  }
+                }}
+                className="px-5 py-2 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
