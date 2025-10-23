@@ -1,14 +1,14 @@
 <div align="center">
-  <img src="https://ik.imagekit.io/496kiwiBird/261497project/logo.png?updatedAt=1761234425256" alt="Enso POS Logo" width="250"/>
+  <img src="https://ik.imagekit.io/496kiwiBird/261497project/logo.png?updatedAt=1761234425256" alt="Enso Logo" width="250"/>
 </div>
 
 # 🍜 Enso: Japanese Restaurant
 
 ## Project Overview
 
-**Enso POS** is a modern, full-stack system designed specifically for Japanese restaurants focusing on efficient table management, group ordering, and flexible payment processing (including bill splitting).
+**Enso** is a modern, full-stack system designed specifically for Japanese restaurants focusing on efficient table management, group ordering, and flexible payment processing (including bill splitting).
 
-The system streamlines the dining process from table assignment to final payment, providing real-time revenue tracking and a seamless experience for both staff (Admin Dashboard) and customers (Mobile/Web Ordering).
+The system streamlines the dining process from table assignment to final payment, providing real-time revenue tracking and a seamless experience for both staff (Admin Dashboard) and customers (Mobile Ordering).
 
 ---
 
@@ -28,7 +28,7 @@ The system streamlines the dining process from table assignment to final payment
 | Layer | Technology |
 | :--- | :--- |
 | **Framework** | **React** / **Vite**
-| **Styling** | [Tailwind CSS / Custom CSS/ ChartJS] 
+| **Styling** | Tailwind CSS / Custom CSS/ ChartJS/ Lucide React
 
 ### Backend (API)
 | Layer | Technology | 
@@ -40,7 +40,7 @@ The system streamlines the dining process from table assignment to final payment
 ### Database
 | Layer | Technology | 
 | :--- | :--- |
-| **Database** | **PostgreSQL (v15+)** 
+| **Database** | **PostgreSQL** 
 | **Containerization** | **Docker** / **Docker Compose** 
 
 ---
@@ -60,4 +60,5 @@ git clone https://github.com/MemeKP/261497Project_G6.git
 docker-compose --env-file ./frontend/.env.local --env-file ./backend/.env.local up -d --force-recreate --build
 ```
 
-
+### Final presentation
+[View Final Project presentation (PDF)](./docs/Restaurant food Ordering Platform with Bill Splitting Feature.pdf)
