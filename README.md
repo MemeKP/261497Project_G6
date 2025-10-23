@@ -67,10 +67,20 @@ cp backend/.env.local backend/.env
 ```
 
 ### Step 3: Build and Run Containers
+This command builds the images, starts all services (DB, Backend, Frontend), runs Drizzle Migrations, and executes the initial Seed Data script automatically.
 ```bash
 docker-compose --env-file ./frontend/.env --env-file ./backend/.env up -d --force-recreate --build
 ```
 
+### Access the Application
+Once the containers are running (Status Up), the application can be accessed via the following endpoints on port 5173
+| User Type | Entry Path | Description |
+| :--- | :--- | :--- |
+| Admin Panel | http://localhost:5173/admin/dashboard | Requires Admin Login to access management features. |
+| Customer Ordering | http://localhost:5173/tables/{sessionId} | Used by customers to join a dining session, view the menu, and place orders. |
+| API Backend | http://localhost:3000 | The base URL for API endpoints |
+
 ### Final presentation
 [View Final Project presentation (PDF)](./docs/Restaurant%20food%20Ordering%20Platform%20with%20Bill%20Splitting%20Feature.pdf)
+
 
