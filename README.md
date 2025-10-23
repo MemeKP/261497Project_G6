@@ -28,7 +28,7 @@ The system streamlines the dining process from table assignment to final payment
 | Layer | Technology |
 | :--- | :--- |
 | **Framework** | **React** / **Vite**
-| **Styling** | Tailwind CSS / Custom CSS/ ChartJS/ Lucide React
+| **Styling** | Tailwind CSS / Custom CSS/ ChartJS/ Lucide React/ Motion
 
 ### Backend (API)
 | Layer | Technology | 
@@ -45,7 +45,7 @@ The system streamlines the dining process from table assignment to final payment
 
 ---
 
-## Getting Started (Local Development)
+## Getting Started
 
 Follow these steps to set up and run the project locally using Docker.
 
@@ -55,10 +55,22 @@ Follow these steps to set up and run the project locally using Docker.
 git clone https://github.com/MemeKP/261497Project_G6.git
 ```
 
-### Step 2: Build and Run Containers
+### Step 2: Install Dependencies & Configure Environment
 ```bash
-docker-compose --env-file ./frontend/.env.local --env-file ./backend/.env.local up -d --force-recreate --build
+cd frontend && pnpm install
+cp .env.local .env
+cp frontend/.env.local frontend/.env 
+cd backend && npm install
+cp .env.local .env
+cp backend/.env.local backend/.env 
+# IMPORTANT: Fill in required secrets in .env files before running.
+```
+
+### Step 3: Build and Run Containers
+```bash
+docker-compose --env-file ./frontend/.env --env-file ./backend/.env up -d --force-recreate --build
 ```
 
 ### Final presentation
 [View Final Project presentation (PDF)](./docs/Restaurant food Ordering Platform with Bill Splitting Feature.pdf)
+
