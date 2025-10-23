@@ -1,10 +1,10 @@
-# 🍜 Enso POS: Japanese Restaurant Point of Sale System
+# 🍜 Enso: Japanese Restaurant
 
-
+![Enso POS Logo](https://ik.imagekit.io/496kiwiBird/261497project/logo.png?updatedAt=1761234425256)
 
 ## Project Overview
 
-**Enso POS** is a modern, full-stack Point of Sale (POS) system designed specifically for Japanese restaurants focusing on efficient table management, group ordering, and flexible payment processing (including bill splitting).
+**Enso POS** is a modern, full-stack system designed specifically for Japanese restaurants focusing on efficient table management, group ordering, and flexible payment processing (including bill splitting).
 
 The system streamlines the dining process from table assignment to final payment, providing real-time revenue tracking and a seamless experience for both staff (Admin Dashboard) and customers (Mobile/Web Ordering).
 
@@ -50,6 +50,11 @@ Follow these steps to set up and run the project locally using Docker.
 ### Step 1: Clone the Repository
 
 ```bash
-git clone [YOUR_REPOSITORY_URL]
-cd [YOUR_PROJECT_FOLDER]
+git clone https://github.com/MemeKP/261497Project_G6.git
+```
+
+### Step 2: Build and Run Containers
+```bash
+docker-compose --env-file ./frontend/.env.local --env-file ./backend/.env.local up -d --force-recreate --build
+```
 
