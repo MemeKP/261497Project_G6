@@ -23,21 +23,21 @@ The system streamlines the dining process from table assignment to final payment
 
 ## Technology Stack
 ### Frontend
-| Layer | Technology | Description |
-| :--- | :--- | :--- |
+| Layer | Technology |
+| :--- | :--- |
 | **Framework** | **React** / **Vite**
 | **Styling** | [Tailwind CSS / Custom CSS/ ChartJS] 
 
 ### Backend (API)
-| Layer | Technology | Description |
-| :--- | :--- | :--- |
+| Layer | Technology | 
+| :--- | :--- |
 | **Runtime** | **Node.js** (Express)
 | **Language** | **TypeScript**
 | **ORM** | **Drizzle ORM** 
 
 ### Database
-| Layer | Technology | Description |
-| :--- | :--- | :--- |
+| Layer | Technology | 
+| :--- | :--- |
 | **Database** | **PostgreSQL (v15+)** 
 | **Containerization** | **Docker** / **Docker Compose** 
 
@@ -52,3 +52,4 @@ Follow these steps to set up and run the project locally using Docker.
 ```bash
 git clone [YOUR_REPOSITORY_URL]
 cd [YOUR_PROJECT_FOLDER]
+
