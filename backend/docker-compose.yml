@@ -1,0 +1,47 @@
+name: group06
+
+services:
+  db:
+    image: postgres:15-alpine   # ใช้ postgres เวอร์ชันล่าสุดที่เสถียร
+    container_name: g06-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_APP_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_APP_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"   # เปิดให้เชื่อมจาก DBeaver ได้
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - project_final-net
+
+  backend:
+    container_name: g06-backend
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env  
+    depends_on:
+      - db    # รอ DB พร้อมก่อน
+    networks:
+      - project_final-net
+    environment:
+      NODE_ENV: production
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_HOST: g06-db   # ใช้ชื่อ service db ใน network
+      POSTGRES_APP_USER: ${POSTGRES_APP_USER}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD}
+    volumes:
+      - ./logs:/app/logs
+    command: >
+      sh -c "npm run db:migrate && npm run start"
+
+volumes:
+  pgdata:
+
+networks:
+  project_final-net:
+    external: true

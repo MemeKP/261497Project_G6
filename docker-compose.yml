@@ -1,0 +1,80 @@
+name: group06
+
+services:
+  db:
+    image: postgres:15-alpine  
+    container_name: g06-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_APP_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_APP_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432" 
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - project_final-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_APP_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    container_name: g06-backend
+    build:
+      context: ./backend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./backend/.env 
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - project_final-net
+    environment:
+      NODE_ENV: production
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_HOST: g06-db  
+      POSTGRES_APP_USER: ${POSTGRES_APP_USER}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD}
+      IMAGEKIT_URL_ENDPOINT: ${IMAGEKIT_URL_ENDPOINT}
+      IMAGEKIT_PUBLIC_KEY: ${IMAGEKIT_PUBLIC_KEY}
+      IMAGEKIT_PRIVATE_KEY: ${IMAGEKIT_PRIVATE_KEY}
+      SESSION_SECRET: ${SESSION_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+      PRODUCTION_FRONTEND_URL: ${PRODUCTION_FRONTEND_URL}
+      PROMPTPAY_ID: ${PROMPTPAY_ID}
+    volumes:
+      - ./logs:/app/logs
+    command: >
+      sh -c "npm run db:migrate && npm run db:seed && npm run start"
+
+  frontend:
+    container_name: g06-frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL}
+        VITE_IMAGEKIT_URL_ENDPOINT: ${VITE_IMAGEKIT_URL_ENDPOINT}
+        VITE_IMAGEKIT_PUBLIC_KEY: ${VITE_IMAGEKIT_PUBLIC_KEY}
+        VITE_IMAGEKIT_PRIVATE_KEY: ${VITE_IMAGEKIT_PRIVATE_KEY}
+    ports:
+      - ${NGINX_PORT}:5173
+    depends_on:
+      - backend
+    networks:
+      - project_final-net
+    environment:
+      - NGINX_PROXY=${NGINX_PROXY}
+      - NGINX_PORT=${NGINX_PORT}
+
+volumes:
+  pgdata:
+
+networks:
+  project_final-net:
+    external: true
