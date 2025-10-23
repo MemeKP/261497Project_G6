@@ -1,6 +1,8 @@
-# 🍜 Enso: Japanese Restaurant
+<div align="center">
+  <img src="https://ik.imagekit.io/496kiwiBird/261497project/logo.png?updatedAt=1761234425256" alt="Enso POS Logo" width="250"/>
+</div>
 
-![Enso POS Logo](https://ik.imagekit.io/496kiwiBird/261497project/logo.png?updatedAt=1761234425256)
+# 🍜 Enso: Japanese Restaurant
 
 ## Project Overview
 
@@ -57,4 +59,5 @@ git clone https://github.com/MemeKP/261497Project_G6.git
 ```bash
 docker-compose --env-file ./frontend/.env.local --env-file ./backend/.env.local up -d --force-recreate --build
 ```
+
 
