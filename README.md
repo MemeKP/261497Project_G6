@@ -72,5 +72,5 @@ docker-compose --env-file ./frontend/.env --env-file ./backend/.env up -d --forc
 ```
 
 ### Final presentation
-[View Final Project presentation (PDF)](./docs/Restaurant food Ordering Platform with Bill Splitting Feature.pdf)
+[View Final Project presentation (PDF)](./docs/Restaurant%20food%20Ordering%20Platform%20with%20Bill%20Splitting%20Feature.pdf)
 
