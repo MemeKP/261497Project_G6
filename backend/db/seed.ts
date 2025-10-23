@@ -203,7 +203,7 @@ async function insertMenuItems() {
         "Rich and flavorful Japanese Curry served over soft, fluffy Japanese rice. Topped with large Ebi Fry.",
       price: 289.0,
       isSignature: false,
-      category: "rice",
+      category: "Rice",
       imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/menu1.png?updatedAt=1759220941089',
     })
     .returning();
@@ -216,7 +216,7 @@ async function insertMenuItems() {
         "A luxurious bowl featuring marinated beef, soft-boiled egg, and rich broth.",
       price: 159.0,
       isSignature: true,
-      category: "noodle",
+      category: "Noodle",
       imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/signature.png?updatedAt=1759220936892'
 
     })
@@ -230,7 +230,7 @@ async function insertMenuItems() {
         "The ultimate rich ramen experience. A creamy, robust pork broth bowl infused with smoky-sweet black garlic oil.",
       price: 169.0,
       isSignature: false,
-      category: "noodle",
+      category: "Noodle",
       imageUrl:
         "https://ik.imagekit.io/496kiwiBird/261497project/menu2.png?updatedAt=1759220940713",
     })
@@ -244,7 +244,7 @@ async function insertMenuItems() {
         "A clear dashi broth paired with soba noodles, featuring an abundance of small, earthy mushrooms and a garnish of microgreens.",
       price: 156.0,
       isSignature: false,
-      category: "noodle",
+      category: "Noodle",
       imageUrl:
         "https://ik.imagekit.io/496kiwiBird/261497project/Mask%20group%20(4).png?updatedAt=1759384870088",
     })
@@ -258,7 +258,7 @@ async function insertMenuItems() {
         "A savory and rich broth served with springy ramen noodles, topped with seasoned spicy ground chicke and sweet corn.",
       price: 201.0,
       isSignature: false,
-      category: "noodle",
+      category: "Noodle",
       imageUrl:
         "https://ik.imagekit.io/496kiwiBird/261497project/menu3.png?updatedAt=1759220940332",
     })
@@ -272,7 +272,7 @@ async function insertMenuItems() {
         "A vibrant and filling noodle dish that balances heat and sweetness. Features fresh corn kernels.",
       price: 149.0,
       isSignature: false,
-      category: "noodle",
+      category: "Noodle",
       imageUrl:
         "https://ik.imagekit.io/496kiwiBird/261497project/Mask%20group%20(3).png?updatedAt=1759384859238",
     })
@@ -286,7 +286,7 @@ async function insertMenuItems() {
         "A classic, comforting dish featuring tender beef chunks, slow-cooked with carrots and onions.",
       price: 149.0,
       isSignature: false,
-      category: "rice",
+      category: "Rice",
       imageUrl:
         "https://ik.imagekit.io/496kiwiBird/261497project/menu6.png?updatedAt=1759410727451",
     })
@@ -299,7 +299,7 @@ async function insertMenuItems() {
         "Crispy pork Gyoza.",
       price: 159.0,
       isSignature: false,
-      category: "appetizer",
+      category: "Appetizer",
       imageUrl:
         "https://ik.imagekit.io/496kiwiBird/261497project/kyoza.PNG?updatedAt=1760404585768",
     })
