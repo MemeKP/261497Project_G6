@@ -1,5 +1,5 @@
 {
-  "id": "abba303d-35ed-45ef-9170-40d7e8d044ca",
+  "id": "92cdab09-6be0-4938-903e-12ad16469716",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -136,13 +136,13 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "bill_splits_member_id_members_id_fk": {
-          "name": "bill_splits_member_id_members_id_fk",
+        "bill_splits_member_id_group_members_id_fk": {
+          "name": "bill_splits_member_id_group_members_id_fk",
           "tableFrom": "bill_splits",
-          "tableTo": "members",
+          "tableTo": "group_members",
           "columnsFrom": [
             "member_id"
           ],
@@ -481,57 +481,6 @@
           "primaryKey": false,
           "notNull": false,
           "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.members": {
-      "name": "members",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "dining_session_id": {
-          "name": "dining_session_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "is_table_admin": {
-          "name": "is_table_admin",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "joined_at": {
-          "name": "joined_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        },
-        "note": {
-          "name": "note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {},
@@ -913,10 +862,10 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "payments_member_id_members_id_fk": {
-          "name": "payments_member_id_members_id_fk",
+        "payments_member_id_group_members_id_fk": {
+          "name": "payments_member_id_group_members_id_fk",
           "tableFrom": "payments",
-          "tableTo": "members",
+          "tableTo": "group_members",
           "columnsFrom": [
             "member_id"
           ],

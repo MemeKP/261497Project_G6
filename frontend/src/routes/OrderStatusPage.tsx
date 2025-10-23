@@ -77,7 +77,7 @@ const OrderStatusPage = () => {
     (i) => i.status === "PREPARING" || i.status === "PENDING"
   );
   const ready = allItems.filter((i) => i.status === "READY");
-  const completed = allItems.filter((i) => i.status === "COMPLETED");
+  // const completed = allItems.filter((i) => i.status === "COMPLETED");
 
   const groupedItems = preparing.reduce((acc: any, item) => {
     const key = item.menuName;

@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import bg1 from "../assets/imgs/bg-1.png";
 import logo from "../assets/imgs/logo.png";
@@ -18,7 +18,7 @@ const SessionPage = () => {
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 🚫 ป้องกันการย้อนกลับจากหน้า SessionPage
+  // ป้องกันการย้อนกลับจากหน้า SessionPage
   useEffect(() => {
     // บันทึกสถานะปัจจุบันใน history (กันปุ่ม Back)
     window.history.pushState(null, "", window.location.href);

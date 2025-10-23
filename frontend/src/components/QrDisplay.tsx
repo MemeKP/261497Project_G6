@@ -86,6 +86,7 @@ const QrDisplay: React.FC = () => {
         tableNumber: parseInt(sessionId)
       });
     } catch (qrError) {
+      console.log('QRDISPLAY ERROR', qrError)
       setError("Failed to generate QR code.");
     }
   } finally {

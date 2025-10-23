@@ -74,8 +74,8 @@ const IKImageWrapper = ({
     onLoad?.();
   };
 
-  const handleError = (error: string) => {
-    console.error('Image load error:', error, 'for src:', src);
+  const handleError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    console.error('Image load error:', event, 'for src:', src);
     setImageError(true);
     setImageLoading(false);
     onError?.();

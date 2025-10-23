@@ -1,5 +1,4 @@
 import homepage from "../assets/imgs/homepage.png";
-import sg1 from "../assets/imgs/signature.png";
 import { FaArrowRightLong } from "react-icons/fa6";
 import InPageNavigation from "../components/InPageNavigation";
 import MenuList from "../components/MenuList";

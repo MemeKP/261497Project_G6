@@ -253,7 +253,7 @@ export async function getPaymentStatus(req: Request, res: Response, next: NextFu
       memberId: payment.memberId,
       billSplitId: payment.billSplitId,
       sessionId: bill?.sessionId || null, // ส่ง sessionId กลับไป
-      billStatus: bill?.billStatus || null, 
+      billStatus: bill?.billStatus || null,
     });
   } catch (error) {
     console.error("Error fetching payment status:", error);
@@ -409,7 +409,7 @@ export async function getPaymentStatus(req: Request, res: Response, next: NextFu
 
 //       // กำหนดสถานะ: ถ้ามี payment และ status เป็น PAID หรือ billSplit paid เป็น true = Paid
 //       const isPaid = split.paid || relatedPayment?.status === 'PAID';
-      
+
 //       return {
 //         billId: split.billId,
 //         splitId: split.splitId,
@@ -548,9 +548,9 @@ export const getPaymentsByTable = async (req: Request, res: Response, next: Next
 
     // ✅ 6. เพิ่ม entire bills (ที่ไม่มี splits)
     const billsWithSplits = new Set(splitsResult.map((s) => s.billId));
-    
+
     const entireTablePayments = billsResult
-      .filter((bill) => !billsWithSplits.has(bill.id) )
+      .filter((bill) => !billsWithSplits.has(bill.id))
       .map((bill) => {
         // หา payment สำหรับ entire bill (ไม่มี billSplitId)
         const entirePayment = paymentsResult.find(
@@ -603,7 +603,7 @@ export const toggleEntireBillStatus = async (req: Request, res: Response, next: 
     // 1. อัพเดทสถานะ bill
     await dbClient
       .update(bills)
-      .set({ 
+      .set({
         status: status === 'PAID' ? 'PAID' : 'PENDING',
         createdAt: new Date()
       })
@@ -948,26 +948,27 @@ export const getRevenue = async (req: Request, res: Response, next: NextFunction
 
     let dateRange: { start: Date; end: Date };
     const now = new Date();
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
     // กำหนดช่วงเวลาตาม period
     switch (period) {
       case 'week':
         dateRange = {
-          start: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7),
-          end: now
+          start: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6), // ลบ 6 วัน
+          end: endOfToday
         };
         break;
       case 'year':
         dateRange = {
           start: new Date(now.getFullYear(), 0, 1),
-          end: now
+          end: endOfToday
         };
         break;
       case 'month':
       default:
         dateRange = {
           start: new Date(now.getFullYear(), now.getMonth(), 1),
-          end: now
+          end: endOfToday
         };
     }
 
@@ -1007,12 +1008,12 @@ export const getRevenue = async (req: Request, res: Response, next: NextFunction
 
     // 3. รวมข้อมูลตามวัน
     const dailyData = groupByDay(currentRevenue, period as string);
-    
+
     // 4. คำนวณสถิติ
     const currentTotal = currentRevenue.reduce((sum, item) => sum + Number(item.amount), 0);
     const previousTotal = previousRevenue.reduce((sum, item) => sum + Number(item.amount), 0);
-    
-    const growthRate = previousTotal > 0 
+
+    const growthRate = previousTotal > 0
       ? ((currentTotal - previousTotal) / previousTotal * 100)
       : currentTotal > 0 ? 100 : 0;
 
@@ -1043,6 +1044,27 @@ export const getRevenue = async (req: Request, res: Response, next: NextFunction
 };
 
 // Helper function สำหรับจัดกลุ่มข้อมูลตามวัน
+// function groupByDay(payments: any[], period: string) {
+//   const grouped: { [key: string]: number } = {};
+
+//   payments.forEach(payment => {
+//     const date = new Date(payment.date);
+//     let key: string;
+
+//     if (period === 'week' || period === 'month') {
+//       key = date.toISOString().split('T')[0]; // YYYY-MM-DD
+//     } else {
+//       key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+//     }
+
+//     if (!grouped[key]) {
+//       grouped[key] = 0;
+//     }
+//     grouped[key] += Number(payment.amount);
+//   });
+
+//   return fillMissingDates(grouped, period);
+// }
 function groupByDay(payments: any[], period: string) {
   const grouped: { [key: string]: number } = {};
 
@@ -1051,9 +1073,12 @@ function groupByDay(payments: any[], period: string) {
     let key: string;
 
     if (period === 'week' || period === 'month') {
-      key = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      key = `${y}-${m}-${d}`;
     } else {
-      key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+      key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     }
 
     if (!grouped[key]) {
@@ -1061,64 +1086,60 @@ function groupByDay(payments: any[], period: string) {
     }
     grouped[key] += Number(payment.amount);
   });
-
   return fillMissingDates(grouped, period);
 }
 
 function fillMissingDates(data: { [key: string]: number }, period: string) {
   const result = [];
   const now = new Date();
-  
+
   if (period === 'month') {
-    // สำหรับเดือน: แสดง 30 วันที่ผ่านมาจนถึงวันนี้
     const startDate = new Date(now);
     startDate.setDate(startDate.getDate() - 29); // 30 วัน (29 + วันนี้)
-    
+
     const currentDate = new Date(startDate);
-    
+
     while (currentDate <= now) {
       const key = currentDate.toISOString().split('T')[0];
-      
+
       result.push({
         date: key,
         amount: data[key] || 0
       });
-      
+
       currentDate.setDate(currentDate.getDate() + 1);
     }
   } else if (period === 'week') {
-    // สำหรับสัปดาห์: แสดง 7 วันที่ผ่านมา
     const startDate = new Date(now);
     startDate.setDate(startDate.getDate() - 6);
-    
+
     const currentDate = new Date(startDate);
-    
+
     while (currentDate <= now) {
       const key = currentDate.toISOString().split('T')[0];
-      
+
       result.push({
         date: key,
         amount: data[key] || 0
       });
-      
+
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
   } else {
-    // สำหรับปี: แสดง 12 เดือนที่ผ่านมา
     const startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
     const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    
+
     const currentDate = new Date(startDate);
-    
+
     while (currentDate <= endDate) {
       const key = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-      
+
       result.push({
         date: key,
         amount: data[key] || 0
       });
-      
+
       currentDate.setMonth(currentDate.getMonth() + 1);
     }
   }

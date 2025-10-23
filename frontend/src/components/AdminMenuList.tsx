@@ -16,7 +16,7 @@ import Portal from "./Portal";
 const AdminMenuList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [_openMenuId, setOpenMenuId] = useState<number | null>(null);
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
@@ -53,7 +53,6 @@ const deleteMutation = useMutation({
     alert('Failed to delete menu: ' + (error.message));
   },
 });
-
 
   // Toggle availability mutation
   const toggleAvailabilityMutation = useMutation({
@@ -126,7 +125,7 @@ const handleMenuClick = (e: React.MouseEvent, itemId: number) => {
   const button = e.currentTarget as HTMLButtonElement;
   const rect = button.getBoundingClientRect();
   
-  // คำนวณตำแหน่งแบบ fixed ที่ไม่เปลี่ยนแปลงเมื่อ scroll
+  // คำนวณตำแหน่งแบบ fixed 
   setDropdownInfo({
     isOpen: true,
     itemId,

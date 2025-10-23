@@ -165,7 +165,7 @@ const PaymentHistory = () => {
         }
 
         const data = await response.json();
-        console.log('📦 Payments data received:', data);
+        console.log('Payments data received:', data);
 
         // แปลง status ให้ตรงกับ type
         const formattedData: Payment[] = data.map((item: any) => ({
@@ -216,7 +216,7 @@ const PaymentHistory = () => {
             <select
               id="table-select"
               className="ml-2 p-2 border rounded-md"
-              value={selectedTable}
+              value={selectedTable ?? ''}
               onChange={(e) => setSelectedTable(Number(e.target.value))}
             >
               {availableTables.map((table) => (

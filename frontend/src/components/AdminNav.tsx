@@ -7,8 +7,8 @@ const AdminNav = () => {
   const navigate = useNavigate()
   const [showDropdown, setDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const [userLogin, setUserLogin] = useState(false)
-  const [ currentUser, setCurrentUser] = useState(null)
+  const [_userLogin, setUserLogin] = useState(false)
+  const [_currentUser, setCurrentUser] = useState(null)
 
   const handleLogout = async () => {
     try {

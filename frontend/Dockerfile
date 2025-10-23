@@ -10,6 +10,18 @@ WORKDIR /app
 # Copy all files from your project directory into the container's /app directory
 COPY . .
 
+# Receive build arguments from docker-compose
+ARG VITE_BACKEND_URL
+ARG VITE_IMAGEKIT_URL_ENDPOINT
+ARG VITE_IMAGEKIT_PUBLIC_KEY
+ARG VITE_IMAGEKIT_PRIVATE_KEY
+
+# Set environment variables for the build process
+ENV VITE_BACKEND_URL=${VITE_BACKEND_URL}
+ENV VITE_IMAGEKIT_URL_ENDPOINT=${VITE_IMAGEKIT_URL_ENDPOINT}
+ENV VITE_IMAGEKIT_PUBLIC_KEY=${VITE_IMAGEKIT_PUBLIC_KEY}
+ENV VITE_IMAGEKIT_PRIVATE_KEY=${VITE_IMAGEKIT_PRIVATE_KEY}
+
 # Install project dependencies using pnpm
 RUN pnpm install
 

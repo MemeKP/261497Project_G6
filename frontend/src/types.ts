@@ -23,7 +23,11 @@ export interface Session {
   startedAt: string;     
   endedAt: string | null;
   qrCode: string;     
-  // qrData: string,    
+  qrData: {
+      path: string;
+    sessionId: number;
+    tableNumber: number;
+  }  
   status: string;
   totalCustomers: number;
   createdAt: string;

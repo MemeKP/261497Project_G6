@@ -14,7 +14,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
           credentials: "include", 
         });
 
-        // console.log('🔍 Auth check response status:', res.status);
+        // console.log('Auth check response status:', res.status);
 
         if (res.ok) {
           const data = await res.json();
@@ -27,10 +27,10 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         } else {
           if (res.status === 401) {
-            // console.log('🔐 Not authenticated (401)');
+            // console.log('Not authenticated (401)');
             setIsAuthenticated(false);
           } else {
-            const errorData = await res.json().catch(() => ({}));
+            // const errorData = await res.json().catch(() => ({}));
             // console.error('Auth check failed:', res.status, errorData);
             setIsAuthenticated(false);
           }

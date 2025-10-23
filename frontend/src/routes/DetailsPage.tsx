@@ -37,10 +37,10 @@ const DetailsPage = () => {
   const [selectMembers, setSelectMembers] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState("");
-  const [isAdding, setIsAdding] = useState(false);
+  const [_isAdding, setIsAdding] = useState(false);
   const { addToCart } = useCart();
   const [isSingleCustomer, setIsSingleCustomer] = useState(false);
-  const [ownerMemberId, setOwnerMemberId] = useState<string | null>(null); // มาคนเดว
+  const [_ownerMemberId, setOwnerMemberId] = useState<string | null>(null); // มาคนเดว
 
  useEffect(() => {
   if (sessionId) {
@@ -142,18 +142,18 @@ const DetailsPage = () => {
         // สำหรับ single customer: ไม่ส่ง memberId (backend จะใช้ owner โดยอัตโนมัติ)
         await addToCart(
           Number(menu.id),
+          null as unknown as number,// ไม่ส่ง memberId
           quantity,
           note
-          // ไม่ส่ง memberId
         );
       } else {
         // สำหรับกลุ่ม: ส่งให้แต่ละ member ที่เลือก
         for (const memberId of selectMembers) {
           await addToCart(
             Number(menu.id),
+            parseInt(memberId),
             quantity,
             note,
-            parseInt(memberId)
           );
         }
       }

@@ -60,7 +60,8 @@ const PaymentGraph = ({
     const ctx = chartRef.current.getContext('2d');
     if (!ctx) return;
 
-    const { chartData, statistics } = revenueData;
+    // const { chartData, statistics } = revenueData;
+    const { chartData } = revenueData;
 
     // chart config
     const config: ChartConfiguration = {
@@ -69,7 +70,7 @@ const PaymentGraph = ({
         labels: chartData.map(item => {
           // Format วันที่ตาม period ที่เลือก
           const date = new Date(item.date);
-             switch (selectedPeriod) {
+          switch (selectedPeriod) {
             case 'week':
               // สำหรับ week: แสดงวันในสัปดาห์ (Mon, Tue, etc.)
               return date.toLocaleDateString('en-US', {
@@ -162,7 +163,7 @@ const PaymentGraph = ({
                 return label;
               },
               title: function (context) {
-                const dateStr = context[0].label;
+                // const dateStr = context[0].label;
                 const dataPoint = chartData[context[0].dataIndex];
                 const date = new Date(dataPoint.date);
 

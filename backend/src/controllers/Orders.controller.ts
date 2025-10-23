@@ -35,41 +35,6 @@ const allowedStatus = [
 ] as const;
 
 
-// Allowed status values
-// const allowedStatus = ["PENDING", "PREPARING", "READY_TO_SERVE", "CANCELLED", "COMPLETE"] as const;
-/*
-export async function createOrder(req: Request, res: Response) {
-  try {
-    const { diningSessionId, items } = req.body;
-
-    if (!diningSessionId || isNaN(Number(diningSessionId))) {
-      return res.status(400).json({ error: "Valid diningSessionId is required" });
-    }
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: "Order items are required" });
-    }
-
-    for (const item of items) {
-      if (!item.menuId || isNaN(Number(item.menuId))) {
-        return res.status(400).json({ error: "Each item must have a valid menuId" });
-      }
-      if (!item.qty || isNaN(Number(item.qty)) || item.qty <= 0) {
-        return res.status(400).json({ error: "Each item must have a valid qty > 0" });
-      }
-    }
-
-    // ส่งไปให้ service จัดการสร้าง order + orderItems
-    const order = await orderService.createOrderWithItems(
-      Number(diningSessionId),
-      items
-    );
-
-    res.status(201).json(order);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-}*/
 export async function createOrder(req: Request, res: Response) {
   try {
     const { diningSessionId, tableId, status = "PENDING" } = req.body;

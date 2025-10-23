@@ -5,11 +5,11 @@ import {
   admins,
   tables,
   diningSessions,
-  
   menuItems,
   orders,
   orderItems,
   groups,
+  group_members,
 } from "@db/schema.js";
 import bcrypt from "bcrypt";
 
@@ -162,6 +162,7 @@ async function updateQRForDiningSession(sessionId: number) {
 // }
 
 // 4. Insert Members
+/*
 async function insertMembers() {
   const sessions = await dbClient.query.diningSessions.findMany();
 
@@ -172,57 +173,56 @@ async function insertMembers() {
   }
 
   const [member1] = await dbClient
-    .insert(members)
+    .insert(group_members)
     .values({
       diningSessionId: sessions[1].id,
       name: "Alice",
-      isTableAdmin: true,
+ 
     })
     .returning();
 
   const [member2] = await dbClient
-    .insert(members)
+    .insert(group_members)
     .values({
       diningSessionId: sessions[0].id,
       name: "Bob",
-      isTableAdmin: false,
     })
     .returning();
 
   console.log("Inserted members:", [member1]);
   dbConn.end();
-}
+}*/
 
 // 5. Insert Menu Items
 async function insertMenuItems() {
-  // const [menu1] = await dbClient
-  //   .insert(menuItems)
-  //   .values({
-  //     name: "Ebi Fry Katsu Curry Rice",
-  //     description:
-  //       "Rich and flavorful Japanese Curry served over soft, fluffy Japanese rice. Topped with large Ebi Fry.",
-  //     price: 289.0,
-  //     isSignature: false,
-  //     category: "rice",
-  //     imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/menu1.png?updatedAt=1759220941089',
-  //   })
-  //   .returning();
+  const [menu1] = await dbClient
+    .insert(menuItems)
+    .values({
+      name: "Ebi Fry Katsu Curry Rice",
+      description:
+        "Rich and flavorful Japanese Curry served over soft, fluffy Japanese rice. Topped with large Ebi Fry.",
+      price: 289.0,
+      isSignature: false,
+      category: "rice",
+      imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/menu1.png?updatedAt=1759220941089',
+    })
+    .returning();
 
-  // const [menu2] = await dbClient
-  //   .insert(menuItems)
-  //   .values({
-  //     name: "Enso's Secret Beef Ramen",
-  //     description:
-  //       "A luxurious bowl featuring marinated beef, soft-boiled egg, and rich broth.",
-  //     price: 159.0,
-  //     isSignature: true,
-  //     category:"noodle",
-  //     imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/signature.png?updatedAt=1759220936892'
+  const [menu2] = await dbClient
+    .insert(menuItems)
+    .values({
+      name: "Enso's Secret Beef Ramen",
+      description:
+        "A luxurious bowl featuring marinated beef, soft-boiled egg, and rich broth.",
+      price: 159.0,
+      isSignature: true,
+      category: "noodle",
+      imageUrl: 'https://ik.imagekit.io/496kiwiBird/261497project/signature.png?updatedAt=1759220936892'
 
-  //   })
-  //   .returning();
+    })
+    .returning();
 
-  /*const [menu3] = await dbClient
+  const [menu3] = await dbClient
     .insert(menuItems)
     .values({
       name: "Kuro Mayu Chashu Ramen",
@@ -278,34 +278,20 @@ async function insertMenuItems() {
     })
     .returning();
 
-    const [menu6] = await dbClient
+  const [menu7] = await dbClient
     .insert(menuItems)
     .values({
-      name: "The Harvest Bowl",
+      name: "Katsu curry",
       description:
-        "A vibrant and filling noodle dish that balances heat and sweetness. Features fresh corn kernels.",
+        "A classic, comforting dish featuring tender beef chunks, slow-cooked with carrots and onions.",
       price: 149.0,
       isSignature: false,
-      category: "noodle",
+      category: "rice",
       imageUrl:
-        "https://ik.imagekit.io/496kiwiBird/261497project/Mask%20group%20(3).png?updatedAt=1759384859238",
+        "https://ik.imagekit.io/496kiwiBird/261497project/menu6.png?updatedAt=1759410727451",
     })
-    .returning();*/
-
-    // const [menu7] = await dbClient
-    // .insert(menuItems)
-    // .values({
-    //   name: "Katsu curry",
-    //   description:
-    //     "A classic, comforting dish featuring tender beef chunks, slow-cooked with carrots and onions.",
-    //   price: 149.0,
-    //   isSignature: false,
-    //   category: "rice",
-    //   imageUrl:
-    //     "https://ik.imagekit.io/496kiwiBird/261497project/menu6.png?updatedAt=1759410727451",
-    // })
-    // .returning();
-    const [menu8] = await dbClient
+    .returning();
+  const [menu8] = await dbClient
     .insert(menuItems)
     .values({
       name: "Kyoza",
@@ -318,11 +304,7 @@ async function insertMenuItems() {
         "https://ik.imagekit.io/496kiwiBird/261497project/kyoza.PNG?updatedAt=1760404585768",
     })
     .returning();
-
-    
-
-  console.log("Inserted menu items:", [menu8]);
-  dbConn.end();
+  console.log("Inserted menu items:", [menu1, menu2, menu3, menu4, menu5, menu6, menu7, menu8]);
 }
 
 // 6. Insert Order
@@ -349,7 +331,7 @@ async function insertOrder() {
 }
 
 // 7. Insert Order Items
-
+/*
 async function insertOrderItems() {
   const orderList = await dbClient.query.orders.findMany();
   const menuList = await dbClient.query.menuItems.findMany();
@@ -387,7 +369,7 @@ async function insertOrderItems() {
 
   console.log("Inserted order items!");
   dbConn.end();
-}
+}*/
 
 export const insertGroup = async () => {
   try {
@@ -469,7 +451,6 @@ export const seedTables = async () => {
       { number: 8, status: "AVAILABLE" },
       { number: 9, status: "AVAILABLE" },
     ];
-
     for (const table of tablesToCreate) {
       await dbClient
         .insert(tables)
@@ -479,10 +460,9 @@ export const seedTables = async () => {
           set: { status: "AVAILABLE" },
         });
     }
-
-    console.log("✅ Tables 1-9 seeded successfully");
+    console.log("Tables 1-9 seeded successfully!");
   } catch (error) {
-    console.error("❌ Error seeding tables:", error);
+    console.error("Error seeding tables:", error);
   }
 };
 
@@ -529,6 +509,24 @@ async function queryOrderItems() {
   dbConn.end();
 }
 
+export const seedDatabase = async () => {
+  try {
+    console.log("Starting database seed...");
+    await insertMenuItems();
+    await seedTables();
+    console.log("Database seeded successfully!");
+  } catch (error) {
+    console.error("Error seeding the database:", error);
+    throw error;
+  } finally {
+    await dbConn.end();
+    console.log("Database connection closed");
+  }
+};
+
+seedDatabase();
+
+
 // seedTables()
 // insertAdmin();
 // insertTable();
@@ -537,7 +535,7 @@ async function queryOrderItems() {
 // insertDiningSession();
 // insertDiningSessionWithQR();
 // insertMembers();
-insertMenuItems();
+// insertMenuItems();
 // insertOrder();
 // insertOrderItems();
 

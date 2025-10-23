@@ -34,12 +34,16 @@ export const startSession = async (req: Request, res: Response, next: NextFuncti
       where: eq(tables.id, tableId),
     });
 
-    console.log('🔍 Table record found:', tableRecord);
+    console.log('Table record found:', tableRecord);
 
     if (!tableRecord) {
       return res.status(400).json({
         error: `Table ID ${tableId} not found.`,
       });
+    }
+
+    if (typeof adminId !== 'number') {
+      throw new Error('adminId is required and must be a number');
     }
 
     const existingSession = await dbClient.query.diningSessions?.findFirst({
@@ -118,7 +122,7 @@ export const startSession = async (req: Request, res: Response, next: NextFuncti
       path: `/tables/${tableRecord.number}`,
     };
 
-    const fullUrlForQR = `http://10.124.4.84:5173/tables/${newSession[0].id}`;
+    const fullUrlForQR = `http://10.124.2.5:5173/tables/${newSession[0].id}`;
     console.log('🔍 QR Code URL:', fullUrlForQR);
 
     // Generate QR Code
@@ -157,7 +161,7 @@ export const startSession = async (req: Request, res: Response, next: NextFuncti
       ownerMember: {
         id: ownerMember.id,
         name: ownerMember.name,
-        isTableAdmin: ownerMember.isTableAdmin 
+        isTableAdmin: ownerMember.isTableAdmin
       }
     });
 
@@ -446,13 +450,13 @@ export const endSession = async (
     // สร้างเงื่อนไขค้นหา
     const whereCondition = sessionId
       ? and(
-          eq(diningSessions.id, sessionId),
-          eq(diningSessions.status, "ACTIVE")
-        )
+        eq(diningSessions.id, sessionId),
+        eq(diningSessions.status, "ACTIVE")
+      )
       : and(
-          eq(diningSessions.tableId, tableId),
-          eq(diningSessions.status, "ACTIVE")
-        );
+        eq(diningSessions.tableId, tableId),
+        eq(diningSessions.status, "ACTIVE")
+      );
 
     const activeSession = await dbClient.query.diningSessions.findFirst({
       where: whereCondition,
@@ -515,7 +519,7 @@ export const endSession = async (
     const durationMinutes = Math.round(
       (endedAt.getTime() -
         (activeSession.startedAt?.getTime() || endedAt.getTime())) /
-        60000
+      60000
     );
 
     res.json({
@@ -590,68 +594,68 @@ export const getActiveSession = async (
     //   totalActiveTables: activeSessions.length,
     // });
     const sessionsWithGroups = await Promise.all(
-  activeSessions.map(async (session) => {
-    // ดึงสมาชิกทั้งหมดของ session นี้
-    const gmRows = await dbClient.query.group_members.findMany({
-      where: eq(group_members.diningSessionId, session.id),
-      orderBy: [asc(group_members.joinedAt), asc(group_members.id)],
-    });
+      activeSessions.map(async (session) => {
+        // ดึงสมาชิกทั้งหมดของ session นี้
+        const gmRows = await dbClient.query.group_members.findMany({
+          where: eq(group_members.diningSessionId, session.id),
+          orderBy: [asc(group_members.joinedAt), asc(group_members.id)],
+        });
 
-    // รวมจำนวนลูกค้าทั้งหมดใน session
-    const totalCustomers = gmRows.length;
+        // รวมจำนวนลูกค้าทั้งหมดใน session
+        const totalCustomers = gmRows.length;
 
-    // เลือก "กลุ่มหลัก" ของ session
-    // วิธีที่ 1: เลือก groupId ล่าสุด (ตามเวลา joinedAt/id)
-    let primaryGroupId: number | null = null;
-    if (gmRows.length) {
-      primaryGroupId = gmRows[gmRows.length - 1].groupId;
-    }
+        // เลือก "กลุ่มหลัก" ของ session
+        // วิธีที่ 1: เลือก groupId ล่าสุด (ตามเวลา joinedAt/id)
+        let primaryGroupId: number | null = null;
+        if (gmRows.length) {
+          primaryGroupId = gmRows[gmRows.length - 1].groupId;
+        }
 
-    // ถ้าอยากเลือกกลุ่มที่มีสมาชิกมากสุด ให้ใช้วิธีนี้แทน (คอมเมนต์ด้านบน)
-    // const counts = new Map<number, number>();
-    // gmRows.forEach(r => counts.set(r.groupId, (counts.get(r.groupId) ?? 0) + 1));
-    // primaryGroupId = [...counts.entries()].sort((a,b) => b[1]-a[1])[0]?.[0] ?? null;
+        // ถ้าอยากเลือกกลุ่มที่มีสมาชิกมากสุด ให้ใช้วิธีนี้แทน (คอมเมนต์ด้านบน)
+        // const counts = new Map<number, number>();
+        // gmRows.forEach(r => counts.set(r.groupId, (counts.get(r.groupId) ?? 0) + 1));
+        // primaryGroupId = [...counts.entries()].sort((a,b) => b[1]-a[1])[0]?.[0] ?? null;
 
-    // เตรียม group object (ถ้ามี)
-    let groupObj: { id: number; members: Array<{ id: number; name: string; note: string | null }> } | null = null;
+        // เตรียม group object (ถ้ามี)
+        let groupObj: { id: number; members: Array<{ id: number; name: string; note: string | null }> } | null = null;
 
-    if (primaryGroupId != null) {
-      const group = await dbClient.query.groups.findFirst({
-        where: eq(groups.id, primaryGroupId),
-      });
+        if (primaryGroupId != null) {
+          const group = await dbClient.query.groups.findFirst({
+            where: eq(groups.id, primaryGroupId),
+          });
 
-      const primaryMembers = gmRows
-        .filter(r => r.groupId === primaryGroupId)
-        .map(m => ({
-          id: m.id,
-          name: m.name,
-          note: m.note ?? null,
-        }));
+          const primaryMembers = gmRows
+            .filter(r => r.groupId === primaryGroupId)
+            .map(m => ({
+              id: m.id,
+              name: m.name,
+              note: m.note ?? null,
+            }));
 
-      if (group) {
-        groupObj = {
-          id: group.id,
-          members: primaryMembers,
+          if (group) {
+            groupObj = {
+              id: group.id,
+              members: primaryMembers,
+            };
+          }
+        }
+
+        return {
+          id: session.id,
+          tableId: session.tableId,
+          startedAt: session.startedAt,
+          status: session.status,
+          totalCustomers, // สมาชิกทั้งหมดใน session
+          createdAt: session.createdAt,
+          group: groupObj, // สมาชิกของ "กลุ่มหลัก" (ถ้ามี)
         };
-      }
-    }
+      })
+    );
 
-    return {
-      id: session.id,
-      tableId: session.tableId,
-      startedAt: session.startedAt,
-      status: session.status,
-      totalCustomers, // สมาชิกทั้งหมดใน session
-      createdAt: session.createdAt,
-      group: groupObj, // สมาชิกของ "กลุ่มหลัก" (ถ้ามี)
-    };
-  })
-);
-
-res.json({
-  activeSessions: sessionsWithGroups,
-  totalActiveTables: activeSessions.length,
-});
+    res.json({
+      activeSessions: sessionsWithGroups,
+      totalActiveTables: activeSessions.length,
+    });
   } catch (err) {
     next(err);
   }
